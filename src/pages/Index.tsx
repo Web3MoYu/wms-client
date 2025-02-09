@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { Layout, Button, theme, Breadcrumb, Space } from 'antd';
 import LeftMenu from '../component/LeftMenu';
-import { Outlet, useLocation, Link } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import userStore from '../store/userStore';
 
 const { Header, Sider, Content } = Layout;

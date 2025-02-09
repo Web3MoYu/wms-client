@@ -9,34 +9,35 @@ import { observer } from 'mobx-react-lite';
 import userStore from '../store/userStore';
 import { JSX } from 'react/jsx-runtime';
 
-const PrivateRoute = () => {
-  const user = new userStore();
-  function createRouter(list: any) {
-    const arr: { path: any; children?: any[]; element?: JSX.Element }[] = [];
-    if (list && list.length > 0) {
-      list.map((item: any) => {
-        const children = item.children;
-        item = item.menu;
-        const Component = lodable(() => {
-          return import('./' + item.componentPath);
-        });
-        if (children && children.length > 0) {
-          arr.push({
-            path: item.routePath,
-            // element: <Component />,
-            children: [...createRouter(children)],
-          });
-        } else {
-          arr.push({
-            path: item.routePath,
-            element: <Component />,
-          });
-        }
+function createRouter(list: any) {
+  const arr: { path: any; children?: any[]; element?: JSX.Element }[] = [];
+  if (list && list.length > 0) {
+    list.map((item: any) => {
+      const children = item.children;
+      item = item.menu;
+      const Component = lodable(() => {
+        return import('./' + item.componentPath);
       });
-    }
-
-    return arr;
+      if (children && children.length > 0) {
+        arr.push({
+          path: item.routePath,
+          // element: <Component />,
+          children: [...createRouter(children)],
+        });
+      } else {
+        arr.push({
+          path: item.routePath,
+          element: <Component />,
+        });
+      }
+    });
   }
+
+  return arr;
+}
+
+const PrivateRoute = observer(() => {
+  const user = new userStore();
 
   return useRoutes([
     {
@@ -57,6 +58,6 @@ const PrivateRoute = () => {
       element: <Navigate to={'/login'}></Navigate>,
     },
   ]);
-};
+});
 
-export default observer(PrivateRoute);
+export default PrivateRoute;

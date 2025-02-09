@@ -18,8 +18,66 @@ import { useState } from 'react';
 
 const { Title, Text } = Typography;
 
-function Login() {
-  const marginX = 20;
+// 在组件外部定义正则表达式常量
+const USERNAME_REGEX =
+  /^(1\d{10}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/;
+const PASSWORD_REGEX = /^[A-Za-z](?=.*\d)(?=.*[.]).{7,}$/;
+
+// 在组件顶部添加样式常量
+const STYLES = {
+  layout: {
+    minHeight: '100vh',
+    background: '#f0f2f5',
+    display: 'flex',
+    flexDirection: 'column' as const,
+  },
+  content: {
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '24px 16px'
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    minWidth: 300,
+    padding: '40px 24px',
+    background: '#ffffff',
+    borderRadius: 8,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: 40,
+    color: '#1890ff',
+    fontSize: '24px',
+    fontWeight: 600
+  },
+  footer: {
+    marginTop: 'auto',
+    padding: '16px',
+    backgroundColor: '#f0f2f5',
+    textAlign: 'center'
+  },
+  footerContent: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 24,
+    flexWrap: 'wrap' as const
+  },
+  footerIcon: {
+    color: 'rgba(0,0,0,0.45)',
+    cursor: 'pointer',
+    transition: 'color 0.3s',
+    ':hover': {
+      color: '#1890ff'
+    }
+  }
+};
+
+const Login = observer(() => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const onFinish: FormProps<LoginDto>['onFinish'] = (values: LoginDto) => {
@@ -39,132 +97,96 @@ function Login() {
       .catch((err: any) => {
         message.error(err.msg);
       });
-      setLoading(false);
+    setLoading(false);
   };
 
   return (
-    <Layout
-      style={{
-        minHeight: '100vh', // 强制撑满视口高度
-        background: '#F0F2F5',
-        display: 'flex', // 启用 flex 布局
-        flexDirection: 'column', // 垂直方向排列
-      }}
-    >
-      <Content
-        style={{
-          flex: 1, // 占据剩余空间
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '20px', // 避免内容贴边
-        }}
-      >
-        <div
-          style={{
-            width: 280,
-            height: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: 400,
-              width: '100%',
-              padding: '0 20px',
-            }}
+    <Layout style={STYLES.layout}>
+      <Content style={STYLES.content}>
+        <div style={STYLES.formContainer}>
+          <Title 
+            level={2} 
+            style={STYLES.title}
+            onClick={() => navigate('/')}
           >
-            {/* Logo 标题 */}
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <Title
-                level={2}
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate('/')}
-              >
-                WMS
-              </Title>
-            </div>
-            <Form
-              name='basic'
-              style={{ width: 300 }}
-              onFinish={onFinish}
-              layout='vertical'
-              autoComplete='off'
+            WMS 管理系统
+          </Title>
+          
+          <Form
+            name="loginForm"
+            onFinish={onFinish}
+            layout="vertical"
+            autoComplete="off"
+          >
+            <Form.Item
+              name='username'
+              rules={[
+                {
+                  required: true,
+                  message: '请输入手机号或邮箱',
+                },
+                {
+                  pattern: USERNAME_REGEX,
+                  message: '格式不正确(请输入11位手机号或有效邮箱)',
+                },
+              ]}
             >
-              <Form.Item
-                name='username'
-                rules={[{ required: true, message: '请输入手机号/邮箱' }]}
+              <Input
+                placeholder='手机号/邮箱'
+                prefix={<UserOutlined />}
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item
+              name='password'
+              rules={[
+                {
+                  required: true,
+                  message: '请输入密码',
+                },
+                {
+                  min: 8,
+                  message: '密码长度至少8位',
+                },
+                {
+                  pattern: PASSWORD_REGEX,
+                  message: '需字母开头，包含数字和.号',
+                },
+              ]}
+            >
+              <Input.Password
+                placeholder='密码'
+                prefix={<LockOutlined />}
+              />
+            </Form.Item>
+            <Form.Item style={{ marginTop: 32 }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                block
+                size="large"
+                loading={loading}
               >
-                <Input
-                  placeholder='请输入手机号/邮箱'
-                  prefix={<UserOutlined />}
-                />
-              </Form.Item>
-              <Form.Item
-                name='password'
-                rules={[{ required: true, message: '请输入密码' }]}
-              >
-                <Input.Password placeholder='密码' prefix={<LockOutlined />} />
-              </Form.Item>
-              <Form.Item>
-                <Button
-                  type='primary'
-                  htmlType='submit'
-                  style={{ width: '100%' }}
-                  loading={loading}
-                >
-                  登录
-                </Button>
-              </Form.Item>
-            </Form>
-          </div>
+                立即登录
+              </Button>
+            </Form.Item>
+          </Form>
         </div>
       </Content>
-      {/* 底部 Footer */}
-      <Footer
-        style={{
-          marginTop: 'auto',
-          textAlign: 'center',
-          padding: '16px',
-          backgroundColor: '#F0F2F5',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 5,
-          }}
-        >
-          <Text
-            type='secondary'
-            style={{ marginLeft: marginX, marginRight: marginX }}
-          >
-            lsh
-          </Text>
-          <GithubOutlined
-            style={{
-              color: 'rgba(0,0,0,0.45)',
-              marginLeft: marginX,
-              marginRight: marginX,
-            }}
-            onClick={() => {
-              window.open('https://github.com/Web3MoYu/wms-client');
-            }}
+
+      <Footer style={STYLES.footer}>
+        <div style={STYLES.footerContent}>
+          <GithubOutlined 
+            style={STYLES.footerIcon}
+            onClick={() => window.open('https://github.com/Web3MoYu/wms-client')}
           />
-          <Text
-            type='secondary'
-            style={{ marginLeft: marginX, marginRight: marginX }}
-          >
-            WMS
+          <Text type="secondary" style={{ fontSize: 14 }}>
+            Copyright ©{new Date().getFullYear()} Produced by lsh
           </Text>
         </div>
-        <Text type='secondary'>Copyright ©202 Produced by lsh</Text>
       </Footer>
     </Layout>
   );
-}
+});
 
-export default observer(Login);
+export default Login;
