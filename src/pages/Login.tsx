@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import userStore from '../store/userStore';
 import { Content } from 'antd/es/layout/layout';
 import { useState } from 'react';
+import styles from './login.module.css';
 
 const { Title, Text } = Typography;
 
@@ -22,60 +23,6 @@ const { Title, Text } = Typography;
 const USERNAME_REGEX =
   /^(1\d{10}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/;
 const PASSWORD_REGEX = /^[A-Za-z](?=.*\d)(?=.*[.]).{7,}$/;
-
-// 在组件顶部添加样式常量
-const STYLES = {
-  layout: {
-    minHeight: '100vh',
-    background: '#f0f2f5',
-    display: 'flex',
-    flexDirection: 'column' as const,
-  },
-  content: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '24px 16px'
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: 400,
-    minWidth: 300,
-    padding: '40px 24px',
-    background: '#ffffff',
-    borderRadius: 8,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-  },
-  title: {
-    textAlign: 'center',
-    marginBottom: 40,
-    color: '#1890ff',
-    fontSize: '24px',
-    fontWeight: 600
-  },
-  footer: {
-    marginTop: 'auto',
-    padding: '16px',
-    backgroundColor: '#f0f2f5',
-    textAlign: 'center'
-  },
-  footerContent: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 24,
-    flexWrap: 'wrap' as const
-  },
-  footerIcon: {
-    color: 'rgba(0,0,0,0.45)',
-    cursor: 'pointer',
-    transition: 'color 0.3s',
-    ':hover': {
-      color: '#1890ff'
-    }
-  }
-};
 
 const Login = observer(() => {
   const navigate = useNavigate();
@@ -101,12 +48,12 @@ const Login = observer(() => {
   };
 
   return (
-    <Layout style={STYLES.layout}>
-      <Content style={STYLES.content}>
-        <div style={STYLES.formContainer}>
+    <Layout className={styles.loginLayout}>
+      <Content className={styles.loginContent}>
+        <div className={styles.formContainer}>
           <Title 
             level={2} 
-            style={STYLES.title}
+            className={styles.loginTitle}
             onClick={() => navigate('/')}
           >
             WMS 管理系统
@@ -174,10 +121,10 @@ const Login = observer(() => {
         </div>
       </Content>
 
-      <Footer style={STYLES.footer}>
-        <div style={STYLES.footerContent}>
+      <Footer className={styles.loginFooter}>
+        <div className={styles.footerContent}>
           <GithubOutlined 
-            style={STYLES.footerIcon}
+            className={styles.footerIcon}
             onClick={() => window.open('https://github.com/Web3MoYu/wms-client')}
           />
           <Text type="secondary" style={{ fontSize: 14 }}>
