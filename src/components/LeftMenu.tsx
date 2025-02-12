@@ -2,10 +2,22 @@ import { Menu } from 'antd';
 import { observer } from 'mobx-react';
 import userStore from '../store/userStore';
 import * as Icon from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { JSX } from 'react/jsx-runtime';
+import { useMemo } from 'react';
 
-const createMenu = (menuList: any) => {
+interface MenuItem {
+  menu: {
+    menuId: number;
+    title: string;
+    menuUrl: string;
+    icon: string;
+    componentPath?: string;
+  };
+  children?: MenuItem[];
+}
+
+const createMenu = (menuList: MenuItem[]): MenuProps['items'] => {
   const arr: { key: any; icon: JSX.Element; label: any; children?: any[] }[] =
     [];
   if (menuList && menuList.length > 0) {
@@ -33,16 +45,40 @@ const createMenu = (menuList: any) => {
 };
 
 const LeftMenu = observer(() => {
+  const location = useLocation();
+  
   // 1.拿到mobx中user存储的menuInfo
   // 2.menuinfo数组，生成对应菜单要求的数组
   const user = new userStore();
+
+  // 新增查找当前路径对应菜单ID的方法
+  const findSelectedKey = (menuList: any[]): string[] => {
+    if (!menuList) return [];
+    
+    const findKey = (items: any[]): string | undefined => {
+      for (const item of items) {
+        if (item.menu.menuUrl === location.pathname) {
+          return item.menu.menuId.toString();
+        }
+        if (item.children) {
+          const childKey = findKey(item.children);
+          if (childKey) return childKey;
+        }
+      }
+    };
+    
+    return [findKey(user.menu) || '1']; // 保持默认值防止报错
+  };
+
+  // 使用useMemo优化性能
+  const menuItems = useMemo(() => createMenu(user.menu), [user.menu]);
 
   return (
     <Menu
       theme='dark'
       mode='inline'
-      defaultSelectedKeys={['1']}
-      items={createMenu(user.menu)}
+      selectedKeys={findSelectedKey(user.menu)}
+      items={menuItems}
     />
   );
 });

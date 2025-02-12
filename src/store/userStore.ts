@@ -1,5 +1,9 @@
 import { makeAutoObservable } from 'mobx';
-import { LoginDto, bindWechat, login } from '../api/auth-service/AuthController';
+import {
+  LoginDto,
+  bindWechat,
+  login,
+} from '../api/auth-service/AuthController';
 
 class userStore {
   // 可观察的属性, observable, computed, action
@@ -44,13 +48,13 @@ class userStore {
     return new Promise((resolve, reject) => {
       login(user)
         .then((data: any) => {
-          if (data.code == 200){
+          if (data.code == 200) {
             this.user = data.data.user;
             this.token = data.data.token;
             this.menu = data.data.menuTree;
             resolve(data);
-          }else{
-            reject(data)
+          } else {
+            reject(data);
           }
         })
         .catch((error) => {
@@ -59,17 +63,20 @@ class userStore {
     });
   };
 
-  bindWechat = (params: { wxid: string; username: string; password: string }) => {
+  bindWechat = (
+    params: { username: string; password: string },
+    wxid: string
+  ) => {
     return new Promise((resolve, reject) => {
-      bindWechat(params)
+      bindWechat(params, wxid)
         .then((data: any) => {
-          if (data.code == 200){
+          if (data.code == 200) {
             this.user = data.data.user;
             this.token = data.data.token;
             this.menu = data.data.menuTree;
             resolve(data);
-          }else{
-            reject(data)
+          } else {
+            reject(data);
           }
         })
         .catch((error) => {
@@ -77,6 +84,11 @@ class userStore {
         });
     });
   };
+
+  // 获取用户名
+  get username() {
+    return this.user?.username || '未知用户';
+  }
 }
 
 export default userStore;

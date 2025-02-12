@@ -53,10 +53,12 @@ const Login = observer(() => {
     const parseUrlParams = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const binding = urlParams.get('binding'); // 是否绑定模式
-      const userInfoStr = urlParams.get('userInfo'); // 用户信息（base64编码）
+      const userInfoStr = urlParams.get('userInfo'); // 用户信息
       const wxIdParam = urlParams.get('wxId'); // 微信ID
 
-      if (wxIdParam) setWxid(wxIdParam);
+      if (wxIdParam) {
+        setWxid(wxIdParam);
+      }
 
       // 处理微信绑定逻辑
       if (binding === 'false' && wxIdParam) {
@@ -67,6 +69,7 @@ const Login = observer(() => {
         user.user = userInfo.user;
         user.token = userInfo.token;
         user.menu = userInfo.menuTree;
+        message.success('微信登录成功');
         navigate('/index');
       }
     };
@@ -77,7 +80,7 @@ const Login = observer(() => {
   // 处理微信绑定提交
   const handleBindSubmit = async (values: any) => {
     try {
-      user.bindWechat(values).then((res: any) => {
+      user.bindWechat(values, wxid).then((res: any) => {
         if (res.code == 200) {
           message.success(res.msg);
           navigate('/index'); // 登录成功跳转到首页

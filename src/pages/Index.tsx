@@ -1,57 +1,76 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect } from 'react';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import { Layout, Button, theme, Breadcrumb, Space } from 'antd';
+import { useState } from 'react';
+import {
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  UserOutlined,
+  LogoutOutlined,
+} from '@ant-design/icons';
+import {
+  Layout,
+  Button,
+  theme,
+  Breadcrumb,
+  Space,
+  Dropdown,
+  MenuProps,
+  message,
+} from 'antd';
 import LeftMenu from '../components/LeftMenu';
-import { Outlet, useLocation } from 'react-router-dom';
-import userStore from '../store/userStore';
+import { Outlet } from 'react-router-dom';
+import UserAvatar from '../components/common/UserAvatar';
+import useBreadcrumb from '../hooks/useBreadcrumb';
+import { logout as authLogout } from '../api/auth-service/AuthController';
 
 const { Header, Sider, Content } = Layout;
 
-function Index() {
-  const user = new userStore();
+const Index = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const breadcrumbItems = useBreadcrumb();
   const {
     token: { colorBgContainer, borderRadiusLG, boxShadowSecondary },
   } = theme.useToken();
-  const location = useLocation();
-  const [breadcrumbItems, setBreadcrumbItems] = useState<
-    { key: string; title: React.ReactNode }[]
-  >([]);
 
-  // 生成面包屑的逻辑（保持不变）
-  useEffect(() => {
-    const generateBreadcrumb = (menuTree: any[], path: string) => {
-      const breadcrumb: { key: string; title: React.ReactNode }[] = [];
-      const findPath = (tree: any[], targetPath: string): boolean => {
-        for (const item of tree) {
-          if (item.menu.menuUrl === targetPath) {
-            breadcrumb.unshift({
-              key: item.menu.menuUrl,
-              title: item.menu.title,
-            });
-            return true;
-          }
-          if (item.children && findPath(item.children, targetPath)) {
-            breadcrumb.unshift({
-              key: item.menu.menuUrl,
-              title: item.menu.title,
-            });
-            return true;
-          }
-        }
-        return false;
-      };
-      findPath(menuTree, path);
-      return breadcrumb;
-    };
+  function logout(): void {
+    authLogout().then((data: any) => {
+      console.log(data);
 
-    const menuTree = user.menu;
-    if (menuTree) {
-      const breadcrumb = generateBreadcrumb(menuTree, location.pathname);
-      setBreadcrumbItems(breadcrumb);
-    }
-  }, [location.pathname, JSON.stringify(user.menu)]);
+      if (data.code == 200) {
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('menu');
+        message.success('退出成功');
+        window.location.href = '/login';
+      }
+    });
+  }
+
+  // 在Index组件内添加下拉菜单配置（放在return语句之前）
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'userInfo',
+      label: (
+        <Space>
+          <UserOutlined />
+          <span>个人信息</span>
+        </Space>
+      ),
+      disabled: true,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      label: (
+        <Space>
+          <LogoutOutlined />
+          <span>退出登录</span>
+        </Space>
+      ),
+      onClick: () => logout(),
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f5f5f5' }}>
@@ -96,9 +115,13 @@ function Index() {
             />
           </Space>
 
-          {/* 可在此处添加用户操作栏（如用户头像、通知按钮等） */}
+          {/* 用户操作栏 */}
           <Space>
-            <span>欢迎回来，管理员</span>
+            <Dropdown menu={{ items: userMenuItems }} trigger={['hover']}>
+              <div style={{ cursor: 'pointer', padding: '0 16px' }}>
+                <UserAvatar />
+              </div>
+            </Dropdown>
           </Space>
         </Header>
 
@@ -129,6 +152,6 @@ function Index() {
       </Layout>
     </Layout>
   );
-}
+};
 
 export default Index;
