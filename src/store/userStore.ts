@@ -1,5 +1,5 @@
 import { makeAutoObservable } from 'mobx';
-import { LoginDto, login } from '../api/auth-service/AuthController';
+import { LoginDto, bindWechat, login } from '../api/auth-service/AuthController';
 
 class userStore {
   // 可观察的属性, observable, computed, action
@@ -43,6 +43,25 @@ class userStore {
     // 只进行数据处理，不进行界面的提示信息
     return new Promise((resolve, reject) => {
       login(user)
+        .then((data: any) => {
+          if (data.code == 200){
+            this.user = data.data.user;
+            this.token = data.data.token;
+            this.menu = data.data.menuTree;
+            resolve(data);
+          }else{
+            reject(data)
+          }
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  };
+
+  bindWechat = (params: { wxid: string; username: string; password: string }) => {
+    return new Promise((resolve, reject) => {
+      bindWechat(params)
         .then((data: any) => {
           if (data.code == 200){
             this.user = data.data.user;

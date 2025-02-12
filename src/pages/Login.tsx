@@ -1,42 +1,43 @@
 import {
-  Button,
   Form,
   FormProps,
   message,
   Input,
   Layout,
   Typography,
+  Modal,
 } from 'antd';
-import { GithubOutlined, LockOutlined, UserOutlined } from '@ant-design/icons';
+import { GithubOutlined } from '@ant-design/icons';
 import { Footer } from 'antd/es/layout/layout';
 import { LoginDto } from '../api/auth-service/AuthController';
 import { observer } from 'mobx-react-lite';
 import { useNavigate } from 'react-router-dom';
 import userStore from '../store/userStore';
 import { Content } from 'antd/es/layout/layout';
-import { useState } from 'react';
-import styles from './login.module.css';
+import { useEffect, useState } from 'react';
+import styles from './css/login.module.css';
+import WechatLoginButton from '../components/wx/WechatLoginButton';
+import UserLoginForm from '../components/wx/UserLoginForm';
 
 const { Title, Text } = Typography;
 
 // 在组件外部定义正则表达式常量
-const USERNAME_REGEX =
-  /^(1\d{10}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/;
-const PASSWORD_REGEX = /^[A-Za-z](?=.*\d)(?=.*[.]).{7,}$/;
-
 const Login = observer(() => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // 登录按钮加载状态
+  const [bindVisible, setBindVisible] = useState(false); // 微信绑定弹窗可见性
+  const [wxid, setWxid] = useState(''); // 微信ID状态
+  const user = new userStore();
+
+  // 处理登录表单提交
   const onFinish: FormProps<LoginDto>['onFinish'] = (values: LoginDto) => {
-    // 发起请求的过程 在mobx中的action中进行
     setLoading(true);
-    const user = new userStore();
     user
       .login(values)
       .then((data: any) => {
         if (data.code == 200) {
           message.success(data.msg);
-          navigate('/index');
+          navigate('/index'); // 登录成功跳转到首页
         } else {
           message.warning(data.msg);
         }
@@ -47,91 +48,112 @@ const Login = observer(() => {
     setLoading(false);
   };
 
+  // 页面加载时解析URL参数（处理微信登录回调）
+  useEffect(() => {
+    const parseUrlParams = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const binding = urlParams.get('binding'); // 是否绑定模式
+      const userInfoStr = urlParams.get('userInfo'); // 用户信息（base64编码）
+      const wxIdParam = urlParams.get('wxId'); // 微信ID
+
+      if (wxIdParam) setWxid(wxIdParam);
+
+      // 处理微信绑定逻辑
+      if (binding === 'false' && wxIdParam) {
+        setBindVisible(true); // 显示绑定弹窗
+      } else if (binding === 'true' && userInfoStr) {
+        // 自动登录逻辑（微信授权成功）
+        const userInfo = JSON.parse(decodeURIComponent(userInfoStr));
+        user.user = userInfo.user;
+        user.token = userInfo.token;
+        user.menu = userInfo.menuTree;
+        navigate('/index');
+      }
+    };
+
+    parseUrlParams();
+  }, [navigate]);
+
+  // 处理微信绑定提交
+  const handleBindSubmit = async (values: any) => {
+    try {
+      user.bindWechat(values).then((res: any) => {
+        if (res.code == 200) {
+          message.success(res.msg);
+          navigate('/index'); // 登录成功跳转到首页
+        } else {
+          message.warning(res.msg);
+        }
+      });
+    } catch (error: any) {
+      message.error(error.msg);
+    }
+  };
+
   return (
     <Layout className={styles.loginLayout}>
+      {/* 登录表单区域 */}
       <Content className={styles.loginContent}>
         <div className={styles.formContainer}>
-          <Title 
-            level={2} 
+          <Title
+            level={2}
             className={styles.loginTitle}
             onClick={() => navigate('/')}
           >
             WMS 管理系统
           </Title>
-          
-          <Form
-            name="loginForm"
+
+          {/* 主登录表单 */}
+          <UserLoginForm
             onFinish={onFinish}
-            layout="vertical"
-            autoComplete="off"
-          >
-            <Form.Item
-              name='username'
-              rules={[
-                {
-                  required: true,
-                  message: '请输入手机号或邮箱',
-                },
-                {
-                  pattern: USERNAME_REGEX,
-                  message: '格式不正确(请输入11位手机号或有效邮箱)',
-                },
-              ]}
-            >
-              <Input
-                placeholder='手机号/邮箱'
-                prefix={<UserOutlined />}
-                allowClear
-              />
-            </Form.Item>
-            <Form.Item
-              name='password'
-              rules={[
-                {
-                  required: true,
-                  message: '请输入密码',
-                },
-                {
-                  min: 8,
-                  message: '密码长度至少8位',
-                },
-                {
-                  pattern: PASSWORD_REGEX,
-                  message: '需字母开头，包含数字和.号',
-                },
-              ]}
-            >
-              <Input.Password
-                placeholder='密码'
-                prefix={<LockOutlined />}
-              />
-            </Form.Item>
-            <Form.Item style={{ marginTop: 32 }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                size="large"
-                loading={loading}
-              >
-                立即登录
-              </Button>
-            </Form.Item>
-          </Form>
+            loading={loading}
+            extraFields={
+              <>
+                <div style={{ textAlign: 'center', margin: '16px 0' }}>
+                  <Text type='secondary'>或使用其他方式登录</Text>
+                </div>
+                <WechatLoginButton loading={loading} />
+              </>
+            }
+          />
         </div>
       </Content>
 
+      {/* 页脚 */}
       <Footer className={styles.loginFooter}>
         <div className={styles.footerContent}>
-          <GithubOutlined 
+          <GithubOutlined
             className={styles.footerIcon}
-            onClick={() => window.open('https://github.com/Web3MoYu/wms-client')}
+            onClick={() =>
+              window.open('https://github.com/Web3MoYu/wms-client')
+            }
           />
-          <Text type="secondary" style={{ fontSize: 14 }}>
+          <Text type='secondary' style={{ fontSize: 14 }}>
             Copyright ©{new Date().getFullYear()} Produced by lsh
           </Text>
         </div>
       </Footer>
+
+      {/* 微信绑定弹窗 */}
+      <Modal
+        title='绑定账户'
+        open={bindVisible}
+        onCancel={() => setBindVisible(false)}
+        footer={null}
+        destroyOnClose
+        centered={true}
+      >
+        {/* 绑定专用表单（复用登录表单组件） */}
+        <UserLoginForm
+          onFinish={handleBindSubmit}
+          submitText='提交'
+          extraFields={
+            <Form.Item name='wxid' hidden initialValue={wxid}>
+              <Input type='hidden' />
+            </Form.Item>
+          }
+        />
+      </Modal>
     </Layout>
   );
 });

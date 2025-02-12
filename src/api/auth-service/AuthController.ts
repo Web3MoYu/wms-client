@@ -17,3 +17,20 @@ export function login(user: LoginDto) {
       });
   });
 }
+
+export function bindWechat(params: {
+  wxid: string;
+  username: string;
+  password: string;
+}) {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/auth/wx/bind', params)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

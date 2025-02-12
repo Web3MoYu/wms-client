@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { Layout, Button, theme, Breadcrumb, Space } from 'antd';
-import LeftMenu from '../component/LeftMenu';
+import LeftMenu from '../components/LeftMenu';
 import { Outlet, useLocation } from 'react-router-dom';
 import userStore from '../store/userStore';
 
