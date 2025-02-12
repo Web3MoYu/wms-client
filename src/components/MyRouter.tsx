@@ -8,7 +8,6 @@ import lodable from '@loadable/component';
 import { observer } from 'mobx-react-lite';
 import userStore from '../store/userStore';
 import { JSX } from 'react/jsx-runtime';
-import AuthCallback from '../pages/AuthCallback';
 
 function createRouter(list: any) {
   const arr: { path: any; children?: any[]; element?: JSX.Element }[] = [];
