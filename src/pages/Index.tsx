@@ -17,7 +17,7 @@ import {
   message,
 } from 'antd';
 import LeftMenu from '../components/LeftMenu';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import UserAvatar from '../components/common/UserAvatar';
 import useBreadcrumb from '../hooks/useBreadcrumb';
 import { logout as authLogout } from '../api/auth-service/AuthController';
@@ -26,6 +26,7 @@ const { Header, Sider, Content } = Layout;
 
 const Index = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
   const breadcrumbItems = useBreadcrumb();
   const {
     token: { colorBgContainer, borderRadiusLG, boxShadowSecondary },
@@ -55,7 +56,9 @@ const Index = () => {
           <span>个人信息</span>
         </Space>
       ),
-      disabled: true,
+      onClick: () => {
+        navigate('/personal');
+      },
     },
     {
       type: 'divider',

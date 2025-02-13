@@ -48,3 +48,20 @@ export function logout() {
       });
   });
 }
+
+/**
+ * 获取用户信息根据token
+ * @returns User信息
+ */
+export function validateToken() {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/auth/token')
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

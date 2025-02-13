@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import styles from './css/login.module.css';
 import WechatLoginButton from '../components/wx/WechatLoginButton';
 import UserLoginForm from '../components/wx/UserLoginForm';
+import { validateToken } from '../api/auth-service/AuthController';
 
 const { Title, Text } = Typography;
 
@@ -50,6 +51,26 @@ const Login = observer(() => {
 
   // 页面加载时解析URL参数（处理微信登录回调）
   useEffect(() => {
+    const checkTokenValidity = async () => {
+      try {
+        // 检查sessionStorage中是否存在token
+        const storedToken = user.token;
+        if (storedToken) {
+          const response: any = await validateToken();
+          console.log(response);
+
+          if (response.code === 200) {
+            user.user = response.data.user;
+            message.success(response.msg);
+            navigate('/index');
+          }
+        }
+      } catch (error) {
+        // token验证失败不处理，保持当前页面
+        console.log(error);
+      }
+    };
+
     const parseUrlParams = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const binding = urlParams.get('binding'); // 是否绑定模式
@@ -66,14 +87,19 @@ const Login = observer(() => {
       } else if (binding === 'true' && userInfoStr) {
         // 自动登录逻辑（微信授权成功）
         const userInfo = JSON.parse(decodeURIComponent(userInfoStr));
-        user.user = userInfo.user;
-        user.token = userInfo.token;
-        user.menu = userInfo.menuTree;
+        user.userInfo = {
+          user: userInfo.user,
+          token: userInfo.token,
+          menu: userInfo.menuTree,
+        };
         message.success('微信登录成功');
         navigate('/index');
       }
     };
 
+    // 先执行token检查
+    checkTokenValidity();
+    // 然后执行原有参数解析
     parseUrlParams();
   }, [navigate]);
 

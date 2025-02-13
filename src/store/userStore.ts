@@ -24,7 +24,7 @@ class userStore {
 
   get token() {
     if (sessionStorage.getItem('token')) {
-      return JSON.parse(sessionStorage.getItem('token') || '');
+      return sessionStorage.getItem('token') || '';
     }
     return '';
   }
@@ -88,6 +88,12 @@ class userStore {
   // 获取用户名
   get username() {
     return this.user?.username || '未知用户';
+  }
+
+  set userInfo(data: { user: any; token: string; menu: any }) {
+    this.user = data.user;
+    this.token = data.token;
+    this.menu = data.menu;
   }
 }
 
