@@ -5,6 +5,7 @@ import {
   MenuUnfoldOutlined,
   UserOutlined,
   LogoutOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import {
   Layout,
@@ -17,16 +18,16 @@ import {
   message,
 } from 'antd';
 import LeftMenu from '../components/LeftMenu';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import UserAvatar from '../components/common/UserAvatar';
 import useBreadcrumb from '../hooks/useBreadcrumb';
 import { logout as authLogout } from '../api/auth-service/AuthController';
+import { Link } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
 
 const Index = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
   const breadcrumbItems = useBreadcrumb();
   const {
     token: { colorBgContainer, borderRadiusLG, boxShadowSecondary },
@@ -51,14 +52,24 @@ const Index = () => {
     {
       key: 'userInfo',
       label: (
-        <Space>
-          <UserOutlined />
-          <span>个人信息</span>
-        </Space>
-      ),
-      onClick: () => {
-        navigate('/personal');
-      },
+        <Link to="/personal">
+          <Space>
+            <UserOutlined />
+            <span>个人信息</span>
+          </Space>
+        </Link>
+      )
+    },
+    {
+      key: 'changePassword',
+      label: (
+        <Link to="/change-password">
+          <Space>
+            <LockOutlined />
+            <span>修改密码</span>
+          </Space>
+        </Link>
+      )
     },
     {
       type: 'divider',
@@ -144,7 +155,7 @@ const Index = () => {
           style={{
             margin: '24px',
             padding: 24,
-            minHeight: 'calc(100vh - 176px)', // 动态高度（减去 Header 和面包屑高度）
+            minHeight: 'calc(100vh - 176px)',
             background: colorBgContainer,
             borderRadius: borderRadiusLG,
             boxShadow: boxShadowSecondary,

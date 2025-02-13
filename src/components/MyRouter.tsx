@@ -8,6 +8,8 @@ import lodable from '@loadable/component';
 import { observer } from 'mobx-react-lite';
 import userStore from '../store/userStore';
 import { JSX } from 'react/jsx-runtime';
+import PersonalInfo from '../components/personal/PersonalInfo';
+import ChangePassword from '../components/personal/ChangePassword';
 
 function createRouter(list: any) {
   const arr: { path: any; children?: any[]; element?: JSX.Element }[] = [];
@@ -36,9 +38,21 @@ function createRouter(list: any) {
   return arr;
 }
 
-const PrivateRoute = observer(() => {
+const myRouter = ()=>{
   const user = new userStore();
+  const router = createRouter(user.menu);
+  router.push({
+    path: '/personal',
+    element: <PersonalInfo />,
+  });
+  router.push({
+    path: '/change-password',
+    element: <ChangePassword />,
+  });
+  return router;
+}
 
+const PrivateRoute = observer(() => {
   return useRoutes([
     {
       path: '/',
@@ -51,7 +65,15 @@ const PrivateRoute = observer(() => {
     {
       path: '/',
       element: <Index />,
-      children: [...createRouter(user.menu)],
+      children: [...myRouter()],
+    },
+    {
+      path: '/personal',
+      element: <PersonalInfo />,
+    },
+    {
+      path: '/change-password',
+      element: <ChangePassword />,
     },
     {
       path: '/*',

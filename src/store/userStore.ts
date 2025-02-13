@@ -4,6 +4,7 @@ import {
   bindWechat,
   login,
 } from '../api/auth-service/AuthController';
+import axios from 'axios';
 
 class userStore {
   // 可观察的属性, observable, computed, action
@@ -95,6 +96,25 @@ class userStore {
     this.token = data.token;
     this.menu = data.menu;
   }
+
+  updateUserInfo = async (userInfo: any) => {
+    // 调用更新用户信息的API
+    // 更新成功后更新本地存储
+    this.user = { ...this.user, ...userInfo };
+  };
+
+  changePassword = async (passwords: {
+    oldPassword: string;
+    newPassword: string;
+  }) => {
+    // 调用修改密码的API
+    return new Promise((resolve, reject) => {
+      // axios调用示例
+      axios.post('/auth/change-password', passwords)
+        .then(resolve)
+        .catch(reject);
+    });
+  };
 }
 
 export default userStore;
