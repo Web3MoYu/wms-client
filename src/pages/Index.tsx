@@ -52,24 +52,13 @@ const Index = () => {
     {
       key: 'userInfo',
       label: (
-        <Link to="/personal">
+        <Link to='/personal'>
           <Space>
             <UserOutlined />
             <span>个人信息</span>
           </Space>
         </Link>
-      )
-    },
-    {
-      key: 'changePassword',
-      label: (
-        <Link to="/change-password">
-          <Space>
-            <LockOutlined />
-            <span>修改密码</span>
-          </Space>
-        </Link>
-      )
+      ),
     },
     {
       type: 'divider',

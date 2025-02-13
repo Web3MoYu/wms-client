@@ -9,7 +9,6 @@ import { observer } from 'mobx-react-lite';
 import userStore from '../store/userStore';
 import { JSX } from 'react/jsx-runtime';
 import PersonalInfo from '../components/personal/PersonalInfo';
-import ChangePassword from '../components/personal/ChangePassword';
 
 function createRouter(list: any) {
   const arr: { path: any; children?: any[]; element?: JSX.Element }[] = [];
@@ -38,19 +37,15 @@ function createRouter(list: any) {
   return arr;
 }
 
-const myRouter = ()=>{
+const myRouter = () => {
   const user = new userStore();
   const router = createRouter(user.menu);
   router.push({
     path: '/personal',
     element: <PersonalInfo />,
   });
-  router.push({
-    path: '/change-password',
-    element: <ChangePassword />,
-  });
   return router;
-}
+};
 
 const PrivateRoute = observer(() => {
   return useRoutes([
@@ -70,10 +65,6 @@ const PrivateRoute = observer(() => {
     {
       path: '/personal',
       element: <PersonalInfo />,
-    },
-    {
-      path: '/change-password',
-      element: <ChangePassword />,
     },
     {
       path: '/*',
