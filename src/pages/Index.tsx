@@ -5,7 +5,6 @@ import {
   MenuUnfoldOutlined,
   UserOutlined,
   LogoutOutlined,
-  LockOutlined,
 } from '@ant-design/icons';
 import {
   Layout,
@@ -16,18 +15,20 @@ import {
   Dropdown,
   MenuProps,
   message,
+  Avatar,
 } from 'antd';
 import LeftMenu from '../components/LeftMenu';
 import { Outlet } from 'react-router-dom';
-import UserAvatar from '../components/common/UserAvatar';
 import useBreadcrumb from '../hooks/useBreadcrumb';
 import { logout as authLogout } from '../api/auth-service/AuthController';
 import { Link } from 'react-router-dom';
-
+import { observer } from 'mobx-react-lite';
+import userStore from '../store/userStore';
 const { Header, Sider, Content } = Layout;
 
-const Index = () => {
+const Index = observer(() => {
   const [collapsed, setCollapsed] = useState(false);
+  const user = new userStore();
   const breadcrumbItems = useBreadcrumb();
   const {
     token: { colorBgContainer, borderRadiusLG, boxShadowSecondary },
@@ -38,9 +39,7 @@ const Index = () => {
       console.log(data);
 
       if (data.code == 200) {
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
-        sessionStorage.removeItem('menu');
+        sessionStorage.clear();
         message.success('退出成功');
         window.location.href = '/login';
       }
@@ -122,7 +121,19 @@ const Index = () => {
           <Space>
             <Dropdown menu={{ items: userMenuItems }} trigger={['hover']}>
               <div style={{ cursor: 'pointer', padding: '0 16px' }}>
-                <UserAvatar />
+                <Space>
+                  <Avatar
+                    src={user.user?.avatar}
+                    icon={!user.user?.avatar && <UserOutlined />}
+                    style={{
+                      backgroundColor: user.user?.avatar
+                        ? 'transparent'
+                        : '#1890ff',
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <span style={{ color: 'rgba(0,0,0,0.65)' }}>{user.user.nickName}</span>
+                </Space>
               </div>
             </Dropdown>
           </Space>
@@ -155,6 +166,6 @@ const Index = () => {
       </Layout>
     </Layout>
   );
-};
+});
 
 export default Index;

@@ -1,8 +1,9 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import {
   LoginDto,
   bindWechat,
   login,
+  updateUserInfo,
 } from '../api/auth-service/AuthController';
 import axios from 'axios';
 
@@ -98,9 +99,20 @@ class userStore {
   }
 
   updateUserInfo = async (userInfo: any) => {
-    // 调用更新用户信息的API
-    // 更新成功后更新本地存储
-    this.user = { ...this.user, ...userInfo };
+    return new Promise((resolve, reject) => {
+      updateUserInfo({ ...this.user, ...userInfo })
+        .then((data: any) => {
+          if (data.code == 200) {
+            runInAction(() => {
+              this.user = { ...this.user, ...userInfo }; // 确保使用action更新
+            });
+            resolve(data);
+          } else {
+            reject(data);
+          }
+        })
+        .catch(reject);
+    });
   };
 
   changePassword = async (passwords: {
@@ -110,7 +122,8 @@ class userStore {
     // 调用修改密码的API
     return new Promise((resolve, reject) => {
       // axios调用示例
-      axios.post('/auth/change-password', passwords)
+      axios
+        .post('/auth/change-password', passwords)
         .then(resolve)
         .catch(reject);
     });

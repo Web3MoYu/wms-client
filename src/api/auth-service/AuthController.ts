@@ -65,3 +65,16 @@ export function validateToken() {
       });
   });
 }
+
+export function updateUserInfo(user: any) {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/sys/personal`, user)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

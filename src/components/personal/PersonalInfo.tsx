@@ -21,20 +21,23 @@ import ChangePasswordForm from './ChangePasswordForm';
 const { Title } = Typography;
 
 const PersonalInfo = observer(() => {
+  const user = new userStore();
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  const [avatar, setAvatar] = useState(user.user.avatar);
   const [editing, setEditing] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-  const user = new userStore();
 
   // 处理头像上传
   const handleAvatarChange = async (info: any) => {
     if (info.file.status === 'done') {
       try {
-        const avatarUrl = info.file.response.url; // 假设后端返回的是这个格式
-        await user.updateUserInfo({ avatar: avatarUrl });
+        const avatarUrl = info.file.response.data; // 假设后端返回的是这个格式
+        console.log(avatarUrl);
+        user.user.avatar = avatarUrl;
+        setAvatar(avatarUrl);
         message.success('头像更新成功');
-      } catch (error) {
+      } catch (error: any) {
         message.error('头像更新失败');
       }
     }
@@ -43,9 +46,20 @@ const PersonalInfo = observer(() => {
   // 处理表单提交
   const handleSubmit = async (values: any) => {
     try {
-      await user.updateUserInfo({ nickName: values.nickName });
-      message.success('昵称修改成功');
-      setEditing(false);
+      user
+        .updateUserInfo({ nickName: values.nickName, avatar: avatar })
+        .then((data: any) => {
+          if (data.code == 200) {
+            message.success(data.msg);
+            setEditing(false);
+            // 强制更新store引用
+            user.user = {
+              ...user.user,
+              nickName: values.nickName,
+              avatar: avatar,
+            };
+          }
+        });
     } catch (error) {
       message.error('修改失败');
     }
@@ -77,7 +91,7 @@ const PersonalInfo = observer(() => {
         个人信息
       </Title>
 
-      <Row gutter={[24, 24]} justify="space-between">
+      <Row gutter={[24, 24]} justify='space-between'>
         {/* 信息卡片（左侧） */}
         <Col xs={24} md={16} xl={18}>
           <Card>
@@ -150,7 +164,10 @@ const PersonalInfo = observer(() => {
                 </Form.Item>
 
                 <Form.Item label='微信绑定'>
-                  <Input value={user.user?.wxId ? '已绑定' : '未绑定'} disabled />
+                  <Input
+                    value={user.user?.wxId ? '已绑定' : '未绑定'}
+                    disabled
+                  />
                 </Form.Item>
 
                 <div className='flex justify-center space-x-4'>
@@ -178,15 +195,35 @@ const PersonalInfo = observer(() => {
           <Card className='h-full'>
             <div className='flex flex-col items-center'>
               <Upload
+                name='file'
+                accept='image/*'
+                headers={{
+                  token: user.token,
+                  before: avatar,
+                }}
+                beforeUpload={(file) => {
+                  const isImage = file.type.startsWith('image/');
+                  const isLt2M = file.size / 1024 / 1024 < 2;
+
+                  if (!isImage) {
+                    message.error('只能上传图片文件！');
+                    return false;
+                  }
+                  if (!isLt2M) {
+                    message.error('图片大小不能超过2MB！');
+                    return false;
+                  }
+                  return isImage && isLt2M;
+                }}
+                onChange={handleAvatarChange}
+                action='/api/sys/img/avatar'
                 disabled={!editing}
                 showUploadList={false}
-                onChange={handleAvatarChange}
-                action='/api/upload/avatar'
               >
                 <div className='relative mb-4'>
                   <Avatar
                     size={160}
-                    src={user.user?.avatar}
+                    src={avatar}
                     icon={<UserOutlined className='text-4xl' />}
                     style={{
                       backgroundColor: '#f0f2f5',

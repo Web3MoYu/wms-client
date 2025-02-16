@@ -2,9 +2,6 @@ import myAxios from 'axios';
 
 const axios = myAxios.create({
   baseURL: 'http://dev.myapp.com:9090/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 // 添加请求拦截器，将token放入header中
 axios.interceptors.request.use((config) => {
