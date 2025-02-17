@@ -66,10 +66,10 @@ export function validateToken() {
   });
 }
 
-export function updateUserInfo(user: any) {
+export function updateUserInfo(user: any, uploaded: number) {
   return new Promise((resolve, reject) => {
     axios
-      .put(`/sys/personal`, user)
+      .put(`/sys/personal/${uploaded}`, user)
       .then((res) => {
         resolve(res.data);
       })

@@ -28,12 +28,14 @@ const PersonalInfo = observer(() => {
   const [editing, setEditing] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
 
+  const [uploaded, setUploaded] = useState(0);
+
   // 处理头像上传
   const handleAvatarChange = async (info: any) => {
     if (info.file.status === 'done') {
       try {
         const avatarUrl = info.file.response.data; // 假设后端返回的是这个格式
-        console.log(avatarUrl);
+        setUploaded(1);
         user.user.avatar = avatarUrl;
         setAvatar(avatarUrl);
         message.success('头像更新成功');
@@ -47,17 +49,14 @@ const PersonalInfo = observer(() => {
   const handleSubmit = async (values: any) => {
     try {
       user
-        .updateUserInfo({ nickName: values.nickName, avatar: avatar })
+        .updateUserInfo({ nickName: values.nickName, avatar: avatar }, uploaded)
         .then((data: any) => {
           if (data.code == 200) {
             message.success(data.msg);
             setEditing(false);
             // 强制更新store引用
-            user.user = {
-              ...user.user,
-              nickName: values.nickName,
-              avatar: avatar,
-            };
+            user.user = data.data
+            setUploaded(0);
           }
         });
     } catch (error) {

@@ -98,13 +98,13 @@ class userStore {
     this.menu = data.menu;
   }
 
-  updateUserInfo = async (userInfo: any) => {
+  updateUserInfo = async (userInfo: any, uploaded: number) => {
     return new Promise((resolve, reject) => {
-      updateUserInfo({ ...this.user, ...userInfo })
+      updateUserInfo({ ...this.user, ...userInfo }, uploaded)
         .then((data: any) => {
           if (data.code == 200) {
             runInAction(() => {
-              this.user = { ...this.user, ...userInfo }; // 确保使用action更新
+              this.user = data.data; // 确保使用action更新
             });
             resolve(data);
           } else {
