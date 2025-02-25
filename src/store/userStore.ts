@@ -5,7 +5,6 @@ import {
   login,
   updateUserInfo,
 } from '../api/auth-service/AuthController';
-import axios from 'axios';
 
 class userStore {
   // 可观察的属性, observable, computed, action
@@ -111,20 +110,6 @@ class userStore {
             reject(data);
           }
         })
-        .catch(reject);
-    });
-  };
-
-  changePassword = async (passwords: {
-    oldPassword: string;
-    newPassword: string;
-  }) => {
-    // 调用修改密码的API
-    return new Promise((resolve, reject) => {
-      // axios调用示例
-      axios
-        .post('/auth/change-password', passwords)
-        .then(resolve)
         .catch(reject);
     });
   };

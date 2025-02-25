@@ -17,10 +17,12 @@ import { UserOutlined, CameraOutlined } from '@ant-design/icons';
 import userStore from '../../store/userStore';
 import { observer } from 'mobx-react-lite';
 import ChangePasswordForm from './ChangePasswordForm';
-
+import { updatePassword } from '../../api/auth-service/AuthController';
+import { useNavigate } from 'react-router-dom';
 const { Title } = Typography;
 
 const PersonalInfo = observer(() => {
+  const navigate = useNavigate();
   const user = new userStore();
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
@@ -55,7 +57,7 @@ const PersonalInfo = observer(() => {
             message.success(data.msg);
             setEditing(false);
             // 强制更新store引用
-            user.user = data.data
+            user.user = data.data;
             setUploaded(0);
           }
         });
@@ -68,19 +70,26 @@ const PersonalInfo = observer(() => {
   const handlePasswordChange = async () => {
     try {
       const values = await passwordForm.validateFields();
-      await user.changePassword({
-        oldPassword: values.oldPassword,
-        newPassword: values.newPassword,
-      });
-      message.success('密码修改成功');
-      setPasswordModalVisible(false);
-      passwordForm.resetFields();
-    } catch (error) {
-      if (error.errorFields) {
-        // 表单验证错误
-        return;
+      // 转换参数名称以匹配接口要求
+      const params = {
+        oldPass: values.oldPassword,
+        newPass: values.newPassword,
+      };
+
+      const resp: any = await updatePassword(params);
+
+      if (resp.code === 200) {
+        message.success(resp.msg);
+        setPasswordModalVisible(false);
+        passwordForm.resetFields();
+        sessionStorage.clear();
+        navigate('/login');
+      } else {
+        message.error(resp.msg);
       }
-      message.error('密码修改失败');
+    } catch (error: any) {
+      // 显示后端返回的具体错误信息
+      message.error(error.msg || '密码修改失败');
     }
   };
 

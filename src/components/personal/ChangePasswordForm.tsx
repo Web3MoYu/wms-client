@@ -25,6 +25,7 @@ const ChangePasswordForm = ({ form }: ChangePasswordFormProps) => (
     <Form.Item
       name='newPassword'
       label='新密码'
+      dependencies={['oldPassword']}
       rules={[
         { required: true, message: '请输入新密码' },
         { min: 8, message: '密码长度至少8位' },
@@ -32,6 +33,14 @@ const ChangePasswordForm = ({ form }: ChangePasswordFormProps) => (
           pattern: /^[A-Za-z](?=.*\d)(?=.*[.]).{7,}$/,
           message: '需字母开头，包含数字和.号',
         },
+        ({ getFieldValue }) => ({
+          validator(_, value) {
+            if (value && getFieldValue('oldPassword') === value) {
+              return Promise.reject(new Error('新密码不能与当前密码相同'));
+            }
+            return Promise.resolve();
+          },
+        }),
       ]}
     >
       <Input.Password prefix={<LockOutlined />} placeholder='请输入新密码' />

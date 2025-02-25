@@ -78,3 +78,16 @@ export function updateUserInfo(user: any, uploaded: number) {
       });
   });
 }
+
+export function updatePassword(params: { oldPass: string; newPass: string }) {
+  return new Promise((resolve, reject) => {
+    axios
+      .put('/auth/modifyPass', params)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
