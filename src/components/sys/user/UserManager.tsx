@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Table, Space, Button, Input, Form, Card, message, Avatar } from 'antd';
-import { SearchOutlined, UserOutlined } from '@ant-design/icons';
-import { getUsers, User } from '../../../api/sys-service/UserController';
+import { SearchOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  getUsers,
+  User,
+  addUser,
+  updateUser,
+} from '../../../api/sys-service/UserController';
 import type { TableProps } from 'antd';
+import UserForm from './UserForm';
 
 interface Params {
   current?: number;
@@ -11,8 +17,13 @@ interface Params {
 }
 
 const UserManager = () => {
+  const tsex = ['女', '男'];
   const [data, setData] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | undefined>();
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 5,
@@ -65,6 +76,37 @@ const UserManager = () => {
     });
   };
 
+  const handleAdd = () => {
+    setModalTitle('添加用户');
+    setCurrentUser(undefined);
+    setModalVisible(true);
+  };
+
+  const handleEdit = (record: User) => {
+    setModalTitle('编辑用户');
+    setCurrentUser(record);
+    setModalVisible(true);
+  };
+
+  const handleFormSubmit = async (values: any) => {
+    try {
+      setConfirmLoading(true);
+      const response = await (currentUser
+        ? updateUser({ ...values }, currentUser.userId)
+        : addUser(values));
+
+      if (response.code === 200) {
+        message.success(currentUser ? '更新成功' : '创建成功');
+        setModalVisible(false);
+        fetchData();
+      }
+    } catch {
+      message.error(currentUser ? '更新失败' : '创建失败');
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
   const columns: TableProps<User>['columns'] = [
     {
       title: '头像',
@@ -92,6 +134,17 @@ const UserManager = () => {
       width: '10%',
     },
     {
+      title: '角色',
+      dataIndex: 'roleName',
+      width: '10%',
+    },
+    {
+      title: '性别',
+      dataIndex: 'sex',
+      width: '10%',
+      render: (value: any) => <>{tsex[value]}</>,
+    },
+    {
       title: '手机号',
       dataIndex: 'phone',
       width: '10%',
@@ -103,9 +156,11 @@ const UserManager = () => {
     },
     {
       title: '操作',
-      render: () => (
+      render: (_, record) => (
         <Space>
-          <Button type='link'>编辑</Button>
+          <Button type='link' onClick={() => handleEdit(record)}>
+            编辑
+          </Button>
           <Button type='link' danger>
             删除
           </Button>
@@ -122,14 +177,19 @@ const UserManager = () => {
           <Input placeholder='请输入昵称' allowClear />
         </Form.Item>
         <Form.Item>
-          <Button
-            type='primary'
-            icon={<SearchOutlined />}
-            htmlType='submit'
-            loading={loading}
-          >
-            搜索
-          </Button>
+          <Space>
+            <Button
+              type='primary'
+              icon={<SearchOutlined />}
+              htmlType='submit'
+              loading={loading}
+            >
+              搜索
+            </Button>
+            <Button type='primary' icon={<PlusOutlined />} onClick={handleAdd}>
+              添加用户
+            </Button>
+          </Space>
         </Form.Item>
       </Form>
 
@@ -146,6 +206,15 @@ const UserManager = () => {
           showTotal: (total) => `共 ${total} 条`,
         }}
         onChange={handleTableChange}
+      />
+
+      <UserForm
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        onSubmit={handleFormSubmit}
+        initialValues={currentUser}
+        title={modalTitle}
+        confirmLoading={confirmLoading}
       />
     </Card>
   );

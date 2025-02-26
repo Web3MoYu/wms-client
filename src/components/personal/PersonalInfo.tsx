@@ -224,7 +224,7 @@ const PersonalInfo = observer(() => {
                   return isImage && isLt2M;
                 }}
                 onChange={handleAvatarChange}
-                action='/api/sys/img/avatar'
+                action='/api/sys/user/img/avatar'
                 disabled={!editing}
                 showUploadList={false}
               >

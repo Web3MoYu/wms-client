@@ -69,7 +69,7 @@ export function validateToken() {
 export function updateUserInfo(user: any, uploaded: number) {
   return new Promise((resolve, reject) => {
     axios
-      .put(`/sys/personal/${uploaded}`, user)
+      .put(`/sys/user/personal/${uploaded}`, user)
       .then((res) => {
         resolve(res.data);
       })

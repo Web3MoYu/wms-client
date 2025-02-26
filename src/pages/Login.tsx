@@ -37,8 +37,12 @@ const Login = observer(() => {
       .login(values)
       .then((data: any) => {
         if (data.code == 200) {
-          message.success(data.msg);
-          navigate('/index'); // 登录成功跳转到首页
+          if (user.menu.length == 0) {
+            message.warning('当前用户没有权限，请联系管理员');
+          } else {
+            message.success(data.msg);
+            navigate('/index'); // 登录成功跳转到首页
+          }
         } else {
           message.warning(data.msg);
         }
@@ -61,8 +65,12 @@ const Login = observer(() => {
 
           if (response.code === 200) {
             user.user = response.data.user;
-            message.success(response.msg);
-            navigate('/index');
+            if (user.menu.length == 0) {
+              message.warning('当前用户没有权限，请联系管理员');
+            } else {
+              message.success(response.msg);
+              navigate('/index');
+            }
           }
         }
       } catch (error) {
