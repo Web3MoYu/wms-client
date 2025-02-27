@@ -60,7 +60,8 @@ const UserManager = () => {
           pageSize: params.pageSize || prev.pageSize,
         }));
       }
-    } catch (error: any) {
+    } catch (_: any) {
+      console.log('获取用户数据失败', _);
       message.error('获取用户数据失败');
     } finally {
       setLoading(false);
@@ -102,7 +103,7 @@ const UserManager = () => {
   const handleFormSubmit = async (values: any) => {
     try {
       setConfirmLoading(true);
-      const response = await (currentUser
+      const response: any = await (currentUser
         ? updateUser({ ...values }, currentUser.userId)
         : addUser(values));
 
@@ -113,7 +114,9 @@ const UserManager = () => {
       } else {
         message.error(response.msg);
       }
-    } catch (error: any) {
+    } catch (_: any) {
+      console.log('更新失败', _);
+
       message.error(currentUser ? '更新失败' : '创建失败');
     } finally {
       setConfirmLoading(false);
@@ -136,7 +139,9 @@ const UserManager = () => {
           } else {
             message.error(response.msg || '删除失败');
           }
-        } catch (error: any) {
+        } catch (_: any) {
+          console.log('删除失败', _);
+
           message.error('删除失败');
         }
       },

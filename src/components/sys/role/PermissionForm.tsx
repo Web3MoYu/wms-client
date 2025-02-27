@@ -11,8 +11,8 @@ const PermissionForm: React.FC<{
   onSave: (permissions: any) => void;
 }> = ({ visible, role, permissions, onCancel, onSave }) => {
   const [form] = Form.useForm();
-  const message = useMessage();
-  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+  const [messageApi, contextHolder] = useMessage();
+  const [selectedKeys] = useState<React.Key[]>([]);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
 
   const formatPermissions = (permissions: any) => {
@@ -27,11 +27,11 @@ const PermissionForm: React.FC<{
   };
 
   const fetchRolePermissions = async (roleId: any) => {
-    const response = await listById(roleId);
+    const response: any = await listById(roleId);
     if (response.code === 200) {
       setCheckedKeys(response.data);
     } else {
-      message.error(response.msg);
+      messageApi.error(response.msg);
     }
   };
 
@@ -50,7 +50,7 @@ const PermissionForm: React.FC<{
       title={`为 ${role?.roleName || '角色'} 分配权限`}
       visible={visible}
       onOk={() => {
-        form.validateFields().then((values) => {
+        form.validateFields().then(() => {
           onSave(checkedKeys);
           form.resetFields();
         });
@@ -60,6 +60,7 @@ const PermissionForm: React.FC<{
         onCancel();
       }}
     >
+      {contextHolder}
       <Form
         form={form}
         layout='vertical'

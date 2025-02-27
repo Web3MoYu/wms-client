@@ -8,17 +8,19 @@ import {
   deleteRole,
   addRole,
   assignRolePermission,
+  Role,
 } from '../../../api/sys-service/RoleController';
 import { getMenuList } from '../../../api/sys-service/MenuController';
+
 const RoleManager: React.FC = () => {
-  const [roles, setRoles] = useState([]);
-  const [permissions, setPermissions] = useState([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<any[]>([]);
   // 控制编辑或新增的窗口
   const [isModalVisible, setIsModalVisible] = useState(false);
   // 控制分配权限的窗口
   const [isPermissionModalVisible, setIsPermissionModalVisible] =
     useState(false);
-  const [editingRole, setEditingRole] = useState(null);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
 
   const [searchText, setSearchText] = useState<string>('');
   // 默认的页数
@@ -38,7 +40,7 @@ const RoleManager: React.FC = () => {
     pageSize: number,
     searchText: string
   ) => {
-    const resp = await pageSearch(page, pageSize, searchText);
+    const resp: any = await pageSearch(page, pageSize, searchText);
     const data = resp.data;
 
     setRoles(data.records);
@@ -46,7 +48,7 @@ const RoleManager: React.FC = () => {
   };
 
   const fetchPermissions = async () => {
-    const response = await getMenuList();
+    const response: any = await getMenuList();
     setPermissions(response.data);
   };
 
@@ -55,7 +57,7 @@ const RoleManager: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const showEditModal = (role: any) => {
+  const showEditModal = (role: Role) => {
     setEditingRole(role);
     setIsModalVisible(true);
   };
@@ -65,12 +67,12 @@ const RoleManager: React.FC = () => {
     fetchRoles(1, pagination.pageSize, value);
   };
 
-  const handleDelete = (roleId: any) => {
+  const handleDelete = (roleId: string) => {
     Modal.confirm({
       title: '确认删除',
       content: '你确定要删除这个角色吗？',
       onOk: async () => {
-        const resp = await deleteRole(roleId);
+        const resp: any = await deleteRole(roleId);
         if (resp.code === 200) {
           message.success(resp.msg);
           fetchRoles(pagination.current, pagination.pageSize, searchText);
@@ -86,16 +88,16 @@ const RoleManager: React.FC = () => {
     setPagination(arg);
   };
 
-  const handleAddOrUpdate = async (role: any) => {
+  const handleAddOrUpdate = async (role: Role) => {
     if (editingRole) {
-      const resp = await updateRole(role, role.roleId);
+      const resp: any = await updateRole(role, role.roleId);
       if (resp.code === 200) {
         message.success(resp.msg);
       } else {
         message.error(resp.msg);
       }
     } else {
-      const resp = await addRole(role);
+      const resp: any = await addRole(role);
       if (resp.code === 200) {
         message.success(resp.msg);
       } else {
@@ -120,7 +122,7 @@ const RoleManager: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (text: any, record: any) => (
+      render: (_: any, record: Role) => (
         <>
           <Button
             type='link'
@@ -195,12 +197,12 @@ const RoleManager: React.FC = () => {
 
       <PermissionForm
         visible={isPermissionModalVisible}
-        role={editingRole}
+        role={editingRole || {}}
         permissions={permissions}
         onCancel={() => setIsPermissionModalVisible(false)}
         onSave={async (permissions) => {
           if (editingRole) {
-            const resp = await assignRolePermission(
+            const resp: any = await assignRolePermission(
               editingRole.roleId,
               permissions
             );

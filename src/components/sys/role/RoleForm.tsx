@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Modal, Form, Input, Select } from 'antd';
+import { Modal, Form, Input } from 'antd';
 
 const { TextArea } = Input;
 
@@ -7,7 +7,7 @@ const RoleForm: React.FC<{
   visible: boolean;
   role: any;
   onCancel: () => void;
-  onSave: (role) => void;
+  onSave: (role: any) => void;
 }> = ({ visible, role, onCancel, onSave }) => {
   const [form] = Form.useForm();
 

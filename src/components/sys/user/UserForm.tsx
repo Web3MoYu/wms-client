@@ -17,6 +17,12 @@ interface UserFormProps {
   confirmLoading: boolean;
 }
 
+interface Role {
+  roleId: string;
+  roleName: string;
+  [key: string]: any;
+}
+
 const UserForm: React.FC<UserFormProps> = ({
   open,
   onCancel,
@@ -26,7 +32,7 @@ const UserForm: React.FC<UserFormProps> = ({
   confirmLoading,
 }) => {
   const [form] = Form.useForm();
-  const [roles, setRoles] = useState<[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -47,7 +53,8 @@ const UserForm: React.FC<UserFormProps> = ({
       } else {
         message.error(resp.msg);
       }
-    } catch (error: any) {
+    } catch (_: any) {
+      console.log('获取角色列表失败', _);
       message.error('获取角色列表失败');
     }
   };
@@ -107,7 +114,7 @@ const UserForm: React.FC<UserFormProps> = ({
         >
           <Select
             placeholder='请选择角色'
-            options={roles.map((role) => ({
+            options={roles.map((role: Role) => ({
               label: role.roleName,
               value: role.roleId,
             }))}
