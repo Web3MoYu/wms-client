@@ -1,6 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, message, Tag } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Table, Button, Modal, message, Tag, Typography, Card, Space, Divider } from 'antd';
 import * as ICONS from '@ant-design/icons/';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  AppstoreOutlined
+} from '@ant-design/icons';
 import MenuModal from './MenuModal';
 import {
   getMenuList,
@@ -10,19 +17,71 @@ import {
   MenuItem,
 } from '../../../api/sys-service/MenuController';
 
+const { Title, Text } = Typography;
+
+// 菜单类型常量
+const MENU_TYPES = ['目录', '菜单', '按钮'];
+const TYPE_COLORS = ['geekblue', 'green', 'volcano'];
+
+// 样式常量
+const styles = {
+  card: {
+    boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16), 0 3px 6px 0 rgba(0, 0, 0, 0.12)',
+    borderRadius: '8px',
+    padding: '24px',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+  },
+  title: {
+    margin: 0,
+  },
+  addButton: {
+    borderRadius: '4px',
+  },
+  table: {
+    marginTop: '16px',
+  },
+  editButton: {
+    marginRight: '8px',
+    backgroundColor: '#1890ff',
+    color: 'white',
+    borderColor: '#1890ff',
+    borderRadius: '4px',
+  },
+  deleteButton: {
+    backgroundColor: '#ff4d4f',
+    color: 'white',
+    borderColor: '#ff4d4f',
+    borderRadius: '4px',
+  },
+  iconCell: {
+    textAlign: 'center' as const,
+  }
+};
+
+// 本地菜单项接口定义，确保与API类型兼容
+interface LocalMenuItem extends Omit<MenuItem, 'icon'> {
+  icon?: string;
+  children?: LocalMenuItem[];
+}
+
+/**
+ * 菜单管理组件
+ */
 const MenuManagement: React.FC = () => {
-  // 菜单类型
-  const menuType = ['目录', '菜单', '按钮'];
-  const [menuData, setMenuData] = useState<MenuItem[]>([]);
-  // 显示菜单图标
-  const antICONS: any = ICONS;
+  const [menuData, setMenuData] = useState<LocalMenuItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [currentMenu, setCurrentMenu] = useState<MenuItem | null>(null);
+  const [currentMenu, setCurrentMenu] = useState<LocalMenuItem | null>(null);
 
-  const formatMenus = (menus: any) => {
+  // 格式化菜单数据
+  const formatMenus = useCallback((menus: any) => {
     return menus.map((menu: any) => ({
-      parentId: menu.menu.parentId == 0 ? null : menu.menu.parentId,
+      parentId: menu.menu.parentId === 0 ? null : menu.menu.parentId,
       menuId: menu.menu.menuId,
       icon: menu.menu.icon || '',
       title: menu.menu.title || '',
@@ -33,194 +92,246 @@ const MenuManagement: React.FC = () => {
       componentPath: menu.menu.componentPath || '',
       type: menu.menu.type,
       orderNum: menu.menu.orderNum,
-      children: menu.children ? formatMenus(menu.children) : '',
+      children: menu.children ? formatMenus(menu.children) : [],
     }));
-  };
+  }, []);
 
-  const fetchMenuData = async () => {
+  // 获取菜单数据
+  const fetchMenuData = useCallback(async () => {
     setLoading(true);
     try {
       const response: any = await getMenuList();
       if (response.code === 200) {
         setMenuData(formatMenus(response.data));
       } else {
-        message.error(response.msg);
+        message.error(response.msg || '获取菜单列表失败');
       }
     } catch (error: any) {
-      message.error(error.data.msg);
+      message.error(error.data?.msg || '获取菜单列表失败');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [formatMenus]);
 
+  // 组件初始化时获取数据
   useEffect(() => {
     fetchMenuData();
-  }, []);
+  }, [fetchMenuData]);
 
-  const handleAddClick = () => {
+  // 处理添加按钮点击
+  const handleAddClick = useCallback(() => {
     setCurrentMenu(null);
     setIsModalVisible(true);
-  };
+  }, []);
 
-  const handleEditClick = (menu: MenuItem) => {
+  // 处理编辑按钮点击
+  const handleEditClick = useCallback((menu: LocalMenuItem) => {
     setCurrentMenu(menu);
     setIsModalVisible(true);
-  };
+  }, []);
 
-  const handleDeleteClick = async (menuId: string) => {
+  // 处理删除按钮点击
+  const handleDeleteClick = useCallback(async (menuId: string, title: string) => {
     Modal.confirm({
       title: '确认删除',
-      content: '你确定要删除这个菜单吗？',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <span>
+          您确定要删除<Text strong>{title}</Text>菜单吗？此操作不可恢复！
+        </span>
+      ),
+      okText: '确认删除',
+      cancelText: '取消',
+      okType: 'danger',
       onOk: async () => {
-        const resp: any = await deleteMenu(menuId);
-        if (resp.code === 200) {
-          fetchMenuData();
-          message.success(resp.msg);
-        } else {
-          message.error(resp.msg);
+        try {
+          const resp: any = await deleteMenu(menuId);
+          if (resp.code === 200) {
+            fetchMenuData();
+            message.success(resp.msg || '删除成功');
+          } else {
+            message.error(resp.msg || '删除失败');
+          }
+        } catch (error: any) {
+          message.error(error.data?.msg || '删除失败');
         }
       },
     });
-  };
+  }, [fetchMenuData]);
 
-  const handleModalCancel = () => {
+  // 处理模态框取消
+  const handleModalCancel = useCallback(() => {
     setIsModalVisible(false);
-  };
+  }, []);
 
-  const handleModalOk = async (values: MenuItem) => {
+  // 处理模态框确认 - 修复类型
+  const handleModalOk = useCallback(async (values: any) => {
     try {
+      let resp: any;
       if (currentMenu) {
-        const resp: any = await updateMenu(values, currentMenu.menuId);
-        if (resp.code === 200) {
-          message.success(resp.msg);
-        } else {
-          message.error(resp.msg);
-        }
+        // 更新已有菜单
+        resp = await updateMenu(values, currentMenu.menuId);
       } else {
-        const resp: any = await addMenu(values);
-        if (resp.code === 200) {
-          message.success(resp.msg);
-        } else {
-          message.error(resp.msg);
-        }
+        // 添加新菜单
+        resp = await addMenu(values);
       }
-      setIsModalVisible(false);
-      fetchMenuData();
-    } catch (error: any) {
-      message.error(error.data.msg);
-    }
-  };
 
+      if (resp.code === 200) {
+        message.success(resp.msg || (currentMenu ? '更新成功' : '添加成功'));
+        setIsModalVisible(false);
+        fetchMenuData();
+      } else {
+        message.error(resp.msg || '操作失败');
+      }
+    } catch (error: any) {
+      message.error(error.data?.msg || '操作失败');
+    }
+  }, [currentMenu, fetchMenuData]);
+
+  // 表格列定义
   const columns = [
     {
       title: '菜单名称',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: true,
     },
     {
       title: '图标',
       dataIndex: 'icon',
       key: 'icon',
       render: (text: string) => {
-        if (text === '') {
-          return <></>;
-        }
-        const Icon = antICONS[text];
-        return <Icon />;
+        if (!text) return null;
+        
+        // 使用类型断言处理动态导入的图标
+        const Icon = (ICONS as { [key: string]: any })[text];
+        return Icon ? <Icon /> : null;
       },
-      width: '4%',
+      width: '80px',
+      align: 'center' as const,
     },
     {
       title: '类型',
       dataIndex: 'type',
       key: 'type',
-      render: (type: number) => {
-        const color = ['geekblue', 'green', 'volcano'];
-        return (
-          <Tag color={color[type]} key={menuType[type]}>
-            {menuType[type]}
-          </Tag>
-        );
-      },
-      width: '4%',
+      render: (type: number) => (
+        <Tag color={TYPE_COLORS[type]} key={MENU_TYPES[type]}>
+          {MENU_TYPES[type]}
+        </Tag>
+      ),
+      width: '80px',
+      align: 'center' as const,
     },
     {
       title: '权限字段',
       dataIndex: 'code',
       key: 'code',
-      width: '10%',
+      width: '150px',
+      ellipsis: true,
     },
     {
       title: '菜单路径',
       dataIndex: 'menuUrl',
       key: 'menuUrl',
+      ellipsis: true,
     },
     {
       title: '路由名称',
       dataIndex: 'name',
       key: 'name',
-      width: '10%',
+      width: '120px',
+      ellipsis: true,
     },
     {
       title: '路由地址',
       dataIndex: 'routePath',
       key: 'routePath',
-      width: '10%',
+      width: '150px',
+      ellipsis: true,
     },
     {
       title: '组件路径',
       dataIndex: 'componentPath',
       key: 'componentPath',
-      width: '10%',
+      width: '150px',
+      ellipsis: true,
     },
     {
       title: '操作',
       key: 'action',
-      width: '11%',
-      render: (text: string, record: MenuItem) => (
-        <span>
+      width: '250px',
+      render: (_: any, record: LocalMenuItem) => (
+        <Space wrap>
           <Button
-            type='link'
+            type='primary'
+            icon={<EditOutlined />}
             onClick={() => handleEditClick(record)}
-            style={{
-              marginRight: 8,
-              backgroundColor: '#1890ff',
-              color: 'white',
-            }}
+            style={styles.editButton}
+            size="middle"
           >
             编辑
           </Button>
           <Button
-            type='link'
             danger
-            onClick={() => handleDeleteClick(record.menuId)}
-            style={{ backgroundColor: '#ff4d4f', color: 'white' }}
+            type='primary'
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeleteClick(record.menuId, record.title)}
+            style={styles.deleteButton}
+            size="middle"
           >
             删除
           </Button>
-        </span>
+        </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      <Button type='primary' onClick={handleAddClick}>
-        新增
-      </Button>
+    <Card style={styles.card}>
+      <div style={styles.header}>
+        <Title level={4} style={styles.title}>
+          <Space>
+            <AppstoreOutlined />
+            菜单管理
+          </Space>
+        </Title>
+        
+        <Button
+          type='primary'
+          icon={<PlusOutlined />}
+          onClick={handleAddClick}
+          style={styles.addButton}
+        >
+          新增菜单
+        </Button>
+      </div>
+      
+      <Divider />
+      
       <Table
         columns={columns}
         dataSource={menuData}
         loading={loading}
         rowKey={(record) => record.menuId}
-        style={{ marginTop: 20 }}
+        style={styles.table}
+        bordered
+        size="middle"
+        pagination={false}
+        scroll={{ x: 1200 }}
+        expandable={{
+          rowExpandable: (record) => 
+            record.children !== undefined && 
+            record.children.length > 0
+        }}
       />
+      
       <MenuModal
         visible={isModalVisible}
         onCancel={handleModalCancel}
         onOk={handleModalOk}
         currentMenu={currentMenu}
       />
-    </div>
+    </Card>
   );
 };
 
