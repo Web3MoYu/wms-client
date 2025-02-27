@@ -1,11 +1,17 @@
 import axios from '../../utils/mxAxios';
 
+/**
+ * 角色信息接口
+ */
 export interface Role {
   roleId: string;
   roleName: string;
   remark: string;
 }
 
+/**
+ * 用户角色权限数据接口
+ */
 export interface UserRoleVo {
   menuId: string;
   parentId: string;
@@ -13,7 +19,7 @@ export interface UserRoleVo {
 }
 
 /**
- * 获取角色列表
+ * 根据角色ID获取角色信息
  * @param roleId 角色id
  * @returns
  */
@@ -31,8 +37,8 @@ export function getRoleById(roleId: string) {
 }
 
 /**
- * 获取角色列表
- * @returns
+ * 获取所有角色列表
+ * @returns Promise，包含所有角色列表
  */
 export function getRoleList() {
   return new Promise((resolve, reject) => {
@@ -48,11 +54,11 @@ export function getRoleList() {
 }
 
 /**
- * 分页查询角色
+ * 分页查询角色列表
  * @param page 页码
  * @param pageSize 每页条数
- * @param roleName 角色名称
- * @returns
+ * @param roleName 角色名称（可选筛选条件）
+ * @returns Promise，包含分页角色数据
  */
 export function pageSearch(page: number, pageSize: number, roleName: string) {
   return new Promise((resolve, reject) => {
@@ -68,9 +74,9 @@ export function pageSearch(page: number, pageSize: number, roleName: string) {
 }
 
 /**
- * 添加角色
- * @param role 角色
- * @returns
+ * 添加新角色
+ * @param role 角色信息对象
+ * @returns Promise，包含添加结果
  */
 export function addRole(role: Role) {
   return new Promise((resolve, reject) => {
@@ -86,9 +92,10 @@ export function addRole(role: Role) {
 }
 
 /**
- * 更新角色
- * @param role 角色
- * @returns
+ * 更新角色信息
+ * @param role 角色信息对象
+ * @param roleId 角色ID
+ * @returns Promise，包含更新结果
  */
 export function updateRole(role: Role, roleId: string) {
   return new Promise((resolve, reject) => {
@@ -105,8 +112,8 @@ export function updateRole(role: Role, roleId: string) {
 
 /**
  * 删除角色
- * @param roleId 角色id
- * @returns
+ * @param roleId 角色ID
+ * @returns Promise，包含删除结果
  */
 export function deleteRole(roleId: string) {
   return new Promise((resolve, reject) => {
@@ -122,10 +129,10 @@ export function deleteRole(roleId: string) {
 }
 
 /**
- *  分配角色权限信息
- * @param roleId 角色id
- * @param permissions 权限信息
- * @returns
+ * 分配角色权限
+ * @param roleId 角色ID
+ * @param permissions 权限信息数组
+ * @returns Promise，包含权限分配结果
  */
 export function assignRolePermission(
   roleId: string,

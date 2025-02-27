@@ -13,28 +13,26 @@ import {
 import { getMenuList } from '../../../api/sys-service/MenuController';
 
 const RoleManager: React.FC = () => {
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [permissions, setPermissions] = useState<any[]>([]);
-  // 控制编辑或新增的窗口
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  // 控制分配权限的窗口
-  const [isPermissionModalVisible, setIsPermissionModalVisible] =
-    useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
-
-  const [searchText, setSearchText] = useState<string>('');
-  // 默认的页数
+  // 状态定义
+  const [roles, setRoles] = useState<Role[]>([]); // 角色列表数据
+  const [permissions, setPermissions] = useState<any[]>([]); // 权限列表数据
+  const [isModalVisible, setIsModalVisible] = useState(false); // 控制角色编辑模态框
+  const [isPermissionModalVisible, setIsPermissionModalVisible] = useState(false); // 控制权限分配模态框
+  const [editingRole, setEditingRole] = useState<Role | null>(null); // 当前编辑的角色
+  const [searchText, setSearchText] = useState<string>(''); // 搜索关键词
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 5,
     total: 0,
   });
 
+  // 初始化数据和数据更新时的处理
   useEffect(() => {
     fetchRoles(pagination.current, pagination.pageSize, searchText);
     fetchPermissions();
   }, [editingRole, pagination.current, pagination.pageSize, pagination.total]);
 
+  // 获取角色列表数据
   const fetchRoles = async (
     page: number,
     pageSize: number,
@@ -47,26 +45,31 @@ const RoleManager: React.FC = () => {
     setPagination({ ...pagination, total: data.total });
   };
 
+  // 获取权限列表数据
   const fetchPermissions = async () => {
     const response: any = await getMenuList();
     setPermissions(response.data);
   };
 
+  // 显示新增角色模态框
   const showAddModal = () => {
     setEditingRole(null);
     setIsModalVisible(true);
   };
 
+  // 显示编辑角色模态框
   const showEditModal = (role: Role) => {
     setEditingRole(role);
     setIsModalVisible(true);
   };
 
+  // 处理搜索
   const handleSearch = (value: string) => {
     setSearchText(value);
     fetchRoles(1, pagination.pageSize, value);
   };
 
+  // 处理删除角色
   const handleDelete = (roleId: string) => {
     Modal.confirm({
       title: '确认删除',
@@ -83,13 +86,15 @@ const RoleManager: React.FC = () => {
     });
   };
 
-  // 处理分页改变的函数
+  // 处理表格分页变化
   const handleTableChange = (arg: any) => {
     setPagination(arg);
   };
 
+  // 处理角色新增或更新
   const handleAddOrUpdate = async (role: Role) => {
     if (editingRole) {
+      // 更新现有角色
       const resp: any = await updateRole(role, role.roleId);
       if (resp.code === 200) {
         message.success(resp.msg);
@@ -97,6 +102,7 @@ const RoleManager: React.FC = () => {
         message.error(resp.msg);
       }
     } else {
+      // 新增角色
       const resp: any = await addRole(role);
       if (resp.code === 200) {
         message.success(resp.msg);
@@ -181,9 +187,9 @@ const RoleManager: React.FC = () => {
           current: pagination.current,
           pageSize: pagination.pageSize,
           total: pagination.total,
-          showSizeChanger: true, // 显示每页大小选择器
+          showSizeChanger: true,
           pageSizeOptions: [5, 10, 15, 20],
-          showQuickJumper: true, // 显示快速跳转
+          showQuickJumper: true,
         }}
         onChange={handleTableChange}
       />

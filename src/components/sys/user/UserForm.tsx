@@ -32,8 +32,9 @@ const UserForm: React.FC<UserFormProps> = ({
   confirmLoading,
 }) => {
   const [form] = Form.useForm();
-  const [roles, setRoles] = useState<Role[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]); // 角色列表数据
 
+  // 当模态框打开时，获取角色列表并设置表单初始值
   useEffect(() => {
     if (open) {
       fetchRoles();
@@ -45,6 +46,7 @@ const UserForm: React.FC<UserFormProps> = ({
     }
   }, [open, initialValues, form]);
 
+  // 获取角色列表
   const fetchRoles = async () => {
     try {
       const resp: any = await getRoleList();
@@ -59,6 +61,7 @@ const UserForm: React.FC<UserFormProps> = ({
     }
   };
 
+  // 处理表单提交
   const handleSubmit = () => {
     form.validateFields().then((values) => {
       onSubmit(values);
@@ -74,6 +77,7 @@ const UserForm: React.FC<UserFormProps> = ({
       confirmLoading={confirmLoading}
     >
       <Form form={form} layout='vertical'>
+        {/* 用户名输入框，包含唯一性验证 */}
         <Form.Item
           name='username'
           label='用户名'

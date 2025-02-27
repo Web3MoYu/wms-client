@@ -11,6 +11,7 @@ const RoleForm: React.FC<{
 }> = ({ visible, role, onCancel, onSave }) => {
   const [form] = Form.useForm();
 
+  // 当模态框显示或角色数据变化时，重置表单数据
   useEffect(() => {
     if (visible) {
       form.setFieldsValue(role || { roleName: '', roleType: '', remark: '' });
@@ -22,13 +23,14 @@ const RoleForm: React.FC<{
       title={role ? '编辑角色' : '新增角色'}
       visible={visible}
       onOk={() => {
+        // 表单验证通过后，合并现有角色数据和表单数据
         form.validateFields().then((values) => {
           onSave({ ...role, ...values });
           form.resetFields();
         });
       }}
       onCancel={() => {
-        form.resetFields();
+        form.resetFields(); // 取消时重置表单
         onCancel();
       }}
     >
