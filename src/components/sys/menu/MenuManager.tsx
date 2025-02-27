@@ -6,7 +6,9 @@ import {
   EditOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
-  AppstoreOutlined
+  AppstoreOutlined,
+  MinusSquareOutlined,
+  PlusSquareOutlined
 } from '@ant-design/icons';
 import MenuModal from './MenuModal';
 import {
@@ -22,6 +24,13 @@ const { Title, Text } = Typography;
 // 菜单类型常量
 const MENU_TYPES = ['目录', '菜单', '按钮'];
 const TYPE_COLORS = ['geekblue', 'green', 'volcano'];
+// 图标颜色常量
+const ICON_COLORS = {
+  directory: '#1890ff', // 目录图标颜色
+  menu: '#52c41a',      // 菜单图标颜色
+  button: '#fa8c16',    // 按钮图标颜色
+  default: '#8c8c8c'    // 默认图标颜色
+};
 
 // 样式常量
 const styles = {
@@ -67,6 +76,7 @@ const styles = {
 interface LocalMenuItem extends Omit<MenuItem, 'icon'> {
   icon?: string;
   children?: LocalMenuItem[];
+  level?: number;
 }
 
 /**
@@ -79,7 +89,7 @@ const MenuManagement: React.FC = () => {
   const [currentMenu, setCurrentMenu] = useState<LocalMenuItem | null>(null);
 
   // 格式化菜单数据
-  const formatMenus = useCallback((menus: any) => {
+  const formatMenus = useCallback((menus: any, level = 0) => {
     return menus.map((menu: any) => ({
       parentId: menu.menu.parentId === 0 ? null : menu.menu.parentId,
       menuId: menu.menu.menuId,
@@ -92,7 +102,8 @@ const MenuManagement: React.FC = () => {
       componentPath: menu.menu.componentPath || '',
       type: menu.menu.type,
       orderNum: menu.menu.orderNum,
-      children: menu.children ? formatMenus(menu.children) : [],
+      level: level,
+      children: menu.children ? formatMenus(menu.children, level + 1) : [],
     }));
   }, []);
 
@@ -188,27 +199,43 @@ const MenuManagement: React.FC = () => {
     }
   }, [currentMenu, fetchMenuData]);
 
+  // 简洁的菜单标题渲染
+  const renderMenuTitle = (text: string, record: LocalMenuItem) => {
+    const level = record.level || 0;
+    const style = level === 0 ? { fontWeight: 'bold' } : {};
+    
+    // 根据菜单类型选择图标颜色
+    const getIconColor = (type: number) => {
+      switch(type) {
+        case 0: return ICON_COLORS.directory;
+        case 1: return ICON_COLORS.menu;
+        case 2: return ICON_COLORS.button;
+        default: return ICON_COLORS.default;
+      }
+    };
+    
+    const iconColor = getIconColor(record.type);
+    
+    return (
+      <span style={style}>
+        {record.icon && ((ICONS as { [key: string]: any })[record.icon] ? 
+          React.createElement((ICONS as { [key: string]: any })[record.icon], { 
+            style: { marginRight: '8px', color: iconColor } 
+          }) : null)}
+        {text}
+      </span>
+    );
+  };
+
   // 表格列定义
   const columns = [
     {
       title: '菜单名称',
       dataIndex: 'title',
       key: 'title',
+      width: '160px', // 设置菜单名称列宽度
       ellipsis: true,
-    },
-    {
-      title: '图标',
-      dataIndex: 'icon',
-      key: 'icon',
-      render: (text: string) => {
-        if (!text) return null;
-        
-        // 使用类型断言处理动态导入的图标
-        const Icon = (ICONS as { [key: string]: any })[text];
-        return Icon ? <Icon /> : null;
-      },
-      width: '80px',
-      align: 'center' as const,
+      render: renderMenuTitle,
     },
     {
       title: '类型',
@@ -233,6 +260,7 @@ const MenuManagement: React.FC = () => {
       title: '菜单路径',
       dataIndex: 'menuUrl',
       key: 'menuUrl',
+      width: '120px', // 缩小菜单路径列宽度
       ellipsis: true,
     },
     {
@@ -253,7 +281,7 @@ const MenuManagement: React.FC = () => {
       title: '组件路径',
       dataIndex: 'componentPath',
       key: 'componentPath',
-      width: '150px',
+      width: '200px', // 增大组件路径列宽度
       ellipsis: true,
     },
     {
@@ -321,7 +349,22 @@ const MenuManagement: React.FC = () => {
         expandable={{
           rowExpandable: (record) => 
             record.children !== undefined && 
-            record.children.length > 0
+            record.children.length > 0,
+          defaultExpandAllRows: true,
+          expandIcon: ({ expanded, onExpand, record }) => {
+            if (record.children && record.children.length > 0) {
+              return expanded ? 
+                <MinusSquareOutlined onClick={e => onExpand(record, e)} style={{ cursor: 'pointer', color: '#1890ff' }} /> : 
+                <PlusSquareOutlined onClick={e => onExpand(record, e)} style={{ cursor: 'pointer', color: '#1890ff' }} />;
+            }
+            return null;
+          }
+        }}
+        indentSize={25}
+        className="menu-tree-table"
+        rowClassName={(record) => {
+          const level = record.level || 0;
+          return level === 0 ? 'menu-parent-row' : '';
         }}
       />
       
