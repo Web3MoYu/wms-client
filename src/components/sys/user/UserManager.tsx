@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Table, Space, Button, Input, Form, Card, message, Avatar } from 'antd';
+import {
+  Table,
+  Space,
+  Button,
+  Input,
+  Form,
+  Card,
+  message,
+  Avatar,
+  Modal,
+} from 'antd';
 import { SearchOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   getUsers,
   User,
   addUser,
   updateUser,
+  deleteUser,
 } from '../../../api/sys-service/UserController';
 import type { TableProps } from 'antd';
 import UserForm from './UserForm';
@@ -49,7 +60,7 @@ const UserManager = () => {
           pageSize: params.pageSize || prev.pageSize,
         }));
       }
-    } catch (error) {
+    } catch (error: any) {
       message.error('获取用户数据失败');
     } finally {
       setLoading(false);
@@ -99,12 +110,37 @@ const UserManager = () => {
         message.success(currentUser ? '更新成功' : '创建成功');
         setModalVisible(false);
         fetchData();
+      } else {
+        message.error(response.msg);
       }
-    } catch {
+    } catch (error: any) {
       message.error(currentUser ? '更新失败' : '创建失败');
     } finally {
       setConfirmLoading(false);
     }
+  };
+
+  const handleDelete = (record: User) => {
+    Modal.confirm({
+      title: '确认删除',
+      content: `确定要删除用户 "${record.nickName}" 吗？此操作不可恢复！`,
+      okText: '确认',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          const response: any = await deleteUser(record.userId);
+          if (response.code === 200) {
+            message.success('删除成功');
+            fetchData();
+          } else {
+            message.error(response.msg || '删除失败');
+          }
+        } catch (error: any) {
+          message.error('删除失败');
+        }
+      },
+    });
   };
 
   const columns: TableProps<User>['columns'] = [
@@ -161,7 +197,7 @@ const UserManager = () => {
           <Button type='link' onClick={() => handleEdit(record)}>
             编辑
           </Button>
-          <Button type='link' danger>
+          <Button type='link' danger onClick={() => handleDelete(record)}>
             删除
           </Button>
         </Space>

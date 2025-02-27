@@ -110,3 +110,21 @@ export function checkEmail(email: string) {
       });
   });
 }
+
+/**
+ * 删除用户
+ * @param userId 用户id
+ * @returns
+ */
+export function deleteUser(userId: string) {
+  return new Promise((resolve, reject) => {
+    axios
+      .delete(`/sys/user/delete/${userId}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
