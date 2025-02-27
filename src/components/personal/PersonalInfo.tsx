@@ -42,6 +42,7 @@ const PersonalInfo = observer(() => {
         setAvatar(avatarUrl);
         message.success('头像更新成功');
       } catch (error: any) {
+        console.log(error);
         message.error('头像更新失败');
       }
     }
@@ -62,6 +63,8 @@ const PersonalInfo = observer(() => {
           }
         });
     } catch (error) {
+      console.log(error);
+
       message.error('修改失败');
     }
   };

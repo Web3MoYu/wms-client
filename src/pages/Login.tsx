@@ -36,6 +36,7 @@ const Login = observer(() => {
     user
       .login(values)
       .then((data: any) => {
+        console.log(data);
         if (data.code == 200) {
           if (user.menu.length == 0) {
             message.warning('当前用户没有权限，请联系管理员');
@@ -61,7 +62,6 @@ const Login = observer(() => {
         const storedToken = user.token;
         if (storedToken) {
           const response: any = await validateToken();
-          console.log(response);
 
           if (response.code === 200) {
             user.user = response.data.user;
@@ -69,7 +69,7 @@ const Login = observer(() => {
               message.warning('当前用户没有权限，请联系管理员');
             } else {
               message.success(response.msg);
-              navigate('/index');
+              navigate(user.menu[0].children[0].menu.menuUrl);
             }
           }
         }
@@ -87,6 +87,12 @@ const Login = observer(() => {
 
       if (wxIdParam) {
         setWxid(wxIdParam);
+        if (binding && userInfoStr === 'null') {
+          message.warning('当前用户没有权限，请联系管理员');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        }
       }
 
       // 处理微信绑定逻辑
@@ -104,7 +110,6 @@ const Login = observer(() => {
         navigate('/index');
       }
     };
-
     // 先执行token检查
     checkTokenValidity();
     // 然后执行原有参数解析
