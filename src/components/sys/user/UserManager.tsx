@@ -16,7 +16,8 @@ import {
   UserOutlined,
   PlusOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  IdcardOutlined
 } from '@ant-design/icons';
 import {
   getUsers,
@@ -40,6 +41,7 @@ interface Params {
   current?: number;
   pageSize?: number;
   nickName?: string;
+  realName?: string;
 }
 
 // 样式常量
@@ -85,7 +87,8 @@ const UserManager: React.FC = () => {
       const response: any = await getUsers(
         params.current || pagination.current,
         params.pageSize || pagination.pageSize,
-        params.nickName || ''
+        params.nickName || '',
+        params.realName || ''
       );
 
       if (response.code === 200) {
@@ -111,7 +114,7 @@ const UserManager: React.FC = () => {
   }, [fetchData]);
 
   // 处理搜索
-  const handleSearch = useCallback((values: { nickName?: string }) => {
+  const handleSearch = useCallback((values: { nickName?: string, realName?: string }) => {
     fetchData({
       current: 1,
       pageSize: pagination.pageSize,
@@ -127,6 +130,7 @@ const UserManager: React.FC = () => {
       current: newPagination.current,
       pageSize: newPagination.pageSize,
       nickName: searchForm.getFieldValue('nickName'),
+      realName: searchForm.getFieldValue('realName'),
     });
   }, [fetchData, searchForm]);
 
@@ -211,7 +215,7 @@ const UserManager: React.FC = () => {
           style={styles.avatar(!!avatar)}
         />
       ),
-      width: '10%',
+      width: '8%',
       align: 'center',
     },
     {
@@ -227,6 +231,13 @@ const UserManager: React.FC = () => {
       ellipsis: true,
     },
     {
+      title: '真实姓名',
+      dataIndex: 'realName',
+      width: '10%',
+      ellipsis: true,
+      render: (text) => text || '未设置'
+    },
+    {
       title: '角色',
       dataIndex: 'roleName',
       width: '10%',
@@ -235,20 +246,20 @@ const UserManager: React.FC = () => {
     {
       title: '性别',
       dataIndex: 'sex',
-      width: '10%',
+      width: '8%',
       render: (value: number) => GENDER_LABELS[value],
       align: 'center',
     },
     {
       title: '手机号',
       dataIndex: 'phone',
-      width: '15%',
+      width: '12%',
       ellipsis: true,
     },
     {
       title: '邮箱',
       dataIndex: 'email',
-      width: '15%',
+      width: '12%',
       ellipsis: true,
     },
     {
@@ -294,6 +305,13 @@ const UserManager: React.FC = () => {
             placeholder="请输入昵称" 
             allowClear 
             prefix={<UserOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
+          />
+        </Form.Item>
+        <Form.Item name="realName" label="真实姓名">
+          <Input 
+            placeholder="请输入真实姓名" 
+            allowClear 
+            prefix={<IdcardOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
           />
         </Form.Item>
         <Form.Item>

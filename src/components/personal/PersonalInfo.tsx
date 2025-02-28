@@ -22,7 +22,8 @@ import {
   PhoneOutlined, 
   WechatOutlined, 
   EditOutlined, 
-  LockOutlined 
+  LockOutlined,
+  IdcardOutlined
 } from '@ant-design/icons';
 import userStore from '../../store/userStore';
 import { observer } from 'mobx-react-lite';
@@ -145,7 +146,11 @@ const PersonalInfo: React.FC = observer(() => {
   const handleSubmit = useCallback(async (values: any) => {
     try {
       const result: any = await user.updateUserInfo(
-        { nickName: values.nickName, avatar: avatar }, 
+        { 
+          nickName: values.nickName, 
+          avatar: avatar,
+          realName: values.realName  // 添加真实姓名字段
+        }, 
         uploaded
       );
       
@@ -196,6 +201,7 @@ const PersonalInfo: React.FC = observer(() => {
     form.setFieldsValue({
       username: user.user?.username,
       nickName: user.user?.nickName,
+      realName: user.user?.realName, // 添加真实姓名字段
       email: user.user?.email,
       phone: user.user?.phone,
     });
@@ -238,6 +244,11 @@ const PersonalInfo: React.FC = observer(() => {
           label={<Space><UserOutlined /> 昵称</Space>}
         >
           {user.user?.nickName}
+        </Descriptions.Item>
+        <Descriptions.Item 
+          label={<Space><IdcardOutlined /> 真实姓名</Space>}
+        >
+          {user.user?.realName || '未设置'}
         </Descriptions.Item>
         <Descriptions.Item 
           label={<Space><MailOutlined /> 邮箱</Space>}
@@ -283,6 +294,7 @@ const PersonalInfo: React.FC = observer(() => {
       initialValues={{
         username: user.user?.username,
         nickName: user.user?.nickName,
+        realName: user.user?.realName, // 添加真实姓名字段
         email: user.user?.email,
         phone: user.user?.phone,
       }}
@@ -302,6 +314,15 @@ const PersonalInfo: React.FC = observer(() => {
         style={styles.formSection}
       >
         <Input placeholder="请输入新的昵称" />
+      </Form.Item>
+      
+      <Form.Item
+        label={<Space><IdcardOutlined /> 真实姓名</Space>}
+        name="realName"
+        rules={[{ required: false, message: '请输入真实姓名' }]}
+        style={styles.formSection}
+      >
+        <Input placeholder="请输入真实姓名" />
       </Form.Item>
 
       <Form.Item 

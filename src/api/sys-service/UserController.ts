@@ -4,6 +4,7 @@ export interface User {
   userId: string;
   wxId: string | null;
   username: string;
+  realName: string;
   password: string | null;
   salt: string | null;
   phone: string;
@@ -24,7 +25,7 @@ export interface User {
  * @param nickName 昵称（可选筛选条件）
  * @returns Promise，包含分页用户数据
  */
-export function getUsers(page: number, pageSize: number, nickName: string) {
+export function getUsers(page: number, pageSize: number, nickName: string, realName: string) {
   return new Promise((resolve, reject) => {
     axios
       .get('/sys/user/list', {
@@ -32,6 +33,7 @@ export function getUsers(page: number, pageSize: number, nickName: string) {
           page,
           pageSize,
           nickName,
+          realName,
         },
       })
       .then((res) => {

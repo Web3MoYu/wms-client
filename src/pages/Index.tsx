@@ -132,7 +132,7 @@ const Index = observer(() => {
                       cursor: 'pointer',
                     }}
                   />
-                  <span style={{ color: 'rgba(0,0,0,0.65)' }}>{user.user.nickName}</span>
+                  <span style={{ color: 'rgba(0,0,0,0.65)' }}>{user.user.realName}</span>
                 </Space>
               </div>
             </Dropdown>

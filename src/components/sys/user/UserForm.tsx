@@ -5,7 +5,8 @@ import {
   PhoneOutlined,
   MailOutlined,
   TeamOutlined,
-  ManOutlined
+  ManOutlined,
+  IdcardOutlined
 } from '@ant-design/icons';
 import {
   User,
@@ -222,6 +223,19 @@ const UserForm: React.FC<UserFormProps> = ({
             <Input 
               placeholder='请输入昵称'
               prefix={<UserOutlined />}
+              style={styles.input}
+            />
+          </Form.Item>
+          
+          <Form.Item
+            name='realName'
+            label='真实姓名'
+            style={styles.formItem}
+            rules={[{ required: false, message: '请输入真实姓名' }]}
+          >
+            <Input 
+              placeholder='请输入真实姓名'
+              prefix={<IdcardOutlined />}
               style={styles.input}
             />
           </Form.Item>
