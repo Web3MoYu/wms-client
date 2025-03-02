@@ -36,8 +36,6 @@ const Index = observer(() => {
 
   function logout(): void {
     authLogout().then((data: any) => {
-      console.log(data);
-
       if (data.code == 200) {
         sessionStorage.clear();
         message.success('退出成功');
@@ -132,7 +130,9 @@ const Index = observer(() => {
                       cursor: 'pointer',
                     }}
                   />
-                  <span style={{ color: 'rgba(0,0,0,0.65)' }}>{user.user.realName}</span>
+                  <span style={{ color: 'rgba(0,0,0,0.65)' }}>
+                    {user.user.realName}
+                  </span>
                 </Space>
               </div>
             </Dropdown>

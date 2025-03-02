@@ -1,8 +1,24 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Modal, Form, Input, Select, TreeSelect, message, Space, Divider, Typography } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  Select,
+  TreeSelect,
+  message,
+  Space,
+  Divider,
+  Typography,
+} from 'antd';
 import * as ICONS from '@ant-design/icons/';
 import { getContentList } from '../../../api/sys-service/MenuController';
-import { KeyOutlined, FolderOutlined, MenuOutlined, AppstoreOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  KeyOutlined,
+  FolderOutlined,
+  MenuOutlined,
+  AppstoreOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -41,7 +57,7 @@ interface MenuModalProps {
 const MENU_TYPES = [
   { value: 0, label: '目录', icon: <FolderOutlined /> },
   { value: 1, label: '菜单', icon: <MenuOutlined /> },
-  { value: 2, label: '按钮', icon: <KeyOutlined /> }
+  { value: 2, label: '按钮', icon: <KeyOutlined /> },
 ];
 
 // 样式常量
@@ -65,7 +81,7 @@ const styles = {
   },
   modal: {
     maxWidth: '650px',
-  }
+  },
 };
 
 /**
@@ -123,7 +139,7 @@ const MenuModal: React.FC<MenuModalProps> = ({
 
     if (visible) {
       fetchMenus();
-      
+
       if (currentMenu) {
         form.setFieldsValue(currentMenu);
       } else {
@@ -160,43 +176,41 @@ const MenuModal: React.FC<MenuModalProps> = ({
             },
           ]}
           style={styles.formItem}
-          tooltip="输入antd图标组件名称，如 UserOutlined"
+          tooltip='输入antd图标组件名称，如 UserOutlined'
         >
-          <Input prefix={<AppstoreOutlined />} placeholder="输入图标名称，如 UserOutlined" />
+          <Input
+            prefix={<AppstoreOutlined />}
+            placeholder='输入图标名称，如 UserOutlined'
+          />
         </Form.Item>
-        
-        <Form.Item 
-          name='menuUrl' 
+
+        <Form.Item
+          name='menuUrl'
           label='菜单路径'
+          rules={[{ required: true, message: '请输入菜单路径' }]}
           style={styles.formItem}
+          tooltip='菜单路径用于路由跳转，例如：/sys/user'
         >
-          <Input placeholder="请输入菜单路径" />
+          <Input placeholder='请输入菜单路径' />
         </Form.Item>
-        
-        <Form.Item 
-          name='name' 
-          label='路由名称'
-          style={styles.formItem}
-        >
-          <Input placeholder="请输入路由名称" />
-        </Form.Item>
-        
         <Form.Item
           name='routePath'
           label='路由地址'
           rules={[{ required: true, message: '请输入路由地址' }]}
           style={styles.formItem}
+          tooltip='路由地址用于路由跳转，取值为菜单路径的最后一个词'
         >
-          <Input placeholder="请输入路由地址" />
+          <Input placeholder='请输入路由地址' />
         </Form.Item>
-        
+
         <Form.Item
           name='componentPath'
           label='组件路径'
           rules={[{ required: true, message: '请输入组件路径' }]}
           style={styles.formItem}
+          tooltip='组件路径用于渲染TSX,为该组件在components目录下的路径'
         >
-          <Input placeholder="请输入组件路径" />
+          <Input placeholder='请输入组件路径' />
         </Form.Item>
       </>
     );
@@ -218,18 +232,14 @@ const MenuModal: React.FC<MenuModalProps> = ({
       width={550}
       maskClosable={false}
       destroyOnClose
-      okText="确认"
-      cancelText="取消"
+      okText='确认'
+      cancelText='取消'
       style={styles.modal}
     >
       <Divider style={styles.divider} />
-      
-      <Form 
-        form={form} 
-        layout='vertical'
-        initialValues={{ type: 0 }}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
+
+      <Form form={form} layout='vertical' initialValues={{ type: 0 }}>
+        <Space direction='vertical' style={{ width: '100%' }}>
           {/* 基本信息部分 */}
           <Form.Item
             name='parentId'
@@ -260,14 +270,14 @@ const MenuModal: React.FC<MenuModalProps> = ({
               }}
             />
           </Form.Item>
-          
+
           <Form.Item
             name='title'
             label='菜单名称'
             rules={[{ required: true, message: '请输入菜单名称' }]}
             style={styles.formItem}
           >
-            <Input placeholder="请输入菜单名称" />
+            <Input placeholder='请输入菜单名称' />
           </Form.Item>
 
           <Form.Item
@@ -275,9 +285,9 @@ const MenuModal: React.FC<MenuModalProps> = ({
             label='权限字段'
             rules={[{ required: true, message: '请输入权限字段' }]}
             style={styles.formItem}
-            tooltip="权限字段用于权限控制，例如：sys:user:add"
+            tooltip='权限字段用于权限控制，例如：sys:user:add'
           >
-            <Input placeholder="请输入权限字段" />
+            <Input placeholder='请输入权限字段' />
           </Form.Item>
 
           <Form.Item
@@ -286,8 +296,8 @@ const MenuModal: React.FC<MenuModalProps> = ({
             rules={[{ required: true, message: '请选择菜单类型' }]}
             style={styles.formItem}
           >
-            <Select placeholder="请选择菜单类型">
-              {MENU_TYPES.map(type => (
+            <Select placeholder='请选择菜单类型'>
+              {MENU_TYPES.map((type) => (
                 <Option key={type.value} value={type.value}>
                   <Space>
                     {type.icon}
@@ -307,14 +317,14 @@ const MenuModal: React.FC<MenuModalProps> = ({
           >
             {() => renderTypeSpecificFields()}
           </Form.Item>
-          
-          <Form.Item 
-            name='orderNum' 
+
+          <Form.Item
+            name='orderNum'
             label='排序字段'
             style={styles.formItem}
-            tooltip="数字越小越靠前"
+            tooltip='数字越小越靠前'
           >
-            <Input type="number" placeholder="请输入排序字段" />
+            <Input type='number' placeholder='请输入排序字段' />
           </Form.Item>
         </Space>
       </Form>

@@ -1,9 +1,17 @@
 import React, { useEffect, useCallback } from 'react';
-import { Modal, Form, Input, Typography, Divider, Space } from 'antd';
-import { TeamOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Typography, Divider, Space, Select } from 'antd';
+import { TeamOutlined, UserSwitchOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 const { Text } = Typography;
+const { Option } = Select;
+
+// 角色类型常量
+const ROLE_TYPES = [
+  { value: 0, label: '超级管理员' },
+  { value: 1, label: '管理员' },
+  { value: 2, label: '员工' }
+];
 
 // 接口定义
 interface RoleFormProps {
@@ -33,6 +41,10 @@ const styles = {
   },
   formContainer: {
     marginTop: '12px',
+  },
+  select: {
+    width: '100%',
+    borderRadius: '4px',
   }
 };
 
@@ -47,7 +59,7 @@ const RoleForm: React.FC<RoleFormProps> = ({ visible, role, onCancel, onSave }) 
   // 当模态框显示或角色数据变化时，重置表单数据
   useEffect(() => {
     if (visible) {
-      form.setFieldsValue(role || { roleName: '', roleType: '', remark: '' });
+      form.setFieldsValue(role || { roleName: '', type: 2, remark: '' });
     }
   }, [visible, role, form]);
 
@@ -102,6 +114,24 @@ const RoleForm: React.FC<RoleFormProps> = ({ visible, role, onCancel, onSave }) 
               placeholder='请输入角色名称'
               style={styles.input}
             />
+          </Form.Item>
+          
+          <Form.Item
+            name='type'
+            label='角色类型'
+            style={styles.formItem}
+            rules={[{ required: true, message: '请选择角色类型' }]}
+          >
+            <Select 
+              placeholder='请选择角色类型'
+              style={styles.select}
+              suffixIcon={<UserSwitchOutlined />}
+              disabled={isEditMode && role?.type === 0} // 超级管理员不允许修改类型
+            >
+              {ROLE_TYPES.map(type => (
+                <Option key={type.value} value={type.value}>{type.label}</Option>
+              ))}
+            </Select>
           </Form.Item>
           
           <Form.Item 
