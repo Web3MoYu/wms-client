@@ -1,4 +1,5 @@
 import axios from '../../utils/mxAxios';
+import { Result } from '../Model';
 
 export interface User {
   userId: string;
@@ -25,7 +26,12 @@ export interface User {
  * @param nickName 昵称（可选筛选条件）
  * @returns Promise，包含分页用户数据
  */
-export function getUsers(page: number, pageSize: number, nickName: string, realName: string) {
+export function getUsers(
+  page: number,
+  pageSize: number,
+  nickName: string,
+  realName: string
+) {
   return new Promise((resolve, reject) => {
     axios
       .get('/sys/user/list', {
@@ -144,6 +150,23 @@ export function deleteUser(userId: string) {
   return new Promise((resolve, reject) => {
     axios
       .delete(`/sys/user/delete/${userId}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 获取管理员列表
+ * @returns Promise，包含管理员列表
+ */
+export function getAdminList(): Promise<Result<User[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/sys/user/admin/list')
       .then((res) => {
         resolve(res.data);
       })

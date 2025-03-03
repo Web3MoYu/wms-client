@@ -247,7 +247,7 @@ const MenuModal: React.FC<MenuModalProps> = ({
             rules={[
               {
                 required: false,
-                validator(rule, value) {
+                validator(_rule, value) {
                   if (value && value === currentMenu?.menuId) {
                     return Promise.reject('无法选择自己作为父节点');
                   }
