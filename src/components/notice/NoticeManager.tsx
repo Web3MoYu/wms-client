@@ -12,15 +12,29 @@ import {
   Col,
   Space,
   message,
+  Modal,
+  Tooltip,
 } from 'antd';
 import {
   Notice,
   NoticePageDTO,
   pageList,
+  publish,
+  abandon,
 } from '../../api/msg-service/NoticeController';
 import { Page, Result } from '../../api/Model';
 import { getAdminList } from '../../api/sys-service/UserController';
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+import { 
+  SearchOutlined, 
+  ReloadOutlined, 
+  SendOutlined, 
+  EditOutlined, 
+  StopOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined 
+} from '@ant-design/icons';
+import NoticeDetailModal from './NoticeDetailModal';
+import NoticeFormModal from './NoticeFormModal';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -56,6 +70,14 @@ export default function NoticeManager() {
     pageSize: 5,
     total: 0,
   });
+  
+  // 详情弹窗相关状态
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [currentNotice, setCurrentNotice] = useState<Notice | null>(null);
+  
+  // 表单弹窗相关状态
+  const [formVisible, setFormVisible] = useState(false);
+  const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
 
   // 查询参数
   const [queryParams, setQueryParams] = useState<
@@ -150,30 +172,104 @@ export default function NoticeManager() {
     fetchAdminList();
   }, []);
 
+  // 显示公告详情
+  const showNoticeDetail = (record: Notice) => {
+    setCurrentNotice(record);
+    setDetailVisible(true);
+  };
+
+  // 关闭公告详情
+  const handleCloseDetail = () => {
+    setDetailVisible(false);
+  };
+
+  // 显示新增弹窗
+  const showAddModal = () => {
+    setCurrentNotice(null);
+    setFormMode('add');
+    setFormVisible(true);
+  };
+
+  // 显示编辑弹窗
+  const handleEdit = (record: Notice) => {
+    setCurrentNotice(record);
+    setFormMode('edit');
+    setFormVisible(true);
+  };
+
+  // 关闭表单弹窗
+  const handleCloseForm = () => {
+    setFormVisible(false);
+  };
+
+  // 表单提交成功回调
+  const handleFormSuccess = () => {
+    fetchNoticeList();
+  };
+
+  // 发布公告
+  const handlePublish = (id: string, title: string) => {
+    Modal.confirm({
+      title: '确认发布',
+      icon: <ExclamationCircleOutlined />,
+      content: `确定要发布 "${title}" 吗？`,
+      onOk: async () => {
+        try {
+          const res = await publish(id) as Result<string>;
+          if (res.code === 200) {
+            message.success('发布成功');
+            fetchNoticeList(); // 刷新列表
+          } else {
+            message.error(res.msg || '发布失败');
+          }
+        } catch (error) {
+          console.error('发布公告失败', error);
+          message.error('发布失败');
+        }
+      },
+    });
+  };
+
+  // 废弃公告
+  const handleAbandon = (id: string, title: string) => {
+    Modal.confirm({
+      title: '确认废弃',
+      icon: <ExclamationCircleOutlined />,
+      content: `确定要废弃 "${title}" 吗？废弃后将无法恢复！`,
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          const res = await abandon(id) as Result<string>;
+          if (res.code === 200) {
+            message.success('废弃成功');
+            fetchNoticeList(); // 刷新列表
+          } else {
+            message.error(res.msg || '废弃失败');
+          }
+        } catch (error) {
+          console.error('废弃公告失败', error);
+          message.error('废弃失败');
+        }
+      },
+    });
+  };
+
   // 表格列定义
   const columns = [
     {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
-      width: 200,
+      width: 160,
       ellipsis: true,
+      render: (title: string, record: Notice) => (
+        <a onClick={() => showNoticeDetail(record)}>
+          {title}
+        </a>
+      ),
     },
     {
-      title: '内容',
-      dataIndex: 'content',
-      key: 'content',
-      width: 300,
-      ellipsis: true,
-      render: (content: string) => {
-        // 只显示前30个字符，后面用省略号
-        return content && content.length > 30
-          ? `${content.substring(0, 30)}...`
-          : content;
-      },
-    },
-    {
-      title: '发布人',
+      title: '创建人',
       dataIndex: 'publisherName',
       key: 'publisherName',
       width: 120,
@@ -182,7 +278,7 @@ export default function NoticeManager() {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 80,
       render: (status: number) => {
         const statusInfo =
           STATUS_MAP.find((item) => item.value === status) || STATUS_MAP[0];
@@ -219,16 +315,76 @@ export default function NoticeManager() {
       width: 120,
     },
     {
-      title: '结束时间',
+      title: '废弃时间',
       dataIndex: 'endTime',
       key: 'endTime',
       width: 120,
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 220,
+      render: (_: any, record: Notice) => {
+        const isDiscarded = record.status === 2; // 已废弃
+        const isPublished = record.status === 1; // 已发布
+        
+        return (
+          <Space size={8}>
+            <Tooltip title={isDiscarded ? '已废弃的公告无法发布' : (isPublished ? '已发布的公告无法再次发布' : '发布公告')}>
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                size="small"
+                disabled={isDiscarded || isPublished}
+                onClick={() => handlePublish(record.id.toString(), record.title)}
+              >
+                发布
+              </Button>
+            </Tooltip>
+            
+            <Tooltip title={isDiscarded ? '已废弃的公告无法编辑' : '编辑公告'}>
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                size="small"
+                disabled={isDiscarded}
+                onClick={() => handleEdit(record)}
+              >
+                编辑
+              </Button>
+            </Tooltip>
+            
+            <Tooltip title={isDiscarded ? '已废弃的公告无法再次废弃' : '废弃公告'}>
+              <Button
+                danger
+                icon={<StopOutlined />}
+                size="small"
+                disabled={isDiscarded}
+                onClick={() => handleAbandon(record.id.toString(), record.title)}
+              >
+                废弃
+              </Button>
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 
   return (
     <Card
-      title={<Title level={4}>公告管理</Title>}
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Title level={4}>公告管理</Title>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={showAddModal}
+          >
+            新增公告
+          </Button>
+        </div>
+      }
       style={{ borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.09)' }}
     >
       {/* 筛选表单 */}
@@ -306,16 +462,14 @@ export default function NoticeManager() {
       </Form>
 
       <Table
-        rowKey='id'
+        rowKey="id"
         columns={columns}
         dataSource={noticeList}
         loading={loading}
         pagination={false}
         scroll={{ x: 'max-content' }}
       />
-      <div
-        style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}
-      >
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Pagination
           current={pagination.current}
           pageSize={pagination.pageSize}
@@ -327,6 +481,22 @@ export default function NoticeManager() {
           showTotal={(total) => `共 ${total} 条记录`}
         />
       </div>
+      
+      {/* 公告详情弹窗 */}
+      <NoticeDetailModal
+        visible={detailVisible}
+        notice={currentNotice}
+        onClose={handleCloseDetail}
+      />
+      
+      {/* 公告表单弹窗 */}
+      <NoticeFormModal
+        visible={formVisible}
+        notice={currentNotice}
+        mode={formMode}
+        onClose={handleCloseForm}
+        onSuccess={handleFormSuccess}
+      />
     </Card>
   );
 }
