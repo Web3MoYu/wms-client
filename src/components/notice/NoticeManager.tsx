@@ -8,8 +8,6 @@ import {
   Form,
   Select,
   Button,
-  Row,
-  Col,
   Space,
   message,
   Modal,
@@ -118,7 +116,6 @@ export default function NoticeManager() {
           current: res.data.current,
           total: res.data.total,
         });
-        message.success(res.msg);
       } else {
         message.error(res.msg);
       }
@@ -141,9 +138,16 @@ export default function NoticeManager() {
 
   // 处理是否显示已删除通知的开关
   const handleShowDeleteChange = (checked: boolean) => {
+    // 如果关闭开关，并且当前状态选择为"已废弃"(2)，则清除状态选择
+    if (!checked && form.getFieldValue('status') === 2) {
+      form.setFieldValue('status', null);
+    }
+    
     setQueryParams({
       ...queryParams,
       showDelete: checked ? 1 : 0,
+      // 如果关闭开关，并且当前状态为已废弃，则将状态设为null
+      status: (!checked && queryParams.status === 2) ? (null as any) : queryParams.status
     });
   };
 
@@ -384,97 +388,98 @@ export default function NoticeManager() {
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Title level={4}>公告管理</Title>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={showAddModal}
-          >
-            新增公告
-          </Button>
         </div>
       }
       style={{ borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.09)' }}
     >
       {/* 筛选表单 */}
-      <Form form={form} layout='horizontal' style={{ marginBottom: 24 }}>
-        <Row gutter={16}>
-          <Col span={6}>
-            <Form.Item name='publisher' label='发布人'>
-              <Select
-                placeholder='请选择发布人'
-                allowClear
-                showSearch
-                optionFilterProp='children'
-              >
-                {adminList.map((admin) => (
-                  <Option key={`admin-${admin.userId}`} value={admin.userId}>
-                    {admin.realName}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name='status' label='状态'>
-              <Select placeholder='请选择状态' allowClear>
-                {STATUS_MAP.map((status) => (
-                  <Option key={`status-${status.value}`} value={status.value}>
-                    {status.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name='priority' label='优先级'>
-              <Select placeholder='请选择优先级' allowClear>
-                {PRIORITY_MAP.map((priority) => (
-                  <Option
-                    key={`priority-${priority.value}`}
-                    value={priority.value}
-                  >
-                    {priority.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name='isTop' label='是否置顶'>
-              <Select placeholder='请选择是否置顶' allowClear>
-                {IS_TOP_MAP.map((isTop) => (
-                  <Option key={`isTop-${isTop.value}`} value={isTop.value}>
-                    {isTop.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
-        <Row>
-          <Col span={24} style={{ textAlign: 'right' }}>
-            <Space>
-              <span>
-                显示已删除通知：
-                <Switch 
-                  checked={queryParams.showDelete === 1} 
-                  onChange={handleShowDeleteChange}
-                  size="small"
-                />
-              </span>
-              <Button
-                type='primary'
-                icon={<SearchOutlined />}
-                onClick={handleSearch}
-              >
-                查询
-              </Button>
-              <Button icon={<ReloadOutlined />} onClick={handleReset}>
-                重置
-              </Button>
-            </Space>
-          </Col>
-        </Row>
+      <Form form={form} layout='inline' style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', width: '100%', marginBottom: '16px' }}>
+          <Form.Item name='publisher' label='发布人' style={{ minWidth: '220px', marginBottom: '8px' }}>
+            <Select
+              placeholder='请选择发布人'
+              allowClear
+              showSearch
+              optionFilterProp='children'
+              style={{ width: '150px' }}
+            >
+              {adminList.map((admin) => (
+                <Option key={`admin-${admin.userId}`} value={admin.userId}>
+                  {admin.realName}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          
+          <Form.Item name='status' label='状态' style={{ minWidth: '180px', marginBottom: '8px' }}>
+            <Select placeholder='请选择状态' allowClear style={{ width: '120px' }}>
+              {STATUS_MAP.filter(status => queryParams.showDelete === 1 || status.value !== 2).map((status) => (
+                <Option key={`status-${status.value}`} value={status.value}>
+                  {status.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          
+          <Form.Item name='priority' label='优先级' style={{ minWidth: '180px', marginBottom: '8px' }}>
+            <Select placeholder='请选择优先级' allowClear style={{ width: '120px' }}>
+              {PRIORITY_MAP.map((priority) => (
+                <Option
+                  key={`priority-${priority.value}`}
+                  value={priority.value}
+                >
+                  {priority.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          
+          <Form.Item name='isTop' label='是否置顶' style={{ minWidth: '180px', marginBottom: '8px' }}>
+            <Select placeholder='请选择是否置顶' allowClear style={{ width: '120px' }}>
+              {IS_TOP_MAP.map((isTop) => (
+                <Option key={`isTop-${isTop.value}`} value={isTop.value}>
+                  {isTop.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </div>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+          <div>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={showAddModal}
+              style={{ marginRight: '16px' }}
+            >
+              新增公告
+            </Button>
+            <span style={{ marginLeft: '16px' }}>
+              显示已废弃通知：
+              <Switch 
+                checked={queryParams.showDelete === 1} 
+                onChange={handleShowDeleteChange}
+                size="small"
+                style={{ marginLeft: '8px' }}
+              />
+            </span>
+          </div>
+          
+          <div>
+            <Button
+              type='primary'
+              icon={<SearchOutlined />}
+              onClick={handleSearch}
+              style={{ marginRight: '8px' }}
+            >
+              查询
+            </Button>
+            <Button icon={<ReloadOutlined />} onClick={handleReset}>
+              重置
+            </Button>
+          </div>
+        </div>
       </Form>
 
       <Table

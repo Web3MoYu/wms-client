@@ -95,7 +95,8 @@ const NoticeFormModal: React.FC<NoticeFormModalProps> = ({
           确定
         </Button>
       ]}
-      width={700}
+      width={900}
+      style={{ top: 20 }}
     >
       <Form
         form={form}
@@ -116,7 +117,12 @@ const NoticeFormModal: React.FC<NoticeFormModalProps> = ({
           label="内容"
           rules={[{ required: true, message: '请输入公告内容' }]}
         >
-          <TextArea placeholder="请输入公告内容" rows={6} maxLength={500} />
+          <TextArea 
+            placeholder="请输入公告内容" 
+            rows={12} 
+            maxLength={500} 
+            style={{ resize: 'vertical', minHeight: '200px' }}
+          />
         </Form.Item>
 
         <Form.Item
