@@ -22,6 +22,8 @@ export interface NoticePageDTO {
   status: number;
   priority: number;
   isTop: number;
+  // 0：不显示已经删除的，1：显示已经删除的
+  showDelete: number;
 }
 
 /**

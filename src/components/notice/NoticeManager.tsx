@@ -14,6 +14,7 @@ import {
   message,
   Modal,
   Tooltip,
+  Switch,
 } from 'antd';
 import {
   Notice,
@@ -89,6 +90,7 @@ export default function NoticeManager() {
     priority: null as any, // null表示全部
     isTop: null as any, // null表示全部
     publisher: null as any, // 发布人ID
+    showDelete: 0, // 默认不显示已删除的
   });
 
   // 获取管理员列表
@@ -133,10 +135,15 @@ export default function NoticeManager() {
     setQueryParams({
       ...queryParams,
       page: 1, // 搜索时重置到第一页
-      publisher: values.publisher,
-      status: values.status,
-      priority: values.priority,
-      isTop: values.isTop,
+      ...values,
+    });
+  };
+
+  // 处理是否显示已删除通知的开关
+  const handleShowDeleteChange = (checked: boolean) => {
+    setQueryParams({
+      ...queryParams,
+      showDelete: checked ? 1 : 0,
     });
   };
 
@@ -150,6 +157,7 @@ export default function NoticeManager() {
       priority: null as any,
       isTop: null as any,
       publisher: null as any,
+      showDelete: 0,
     });
   };
 
@@ -446,6 +454,14 @@ export default function NoticeManager() {
         <Row>
           <Col span={24} style={{ textAlign: 'right' }}>
             <Space>
+              <span>
+                显示已删除通知：
+                <Switch 
+                  checked={queryParams.showDelete === 1} 
+                  onChange={handleShowDeleteChange}
+                  size="small"
+                />
+              </span>
               <Button
                 type='primary'
                 icon={<SearchOutlined />}
