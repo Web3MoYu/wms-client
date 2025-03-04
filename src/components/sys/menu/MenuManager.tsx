@@ -264,13 +264,6 @@ const MenuManagement: React.FC = () => {
       ellipsis: true,
     },
     {
-      title: '路由名称',
-      dataIndex: 'name',
-      key: 'name',
-      width: '120px',
-      ellipsis: true,
-    },
-    {
       title: '路由地址',
       dataIndex: 'routePath',
       key: 'routePath',
