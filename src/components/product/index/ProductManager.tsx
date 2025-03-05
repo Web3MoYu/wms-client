@@ -10,21 +10,30 @@ import {
   message,
   Tooltip,
   Typography,
+  Modal,
+  Popconfirm,
 } from 'antd';
 import {
   SearchOutlined,
   ReloadOutlined,
   PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import type { TablePaginationConfig } from 'antd/es/table';
-import { 
-  pageProducts, 
-  ProductVo 
+import {
+  pageProducts,
+  ProductVo,
+  Product,
+  addProduct,
+  updateProduct,
+  deleteProduct,
 } from '../../../api/product-service/ProductController';
-import { 
-  getProductCatTree, 
-  ProductCatTree 
+import {
+  getProductCatTree,
+  ProductCatTree,
 } from '../../../api/product-service/ProductCatController';
+import ProductForm from './ProductForm';
 
 const { Title } = Typography;
 
@@ -53,6 +62,7 @@ interface CategoryPathMap {
 export default function ProductManager() {
   // 状态定义
   const [loading, setLoading] = useState<boolean>(false);
+  const [submitLoading, setSubmitLoading] = useState<boolean>(false);
   const [products, setProducts] = useState<ProductVo[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [queryParams, setQueryParams] = useState<QueryParams>({
@@ -65,6 +75,11 @@ export default function ProductManager() {
   const [categoryOptions, setCategoryOptions] = useState<CascaderOption[]>([]);
   const [categoryPathMap, setCategoryPathMap] = useState<CategoryPathMap>({});
   const [form] = Form.useForm();
+
+  // 表单模态框状态
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [isEdit, setIsEdit] = useState<boolean>(false);
+  const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({});
 
   // 初始化
   useEffect(() => {
@@ -119,30 +134,31 @@ export default function ProductManager() {
 
   // 转换分类树数据为Cascader所需格式，同时构建路径映射
   const transformTreeData = (
-    data: ProductCatTree[], 
-    pathMap: CategoryPathMap, 
+    data: ProductCatTree[],
+    pathMap: CategoryPathMap,
     parentPath: string = ''
   ): CascaderOption[] => {
-    return data.map(item => {
+    return data.map((item) => {
       // 当前分类名称
       const categoryName = item.category.categoryName;
-      
+
       // 计算当前分类的完整路径
-      const currentPath = parentPath 
-        ? `${parentPath}-${categoryName}` 
+      const currentPath = parentPath
+        ? `${parentPath}-${categoryName}`
         : categoryName;
-      
+
       // 保存路径映射
       pathMap[item.category.id] = currentPath;
-      
+
       // 构建级联选项
       return {
         value: item.category.id,
         label: categoryName,
         isLeaf: !item.children || item.children.length === 0,
-        children: item.children && item.children.length > 0 
-          ? transformTreeData(item.children, pathMap, currentPath) 
-          : undefined
+        children:
+          item.children && item.children.length > 0
+            ? transformTreeData(item.children, pathMap, currentPath)
+            : undefined,
       };
     });
   };
@@ -186,6 +202,91 @@ export default function ProductManager() {
     fetchProducts(newParams);
   };
 
+  // 打开添加产品模态框
+  const handleAddProduct = () => {
+    setIsEdit(false);
+    setCurrentProduct({});
+    setModalVisible(true);
+  };
+
+  // 打开编辑产品模态框
+  const handleEditProduct = (record: ProductVo) => {
+    setIsEdit(true);
+    // 创建一个包含已有数据的产品对象
+    const productData = { ...record };
+
+    // 如果存在分类ID和分类名称映射，确保使用正确的分类ID
+    if (productData.categoryId && categoryPathMap[productData.categoryId]) {
+      // categoryId 已经是正确的，不需要修改
+      console.log('使用分类ID:', productData.categoryId);
+    }
+
+    setCurrentProduct(productData);
+    setModalVisible(true);
+  };
+
+  // 处理删除产品
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      setLoading(true);
+      const result = await deleteProduct(id);
+      if (result.code === 200 && result.msg) {
+        message.success(result.msg);
+        fetchProducts();
+      } else {
+        message.error(result.msg || '删除产品失败');
+      }
+    } catch (error) {
+      console.error('删除产品出错:', error);
+      message.error('删除产品失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 处理表单提交（新增或编辑）
+  const handleFormSubmit = async (values: any) => {
+    try {
+      setSubmitLoading(true);
+
+      // 处理价格，转为字符串
+      if (typeof values.price === 'number') {
+        values.price = values.price.toString();
+      }
+
+      let result;
+      if (isEdit) {
+        // 编辑模式
+        result = await updateProduct(currentProduct.id as string, values);
+      } else {
+        // 新增模式
+        result = await addProduct(values);
+      }
+      if (result.code === 200 && result.msg) {
+        message.success(isEdit ? '更新产品成功' : '添加产品成功');
+        setModalVisible(false);
+        fetchProducts();
+      } else {
+        message.error(result.msg || (isEdit ? '更新产品失败' : '添加产品失败'));
+      }
+    } catch (error) {
+      console.error(isEdit ? '更新产品出错:' : '添加产品出错:', error);
+      message.error(isEdit ? '更新产品失败' : '添加产品失败');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  // 关闭模态框
+  const handleCancel = () => {
+    setModalVisible(false);
+  };
+
+  // 自定义级联选择器显示
+  const displayRender = (labels: string[]) => {
+    return labels.join('-');
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -207,9 +308,12 @@ export default function ProductManager() {
       key: 'categoryId',
       width: 120,
       render: (categoryId: string) => {
+        // 处理空值情况
+        if (!categoryId) return '-';
         // 使用分类路径映射显示完整路径
-        return categoryPathMap[categoryId] || categoryId;
-      }
+        const displayName = categoryPathMap[categoryId];
+        return displayName || categoryId;
+      },
     },
     {
       title: '品牌',
@@ -229,9 +333,7 @@ export default function ProductManager() {
       key: 'spec',
       width: 120,
       ellipsis: true,
-      render: (text: string) => (
-        <Tooltip title={text}>{text}</Tooltip>
-      ),
+      render: (text: string) => <Tooltip title={text}>{text}</Tooltip>,
     },
     {
       title: '价格',
@@ -240,72 +342,87 @@ export default function ProductManager() {
       width: 100,
     },
     {
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+      width: 150,
+      render: (text: string) => {
+        if (!text) return '-';
+        const displayText =
+          text.length > 10 ? `${text.substring(0, 10)}...` : text;
+        return <Tooltip title={text}>{displayText}</Tooltip>;
+      },
+    },
+    {
       title: '操作',
       key: 'action',
       width: 150,
-      render: () => (
-        <Space size="small">
-          <Button type="link" size="small">
+      render: (_: any, record: ProductVo) => (
+        <Space size='small'>
+          <Button
+            type='link'
+            size='small'
+            icon={<EditOutlined />}
+            onClick={() => handleEditProduct(record)}
+          >
             编辑
           </Button>
-          <Button type="link" size="small" danger>
-            删除
-          </Button>
+          <Popconfirm
+            title='确定要删除这个产品吗?'
+            onConfirm={() => handleDeleteProduct(record.id)}
+            okText='确定'
+            cancelText='取消'
+          >
+            <Button type='link' size='small' danger icon={<DeleteOutlined />}>
+              删除
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
   ];
 
-  // 自定义级联选择器的显示格式
-  const displayRender = (labels: string[]) => {
-    return labels.join('-');
-  };
-
   return (
     <Card title={<Title level={4}>产品管理</Title>}>
       {/* 查询表单 */}
-      <Form
-        form={form}
-        layout="inline"
-        style={{ marginBottom: '20px' }}
-      >
-        <Form.Item name="productName" label="产品名称">
-          <Input placeholder="请输入产品名称" allowClear />
+      <Form form={form} layout='inline' style={{ marginBottom: '20px' }}>
+        <Form.Item name='productName' label='产品名称'>
+          <Input placeholder='请输入产品名称' allowClear />
         </Form.Item>
-        <Form.Item name="categoryId" label="产品分类">
+        <Form.Item name='categoryId' label='产品分类'>
           <Cascader
             options={categoryOptions}
-            placeholder="请选择产品分类"
+            placeholder='请选择产品分类'
             style={{ width: 250 }}
             changeOnSelect
-            expandTrigger="hover"
+            expandTrigger='hover'
             displayRender={displayRender}
             showSearch={{
               filter: (inputValue, path) => {
-                return path.some(option => 
-                  option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1
+                return path.some(
+                  (option) =>
+                    option.label
+                      .toLowerCase()
+                      .indexOf(inputValue.toLowerCase()) > -1
                 );
-              }
+              },
             }}
             allowClear
           />
         </Form.Item>
-        <Form.Item name="brand" label="品牌">
-          <Input placeholder="请输入品牌" allowClear />
+        <Form.Item name='brand' label='品牌'>
+          <Input placeholder='请输入品牌' allowClear />
         </Form.Item>
         <Form.Item>
           <Space>
-            <Button 
-              type="primary" 
-              icon={<SearchOutlined />} 
+            <Button
+              type='primary'
+              icon={<SearchOutlined />}
               onClick={handleSearch}
             >
               查询
             </Button>
-            <Button 
-              icon={<ReloadOutlined />} 
-              onClick={handleReset}
-            >
+            <Button icon={<ReloadOutlined />} onClick={handleReset}>
               重置
             </Button>
           </Space>
@@ -315,9 +432,10 @@ export default function ProductManager() {
       {/* 操作按钮 */}
       <div style={{ marginBottom: '16px' }}>
         <Space>
-          <Button 
-            type="primary" 
+          <Button
+            type='primary'
             icon={<PlusOutlined />}
+            onClick={handleAddProduct}
           >
             新增产品
           </Button>
@@ -326,11 +444,12 @@ export default function ProductManager() {
 
       {/* 产品表格 */}
       <Table
-        rowKey="id"
+        rowKey='id'
         columns={columns}
         dataSource={products}
         loading={loading}
         pagination={{
+          pageSizeOptions: ['5', '10', '20', '50', '100'],
           current: queryParams.page,
           pageSize: queryParams.pageSize,
           total: total,
@@ -341,6 +460,25 @@ export default function ProductManager() {
         onChange={handleTableChange}
         scroll={{ x: 'max-content' }}
       />
+
+      {/* 产品表单模态框 */}
+      <Modal
+        title={isEdit ? '编辑产品' : '添加产品'}
+        open={modalVisible}
+        onCancel={handleCancel}
+        footer={null}
+        width={800}
+        destroyOnClose
+      >
+        <ProductForm
+          initialValues={currentProduct}
+          onFinish={handleFormSubmit}
+          onCancel={handleCancel}
+          categoryOptions={categoryOptions}
+          loading={submitLoading}
+          isEdit={isEdit}
+        />
+      </Modal>
     </Card>
   );
 }

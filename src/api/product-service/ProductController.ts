@@ -55,3 +55,81 @@ export function pageProducts(
       });
   });
 }
+
+/**
+ * 检查产品编码是否存在
+ * @param productCode 产品编码
+ * @returns 是否存在
+ */
+export function checkProductCode(
+  productCode: string
+): Promise<Result<boolean>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/product/checkCode', {
+        params: { productCode },
+      })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 根据id删除商品
+ * @param id 商品id
+ * @returns 是否删除成功
+ */
+export function deleteProduct(id: string): Promise<Result<boolean>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .delete(`/product/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 新增商品
+ * @param product 商品信息
+ * @returns 是否新增成功
+ */
+export function addProduct(product: Product): Promise<Result<boolean>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/product', product)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+/**
+ * 更新商品
+ * @param product 商品信息
+ * @returns 是否更新成功
+ */
+export function updateProduct(
+  id: string,
+  product: Product
+): Promise<Result<boolean>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/product/${id}`, product)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
