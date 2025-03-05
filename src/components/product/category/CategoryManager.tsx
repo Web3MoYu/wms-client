@@ -707,7 +707,7 @@ export default function CategoryManager() {
 
     try {
       // 获取当前选中的父节点ID
-      const parentId = form.getFieldValue('parentId') || '';
+      const parentId = form.getFieldValue('parentId') || 'null';
       
       // 调用API检查编码是否存在，传递parentId和分类编码
       const result = await checkCategoryCode(parentId, value);
