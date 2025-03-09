@@ -133,3 +133,23 @@ export function updateProduct(
       });
   });
 }
+
+/**
+ * 根据商品名模糊查询商品列表
+ * @param productName 商品名称
+ * @returns 商品列表
+ */
+export function searchProducts(
+  productName: string
+): Promise<Result<Product[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/product/list/${productName}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
