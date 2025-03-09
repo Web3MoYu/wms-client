@@ -10,7 +10,7 @@ import {
   MinusSquareOutlined,
   PlusSquareOutlined
 } from '@ant-design/icons';
-import MenuModal from './MenuModal';
+import MenuDrawer from './MenuDrawer';
 import {
   getMenuList,
   updateMenu,
@@ -361,7 +361,7 @@ const MenuManagement: React.FC = () => {
         }}
       />
       
-      <MenuModal
+      <MenuDrawer
         visible={isModalVisible}
         onCancel={handleModalCancel}
         onOk={handleModalOk}
