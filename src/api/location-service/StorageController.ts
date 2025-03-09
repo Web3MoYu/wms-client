@@ -16,6 +16,7 @@ export interface Storage {
 export interface StorageVo extends Storage {
   areaName: string; // 区域名称
   shelfName: string; // 货架名称
+  productName: string; // 产品名称
 }
 
 /**
@@ -149,7 +150,7 @@ export function deleteStorage(id: string): Promise<Result<string>> {
  * @param storages 库位信息列表
  * @return 新增结果
  */
-export function addStorages(storages: Storage[]): Promise<Result<string>> {
+export function addBatchStorage(storages: Storage[]): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .post('/location/storage/batch', storages)

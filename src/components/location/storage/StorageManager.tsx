@@ -1,23 +1,62 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Card, Select, Button, Row, Col, Space, Form, Tag, Input } from 'antd';
-import { getAllAreas, Area } from '../../../api/location-service/AreaController';
-import { getShelfListByAreaId, Shelf } from '../../../api/location-service/ShelfController';
-import { pageStorages, StorageVo } from '../../../api/location-service/StorageController';
-import { searchProducts, Product } from '../../../api/product-service/ProductController';
-import { SearchOutlined, ReloadOutlined, ClearOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import {
+  Table,
+  Card,
+  Select,
+  Button,
+  Row,
+  Col,
+  Space,
+  Form,
+  Tag,
+  Input,
+  Popconfirm,
+  message,
+} from 'antd';
+import {
+  getAllAreas,
+  Area,
+} from '../../../api/location-service/AreaController';
+import {
+  getShelfListByAreaId,
+  Shelf,
+} from '../../../api/location-service/ShelfController';
+import {
+  pageStorages,
+  StorageVo,
+  Storage,
+  deleteStorage,
+} from '../../../api/location-service/StorageController';
+import {
+  searchProducts,
+  Product,
+} from '../../../api/product-service/ProductController';
+import {
+  SearchOutlined,
+  ClearOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import debounce from 'lodash/debounce';
+import StorageDrawer from './StorageDrawer';
 
 export default function StorageManager() {
   // 状态定义
   const [areas, setAreas] = useState<Area[]>([]);
-  const [shelves, setShelves] = useState<Shelf[]>([]); 
+  const [shelves, setShelves] = useState<Shelf[]>([]);
   const [storages, setStorages] = useState<StorageVo[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [total, setTotal] = useState<number>(0);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [drawerTitle, setDrawerTitle] = useState('');
+  const [editingStorage, setEditingStorage] = useState<Storage | null>(null);
 
   // 查询参数
   const [form] = Form.useForm();
+  // 抽屉表单
+  const [drawerForm] = Form.useForm();
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -46,7 +85,7 @@ export default function StorageManager() {
       setShelves([]);
       return;
     }
-    
+
     try {
       const res = await getShelfListByAreaId(areaId);
       if (res.code === 200) {
@@ -65,11 +104,11 @@ export default function StorageManager() {
 
   // 模糊搜索产品
   const handleProductSearch = debounce(async (productName: string) => {
-    if (!productName || productName.length < 2) {
+    if (!productName || productName.length < 1) {
       setProducts([]);
       return;
     }
-    
+
     try {
       const res = await searchProducts(productName);
       if (res.code === 200) {
@@ -91,10 +130,10 @@ export default function StorageManager() {
         values.areaId || '',
         values.shelfId || '',
         values.status === undefined ? 1 : values.status, // 默认查询空闲状态(1)
-        values.locationName || '',  // 使用表单中的locationName进行模糊查询
+        values.locationName || '', // 使用表单中的locationName进行模糊查询
         values.productId || ''
       );
-      
+
       if (res.code === 200) {
         setStorages(res.data.records);
         setTotal(res.data.total);
@@ -119,6 +158,59 @@ export default function StorageManager() {
     fetchStorages();
   }, [pagination.current, pagination.pageSize]);
 
+  // 处理新增库位
+  const handleAdd = () => {
+    setDrawerTitle('新增库位');
+    setEditingStorage(null);
+    // 清空表单
+    drawerForm.resetFields();
+    // 打开抽屉
+    setDrawerVisible(true);
+  };
+
+  // 处理编辑库位
+  const handleEdit = (record: Storage) => {
+    setDrawerTitle('编辑库位');
+    setEditingStorage(record);
+    // 设置表单值
+    drawerForm.setFieldsValue({
+      ...record,
+      status: record.status === 1, // 1-空闲，2-禁用
+    });
+    // 打开抽屉
+    setDrawerVisible(true);
+  };
+
+  // 处理删除库位
+  const handleDelete = async (id: string) => {
+    try {
+      setLoading(true);
+      const result = await deleteStorage(id);
+      if (result.code === 200) {
+        message.success(result.msg || '禁用库位成功');
+        fetchStorages(); // 刷新列表
+      } else {
+        message.error(result.msg || '禁用库位失败');
+      }
+    } catch (error) {
+      console.error('禁用库位失败:', error);
+      message.error('禁用库位失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 关闭抽屉
+  const handleCloseDrawer = () => {
+    setDrawerVisible(false);
+  };
+
+  // 抽屉操作成功
+  const handleDrawerSuccess = () => {
+    setDrawerVisible(false);
+    fetchStorages(); // 刷新数据
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -142,16 +234,22 @@ export default function StorageManager() {
       key: 'shelfName',
     },
     {
+      title: '产品',
+      dataIndex: 'productName',
+      key: 'productName',
+      render: (text: string) => text || '-',
+    },
+    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       render: (status: number) => {
         if (status === 0) {
-          return <Tag color="red">占用</Tag>;
+          return <Tag color='red'>占用</Tag>;
         } else if (status === 1) {
-          return <Tag color="green">空闲</Tag>;
+          return <Tag color='green'>空闲</Tag>;
         } else {
-          return <Tag color="gray">禁用</Tag>;
+          return <Tag color='gray'>禁用</Tag>;
         }
       },
     },
@@ -163,10 +261,25 @@ export default function StorageManager() {
     {
       title: '操作',
       key: 'action',
-      render: () => (
-        <Space size="middle">
-          <a>详情</a>
-          <a>编辑</a>
+      render: (_: any, record: StorageVo) => (
+        <Space size='middle'>
+          <Button
+            type='link'
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          >
+            编辑
+          </Button>
+          <Popconfirm
+            title='确定要禁用此库位吗？'
+            onConfirm={() => handleDelete(record.id)}
+            okText='确定'
+            cancelText='取消'
+          >
+            <Button type='link' danger icon={<DeleteOutlined />}>
+              禁用
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -174,30 +287,23 @@ export default function StorageManager() {
 
   return (
     <div>
-      <Card 
-        title="库位管理" 
-        style={{ marginBottom: 16 }}
-        extra={
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={fetchStorages}
-          >
-            刷新数据
-          </Button>
-        }
-      >
+      <Card title='库位管理' style={{ marginBottom: 16 }}>
         <Form
           form={form}
-          layout="horizontal"
+          layout='horizontal'
           initialValues={{ status: 1 }} // 默认选择空闲状态
           onFinish={fetchStorages}
         >
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="areaId" label="区域" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+              <Form.Item
+                name='areaId'
+                label='区域'
+                labelCol={{ span: 6 }}
+                wrapperCol={{ span: 18 }}
+              >
                 <Select
-                  placeholder="请选择区域"
+                  placeholder='请选择区域'
                   allowClear
                   onChange={handleAreaChange}
                 >
@@ -210,9 +316,14 @@ export default function StorageManager() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="shelfId" label="货架" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+              <Form.Item
+                name='shelfId'
+                label='货架'
+                labelCol={{ span: 6 }}
+                wrapperCol={{ span: 18 }}
+              >
                 <Select
-                  placeholder="请选择货架"
+                  placeholder='请选择货架'
                   allowClear
                   disabled={!form.getFieldValue('areaId')}
                 >
@@ -225,13 +336,23 @@ export default function StorageManager() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="locationName" label="库位名称" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
-                <Input placeholder="请输入库位名称" allowClear />
+              <Form.Item
+                name='locationName'
+                label='库位名称'
+                labelCol={{ span: 8 }}
+                wrapperCol={{ span: 16 }}
+              >
+                <Input placeholder='请输入库位名称' allowClear />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="status" label="状态" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-                <Select placeholder="请选择状态">
+              <Form.Item
+                name='status'
+                label='状态'
+                labelCol={{ span: 6 }}
+                wrapperCol={{ span: 18 }}
+              >
+                <Select placeholder='请选择状态'>
                   <Select.Option value={null}>全部</Select.Option>
                   <Select.Option value={1}>空闲</Select.Option>
                   <Select.Option value={0}>占用</Select.Option>
@@ -240,9 +361,14 @@ export default function StorageManager() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="productId" label="产品" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+              <Form.Item
+                name='productId'
+                label='产品'
+                labelCol={{ span: 6 }}
+                wrapperCol={{ span: 18 }}
+              >
                 <Select
-                  placeholder="请输入产品名称搜索"
+                  placeholder='请输入产品名称搜索'
                   allowClear
                   showSearch
                   filterOption={false}
@@ -256,39 +382,74 @@ export default function StorageManager() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12} md={8} lg={6} style={{ display: 'flex', alignItems: 'center' }}>
-              <Form.Item style={{ marginBottom: 0, width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
-                <Space>
-                  <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
-                    查询
-                  </Button>
-                  <Button 
-                    danger
-                    icon={<ClearOutlined />}
-                    onClick={() => {
-                      form.resetFields();
-                      setShelves([]);
-                    }}
-                  >
-                    重置
-                  </Button>
-                </Space>
-              </Form.Item>
+          </Row>
+
+          <Row>
+            <Col span={24} style={{ textAlign: 'right', marginTop: 16 }}>
+              <Button
+                type='primary'
+                htmlType='submit'
+                icon={<SearchOutlined />}
+                style={{ marginRight: 8, borderRadius: '4px' }}
+              >
+                查询
+              </Button>
+              <Button
+                icon={<ClearOutlined />}
+                onClick={() => {
+                  form.resetFields();
+                  setShelves([]);
+                }}
+                style={{ borderRadius: '4px' }}
+              >
+                重置
+              </Button>
             </Col>
           </Row>
         </Form>
       </Card>
 
       <Card>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginBottom: 16,
+          }}
+        >
+          <Space>
+            <Button
+              type='primary'
+              ghost
+              onClick={fetchStorages}
+              icon={<SearchOutlined />}
+              style={{ borderRadius: '4px' }}
+            >
+              刷新数据
+            </Button>
+          </Space>
+          <Space>
+            <Button
+              type='primary'
+              icon={<PlusOutlined />}
+              onClick={handleAdd}
+              style={{ borderRadius: '4px' }}
+            >
+              新增库位
+            </Button>
+          </Space>
+        </div>
+
         <Table
           columns={columns}
           dataSource={storages}
-          rowKey="id"
+          rowKey='id'
           loading={loading}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
             total: total,
+            pageSizeOptions: ['5', '10', '20', '50', '100'],
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条记录`,
@@ -296,6 +457,17 @@ export default function StorageManager() {
           onChange={handleTableChange}
         />
       </Card>
+
+      {/* 库位抽屉组件 */}
+      <StorageDrawer
+        visible={drawerVisible}
+        title={drawerTitle}
+        onClose={handleCloseDrawer}
+        onSuccess={handleDrawerSuccess}
+        areaList={areas}
+        editingStorage={editingStorage}
+        drawerForm={drawerForm}
+      />
     </div>
   );
 }
