@@ -1,6 +1,19 @@
 import axios from '../../utils/mxAxios';
 import { Page, Result } from '../Model';
+import { User } from '../sys-service/UserController';
 
+export interface AreaInspector {
+  id: string; // 关系id
+  areaId: string; // 区域ID
+  areaName: string; // 区域名称
+  inspectorId: string; // 质检员ID
+  inspectorName: string; // 质检员姓名
+  inspectorPhone: string; // 质检员联系电话
+  isPrimary: number; // 是否主要负责人：0-否，1-是
+  remark: string; // 备注
+  createTime: string; // 创建时间
+  updateTime: string; // 更新时间
+}
 export interface Area {
   id: string; // 区域ID
   areaName: string; // 区域名称
@@ -14,6 +27,15 @@ export interface Area {
 
 export interface AreaVo extends Area {
   areaManagerName: string; // 区域负责人名称
+  inspectors: AreaInspector[];
+}
+
+export interface AreaDto extends Area {
+  // 主要质检员
+  primaryUser: User;
+
+  // 次要质检员
+  secondaryUsers: User[];
 }
 
 /**
@@ -47,7 +69,7 @@ export function pageAreas(
 /**
  * 添加区域
  */
-export function addArea(area: Area): Promise<Result<string>> {
+export function addArea(area: AreaDto): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .post('/location/area', area)
@@ -63,7 +85,7 @@ export function addArea(area: Area): Promise<Result<string>> {
 /**
  * 更新区域
  */
-export function updateArea(id: string, area: Area): Promise<Result<string>> {
+export function updateArea(id: string, area: AreaDto): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .put(`/location/area/${id}`, area)

@@ -10,26 +10,28 @@ import {
   message,
   Tooltip,
   Typography,
-  Modal,
   Popconfirm,
+  Tag,
+  Drawer,
 } from 'antd';
 import {
   SearchOutlined,
   ReloadOutlined,
   PlusOutlined,
-  EditOutlined,
   DeleteOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import type { TablePaginationConfig } from 'antd/es/table';
 import {
   pageAreas,
   AreaVo,
-  Area,
+  AreaDto,
   addArea,
   updateArea,
   deleteArea,
+  AreaInspector,
 } from '../../../api/location-service/AreaController';
-import { getAdminList, User } from '../../../api/sys-service/UserController';
+import { getAdminList, User, getAllUsers } from '../../../api/sys-service/UserController';
 import AreaForm from './AreaForm';
 
 const { Title } = Typography;
@@ -58,17 +60,20 @@ export default function AreaManager() {
     pageSize: 10,
   });
   const [adminOptions, setAdminOptions] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [form] = Form.useForm();
 
-  // 表单模态框状态
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  // 抽屉和表单状态
+  const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
   const [isEdit, setIsEdit] = useState<boolean>(false);
-  const [currentArea, setCurrentArea] = useState<Partial<Area>>({});
+  const [isViewMode, setIsViewMode] = useState<boolean>(true); // 是否是查看模式
+  const [currentArea, setCurrentArea] = useState<Partial<AreaDto>>({});
 
   // 初始化
   useEffect(() => {
     fetchAreas();
     fetchAdmins();
+    fetchAllUsers();
   }, []);
 
   // 加载区域数据
@@ -112,6 +117,21 @@ export default function AreaManager() {
     }
   };
 
+  // 获取所有用户
+  const fetchAllUsers = async () => {
+    try {
+      const result = await getAllUsers();
+      if (result.code === 200 && result.data) {
+        setAllUsers(result.data);
+      } else {
+        message.error(result.msg || '获取用户列表失败');
+      }
+    } catch (error) {
+      console.error('获取用户列表出错:', error);
+      message.error('获取用户列表失败');
+    }
+  };
+
   // 处理查询表单提交
   const handleSearch = () => {
     const values = form.getFieldsValue();
@@ -151,20 +171,61 @@ export default function AreaManager() {
     fetchAreas(newParams);
   };
 
-  // 打开添加区域模态框
+  // 打开添加区域抽屉
   const handleAddArea = () => {
     setIsEdit(false);
+    setIsViewMode(false); // 新增直接进入编辑模式
     setCurrentArea({
       status: 1, // 默认启用
+      primaryUser: undefined,
+      secondaryUsers: [],
     });
-    setModalVisible(true);
+    setDrawerVisible(true);
   };
 
-  // 打开编辑区域模态框
-  const handleEditArea = (record: AreaVo) => {
+  // 打开查看区域抽屉
+  const handleViewArea = (record: AreaVo) => {
     setIsEdit(true);
-    setCurrentArea(record);
-    setModalVisible(true);
+    setIsViewMode(true); // 详情默认是查看模式
+    
+    // 创建符合 AreaDto 的对象
+    const areaData: Partial<AreaDto> = {
+      ...record,
+      // 如果有 inspectors 数据，处理主要负责人和次要负责人
+      primaryUser: undefined,
+      secondaryUsers: [],
+    };
+    
+    // 处理质检员数据
+    if (record.inspectors && record.inspectors.length > 0) {
+      // 寻找主要负责人
+      const primaryInspector = record.inspectors.find(i => i.isPrimary === 1);
+      const secondaryInspectors = record.inspectors.filter(i => i.isPrimary === 0);
+      
+      // 如果找到主要负责人，设置 primaryUser
+      if (primaryInspector) {
+        const primaryUser = allUsers.find(u => u.userId === primaryInspector.inspectorId);
+        if (primaryUser) {
+          areaData.primaryUser = primaryUser;
+        }
+      }
+      
+      // 设置次要负责人
+      if (secondaryInspectors.length > 0) {
+        areaData.secondaryUsers = secondaryInspectors.map(inspector => {
+          const user = allUsers.find(u => u.userId === inspector.inspectorId);
+          return user as User;
+        }).filter(Boolean);
+      }
+    }
+    
+    setCurrentArea(areaData);
+    setDrawerVisible(true);
+  };
+
+  // 切换到编辑模式
+  const handleEdit = () => {
+    setIsViewMode(false);
   };
 
   // 处理禁用区域
@@ -187,10 +248,10 @@ export default function AreaManager() {
   };
 
   // 处理表单提交（新增或编辑）
-  const handleFormSubmit = async (values: Area) => {
+  const handleFormSubmit = async (values: AreaDto) => {
     try {
       setSubmitLoading(true);
-
+      
       let result;
       if (isEdit) {
         // 编辑模式
@@ -199,10 +260,11 @@ export default function AreaManager() {
         // 新增模式
         result = await addArea(values);
       }
-
+      
       if (result.code === 200) {
+        // API成功返回，result.data可能是操作成功后的区域ID
         message.success(isEdit ? '更新区域成功' : '添加区域成功');
-        setModalVisible(false);
+        setDrawerVisible(false);
         fetchAreas();
       } else {
         message.error(result.msg || (isEdit ? '更新区域失败' : '添加区域失败'));
@@ -215,9 +277,9 @@ export default function AreaManager() {
     }
   };
 
-  // 关闭模态框
+  // 关闭抽屉
   const handleCancel = () => {
-    setModalVisible(false);
+    setDrawerVisible(false);
   };
 
   // 渲染状态
@@ -251,6 +313,27 @@ export default function AreaManager() {
       width: 120,
     },
     {
+      title: '质检员',
+      dataIndex: 'inspectors',
+      key: 'inspectors',
+      width: 200,
+      render: (inspectors: AreaInspector[]) => {
+        if (!inspectors || inspectors.length === 0) return '-';
+        return (
+          <Space size={[0, 4]} wrap>
+            {inspectors.map((inspector) => (
+              <Tag 
+                color={inspector.isPrimary === 1 ? 'red' : 'green'} 
+                key={inspector.id}
+              >
+                {inspector.inspectorName}
+              </Tag>
+            ))}
+          </Space>
+        );
+      },
+    },
+    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
@@ -272,31 +355,34 @@ export default function AreaManager() {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 180,
       render: (_: any, record: AreaVo) => (
         <Space size='small'>
-          <Button
-            type='link'
+          <Button 
+            type='link' 
             size='small'
-            icon={<EditOutlined />}
-            onClick={() => handleEditArea(record)}
+            icon={<EyeOutlined />}
+            onClick={() => handleViewArea(record)}
           >
-            编辑
+            详情
           </Button>
           <Popconfirm
-            title='确定禁用这个区域吗?'
+            title='确定要删除这个区域吗?'
             onConfirm={() => handleDeleteArea(record.id)}
             okText='确定'
             cancelText='取消'
           >
             <Button type='link' size='small' danger icon={<DeleteOutlined />}>
-              禁用
+              删除
             </Button>
           </Popconfirm>
         </Space>
       ),
     },
   ];
+
+  // 更新列定义
+  const updatedColumns = columns;
 
   return (
     <Card title={<Title level={4}>区域管理</Title>}>
@@ -351,7 +437,7 @@ export default function AreaManager() {
       {/* 区域表格 */}
       <Table
         rowKey='id'
-        columns={columns}
+        columns={updatedColumns}
         dataSource={areas}
         loading={loading}
         pagination={{
@@ -367,24 +453,36 @@ export default function AreaManager() {
         scroll={{ x: 'max-content' }}
       />
 
-      {/* 区域表单模态框 */}
-      <Modal
-        title={isEdit ? '编辑区域' : '添加区域'}
-        open={modalVisible}
-        onCancel={handleCancel}
-        footer={null}
+      {/* 区域表单抽屉 */}
+      <Drawer
+        title={
+          isEdit 
+            ? (isViewMode ? '区域详情' : '编辑区域') 
+            : '新增区域'
+        }
         width={700}
+        open={drawerVisible}
+        onClose={handleCancel}
         destroyOnClose
+        extra={
+          isEdit && isViewMode ? (
+            <Button type="primary" onClick={handleEdit}>
+              编辑
+            </Button>
+          ) : null
+        }
       >
         <AreaForm
           initialValues={currentArea}
           onFinish={handleFormSubmit}
           onCancel={handleCancel}
           adminOptions={adminOptions}
+          userOptions={allUsers}
           loading={submitLoading}
           isEdit={isEdit}
+          disabled={isViewMode} // 详情模式时禁用表单
         />
-      </Modal>
+      </Drawer>
     </Card>
   );
 }

@@ -175,3 +175,19 @@ export function getAdminList(): Promise<Result<User[]>> {
       });
   });
 }
+
+/**
+ * 获取所有用户信息
+ */
+export function getAllUsers(): Promise<Result<User[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/sys/user/listAll')
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
