@@ -156,7 +156,7 @@ export default function ShelfManager() {
     try {
       const res = await deleteShelf(id);
       if (res.code === 200) {
-        message.success('禁用货架成功');
+        message.success(res.msg || '禁用货架成功');
         // 如果当前页只有一条数据且不是第一页，则跳转到上一页
         if (shelfList.length === 1 && current > 1) {
           setCurrent(current - 1);
@@ -174,7 +174,8 @@ export default function ShelfManager() {
 
   // 校验货架编码
   const validateShelfCode = async (_: any, value: string) => {
-    if (!value) return Promise.reject(new Error('请输入货架编码'));
+    // 不再检查空值，因为Form.Item的required规则会处理
+    if (!value) return Promise.resolve();
     
     const areaId = drawerForm.getFieldValue('areaId');
     if (!areaId) return Promise.reject(new Error('请先选择区域'));
@@ -190,7 +191,8 @@ export default function ShelfManager() {
         if (res.data === false) {
           return Promise.resolve();
         } else {
-          return Promise.reject(new Error('货架编码已存在'));
+          message.error('货架编码已存在，请修改后重试！');
+          return Promise.reject(new Error('该区域下已存在相同的货架编码'));
         }
       } else {
         return Promise.reject(new Error(res.msg || '校验货架编码失败'));
@@ -203,7 +205,8 @@ export default function ShelfManager() {
 
   // 校验货架名称
   const validateShelfName = async (_: any, value: string) => {
-    if (!value) return Promise.reject(new Error('请输入货架名称'));
+    // 不再检查空值，因为Form.Item的required规则会处理
+    if (!value) return Promise.resolve();
     
     const areaId = drawerForm.getFieldValue('areaId');
     if (!areaId) return Promise.reject(new Error('请先选择区域'));
@@ -219,7 +222,8 @@ export default function ShelfManager() {
         if (res.data === false) {
           return Promise.resolve();
         } else {
-          return Promise.reject(new Error('货架名称已存在'));
+          message.error('货架名称已存在，请修改后重试！');
+          return Promise.reject(new Error('该区域下已存在相同的货架名称'));
         }
       } else {
         return Promise.reject(new Error(res.msg || '校验货架名称失败'));

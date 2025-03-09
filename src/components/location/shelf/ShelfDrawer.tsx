@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Drawer, Button, Space, Tabs, message } from 'antd';
 import { Area } from '../../../api/location-service/AreaController';
-import { Shelf, addShelf, updateShelf, addShelfBatch } from '../../../api/location-service/ShelfController';
+import {
+  Shelf,
+  addShelf,
+  updateShelf,
+  addShelfBatch,
+} from '../../../api/location-service/ShelfController';
 import ShelfForm from './ShelfForm';
 import ShelfBatchForm, { BatchFormRef } from './ShelfBatchForm';
 
@@ -60,7 +65,7 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
   const handleSubmitForm = async () => {
     try {
       const values = await drawerForm.validateFields();
-      
+
       // 转换状态值
       const shelfData: Shelf = {
         ...values,
@@ -72,7 +77,7 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
       delete (shelfData as any).updateTime;
 
       let res;
-      
+
       if (editingShelf?.id) {
         // 更新操作
         shelfData.id = editingShelf.id;
@@ -83,13 +88,31 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
       }
 
       if (res.code === 200) {
-        message.success(editingShelf ? '更新货架成功' : '新增货架成功');
+        message.success(
+          res.msg || (editingShelf ? '更新货架成功' : '新增货架成功')
+        );
         onSuccess();
       } else {
-        message.error(res.msg || (editingShelf ? '更新货架失败' : '新增货架失败'));
+        message.error(
+          res.msg || (editingShelf ? '更新货架失败' : '新增货架失败')
+        );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('提交表单出错:', error);
+      // 检查是否是表单验证错误
+      if (error.errorFields) {
+        // 获取第一个错误信息
+        const firstError = error.errorFields[0];
+        message.error(`表单验证失败: ${firstError.errors[0]}`);
+
+        // 滚动到第一个错误的字段
+        const fieldElement = document.getElementById(
+          `drawer_form_${firstError.name[0]}`
+        );
+        if (fieldElement) {
+          fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
     }
   };
 
@@ -97,10 +120,10 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
   const handleBatchSubmit = async (shelves: any[]) => {
     try {
       setBatchSubmitting(true);
-      
+
       const res = await addShelfBatch(shelves as Shelf[]);
       if (res.code === 200) {
-        message.success('批量添加货架成功');
+        message.success(res.msg || '批量添加货架成功');
         onSuccess();
       } else {
         message.error(res.msg || '批量添加货架失败');
@@ -118,7 +141,7 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
     <Drawer
       title={title}
       width={activeKey === '2' && isAddMode ? 900 : 520}
-      placement="right"
+      placement='right'
       onClose={handleClose}
       open={visible}
       footer={
@@ -127,10 +150,7 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
             <Button onClick={handleClose}>取消</Button>
             {/* 仅在单条添加模式下显示表单提交按钮 */}
             {(activeKey === '1' || !isAddMode) && (
-              <Button 
-                type="primary" 
-                onClick={handleSubmitForm}
-              >
+              <Button type='primary' onClick={handleSubmitForm}>
                 提交
               </Button>
             )}
@@ -145,7 +165,7 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
           onChange={setActiveKey}
           style={{ marginBottom: 20 }}
         >
-          <TabPane tab="单个添加" key="1">
+          <TabPane tab='单个添加' key='1'>
             <ShelfForm
               form={drawerForm}
               areaList={areaList}
@@ -154,7 +174,7 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
               validateShelfName={validateShelfName}
             />
           </TabPane>
-          <TabPane tab="批量添加" key="2">
+          <TabPane tab='批量添加' key='2'>
             <ShelfBatchForm
               ref={batchFormRef}
               areaList={areaList}
@@ -177,4 +197,4 @@ const ShelfDrawer: React.FC<DrawerProps> = ({
   );
 };
 
-export default ShelfDrawer; 
+export default ShelfDrawer;

@@ -229,7 +229,7 @@ export default function NoticeManager() {
         try {
           const res = await publish(id) as Result<string>;
           if (res.code === 200) {
-            message.success('发布成功');
+            message.success(res.msg || '发布成功');
             fetchNoticeList(); // 刷新列表
           } else {
             message.error(res.msg || '发布失败');
@@ -253,7 +253,7 @@ export default function NoticeManager() {
         try {
           const res = await abandon(id) as Result<string>;
           if (res.code === 200) {
-            message.success('废弃成功');
+            message.success(res.msg || '废弃成功');
             fetchNoticeList(); // 刷新列表
           } else {
             message.error(res.msg || '废弃失败');

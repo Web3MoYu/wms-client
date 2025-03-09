@@ -234,7 +234,7 @@ export default function AreaManager() {
       setLoading(true);
       const result = await deleteArea(id);
       if (result.code === 200) {
-        message.success('禁用成功');
+        message.success(result.msg || '禁用成功');
         fetchAreas();
       } else {
         message.error(result.msg || '禁用失败');
@@ -263,7 +263,7 @@ export default function AreaManager() {
       
       if (result.code === 200) {
         // API成功返回，result.data可能是操作成功后的区域ID
-        message.success(isEdit ? '更新区域成功' : '添加区域成功');
+        message.success(result.msg || (isEdit ? '更新区域成功' : '添加区域成功'));
         setDrawerVisible(false);
         fetchAreas();
       } else {

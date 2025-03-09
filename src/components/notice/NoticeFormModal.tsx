@@ -70,7 +70,7 @@ const NoticeFormModal: React.FC<NoticeFormModalProps> = ({
       setLoading(false);
       
       if (result.code === 200) {
-        message.success(`${mode === 'add' ? '添加' : '编辑'}公告成功`);
+        message.success(result.msg || `${mode === 'add' ? '添加' : '编辑'}公告成功`);
         onSuccess();
         onClose();
       } else {

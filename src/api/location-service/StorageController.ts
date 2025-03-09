@@ -60,3 +60,104 @@ export function pageStorages(
       });
   });
 }
+
+/**
+ * 检查库位信息是否存在
+ * @param locationCode 库位编码
+ * @param shelfId 货架ID
+ * @param areaId 区域ID
+ * @return 是否存在 false 不存在 true 存在
+ */
+export function checkStorageExists(
+  locationCode: string,
+  shelfId: string,
+  areaId: string
+): Promise<Result<boolean>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/location/storage/checkCode', {
+        params: { locationCode, shelfId, areaId },
+      })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 新增库位信息
+ * @param storage 库位信息
+ * @return 新增结果
+ */
+export function addStorage(storage: Storage): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/location/storage', storage)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 修改库位信息
+ * @param storage 库位信息
+ * @return 修改结果
+ */
+export function updateStorage(
+  id: string,
+  storage: Storage
+): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/location/storage/${id}`, storage)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 禁用库位信息
+ * @param id 库位ID
+ * @return 禁用结果
+ */
+export function deleteStorage(id: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .delete(`/location/storage/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 批量新增库位信息
+ * @param storages 库位信息列表
+ * @return 新增结果
+ */
+export function addStorages(storages: Storage[]): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/location/storage/batch', storages)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
