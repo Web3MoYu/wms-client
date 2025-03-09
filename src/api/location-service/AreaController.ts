@@ -143,3 +143,15 @@ export function checkAreaName(areaName: string): Promise<Result<boolean>> {
       .catch((err) => reject(err));
   });
 }
+
+/**
+ * 获取所有区域
+ */
+export function getAllAreas(): Promise<Result<Area[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/location/area/getAreas')
+      .then((res) => resolve(res.data))
+      .catch((err) => reject(err));
+  });
+}

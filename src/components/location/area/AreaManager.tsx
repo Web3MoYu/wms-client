@@ -229,7 +229,7 @@ export default function AreaManager() {
   };
 
   // 处理禁用区域
-  const handleDeleteArea = async (id: string) => {
+  const handleDisableArea = async (id: string) => {
     try {
       setLoading(true);
       const result = await deleteArea(id);
@@ -367,13 +367,20 @@ export default function AreaManager() {
             详情
           </Button>
           <Popconfirm
-            title='确定要删除这个区域吗?'
-            onConfirm={() => handleDeleteArea(record.id)}
+            title='确定要禁用这个区域吗?'
+            onConfirm={() => handleDisableArea(record.id)}
             okText='确定'
             cancelText='取消'
+            disabled={record.status === 0}
           >
-            <Button type='link' size='small' danger icon={<DeleteOutlined />}>
-              删除
+            <Button 
+              type='link' 
+              size='small' 
+              danger 
+              icon={<DeleteOutlined />}
+              disabled={record.status === 0}
+            >
+              禁用
             </Button>
           </Popconfirm>
         </Space>
