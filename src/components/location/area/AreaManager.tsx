@@ -460,7 +460,7 @@ export default function AreaManager() {
             ? (isViewMode ? '区域详情' : '编辑区域') 
             : '新增区域'
         }
-        width={700}
+        width={900}
         open={drawerVisible}
         onClose={handleCancel}
         destroyOnClose
