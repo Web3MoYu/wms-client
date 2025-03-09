@@ -413,7 +413,7 @@ export default function ProductManager() {
         <Form.Item name='brand' label='品牌'>
           <Input placeholder='请输入品牌' allowClear />
         </Form.Item>
-        <Form.Item>
+        <Form.Item style={{ marginLeft: 'auto' }}>
           <Space>
             <Button
               type='primary'
@@ -425,22 +425,16 @@ export default function ProductManager() {
             <Button icon={<ReloadOutlined />} onClick={handleReset}>
               重置
             </Button>
+            <Button
+              type='primary'
+              icon={<PlusOutlined />}
+              onClick={handleAddProduct}
+            >
+              新增产品
+            </Button>
           </Space>
         </Form.Item>
       </Form>
-
-      {/* 操作按钮 */}
-      <div style={{ marginBottom: '16px' }}>
-        <Space>
-          <Button
-            type='primary'
-            icon={<PlusOutlined />}
-            onClick={handleAddProduct}
-          >
-            新增产品
-          </Button>
-        </Space>
-      </div>
 
       {/* 产品表格 */}
       <Table
