@@ -271,7 +271,7 @@ const StorageDrawer: React.FC<DrawerProps> = ({
   return (
     <Drawer
       title={title}
-      width={activeKey === '2' && isAddMode ? 900 : 520}
+      width={activeKey === '2' && isAddMode ? 1100 : 520}
       placement="right"
       onClose={handleClose}
       open={visible}
