@@ -382,28 +382,28 @@ export default function StorageManager() {
                 </Select>
               </Form.Item>
             </Col>
-          </Row>
-
-          <Row>
-            <Col span={24} style={{ textAlign: 'right', marginTop: 16 }}>
-              <Button
-                type='primary'
-                htmlType='submit'
-                icon={<SearchOutlined />}
-                style={{ marginRight: 8, borderRadius: '4px' }}
-              >
-                查询
-              </Button>
-              <Button
-                icon={<ClearOutlined />}
-                onClick={() => {
-                  form.resetFields();
-                  setShelves([]);
-                }}
-                style={{ borderRadius: '4px' }}
-              >
-                重置
-              </Button>
+            <Col xs={0} sm={0} md={0} lg={12}></Col>
+            <Col xs={24} sm={12} md={8} lg={6} style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
+              <Form.Item style={{ marginBottom: 0 }}>
+                <Button
+                  type='primary'
+                  htmlType='submit'
+                  icon={<SearchOutlined />}
+                  style={{ marginRight: 8, borderRadius: '4px' }}
+                >
+                  查询
+                </Button>
+                <Button
+                  icon={<ClearOutlined />}
+                  onClick={() => {
+                    form.resetFields();
+                    setShelves([]);
+                  }}
+                  style={{ borderRadius: '4px' }}
+                >
+                  重置
+                </Button>
+              </Form.Item>
             </Col>
           </Row>
         </Form>
