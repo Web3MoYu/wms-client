@@ -383,7 +383,18 @@ export default function StorageManager() {
               </Form.Item>
             </Col>
             <Col xs={0} sm={0} md={0} lg={12}></Col>
-            <Col xs={24} sm={12} md={8} lg={6} style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
+            <Col
+              xs={24}
+              sm={12}
+              md={8}
+              lg={6}
+              style={{
+                textAlign: 'right',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'flex-end',
+              }}
+            >
               <Form.Item style={{ marginBottom: 0 }}>
                 <Button
                   type='primary'

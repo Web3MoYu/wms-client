@@ -162,3 +162,23 @@ export function addBatchStorage(storages: Storage[]): Promise<Result<string>> {
       });
   });
 }
+
+/**
+ * 根据货架ID获取所有库位
+ * @param shelfId 货架ID
+ * @return 库位列表
+ */
+export function getStoragesByShelfId(
+  shelfId: string
+): Promise<Result<Storage[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/location/storage/getStorageById/${shelfId}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

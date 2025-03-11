@@ -200,3 +200,20 @@ export function addShelfBatch(shelves: Shelf[]): Promise<Result<string>> {
       });
   });
 }
+
+/**
+ * 获取还存在空闲库位的货架
+ * @return 货架列表
+ */
+export function getFreeShelves(areaId: string): Promise<Result<Shelf[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/location/shelf/getFreeShelves/${areaId}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
