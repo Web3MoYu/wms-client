@@ -182,3 +182,27 @@ export function getStoragesByShelfId(
       });
   });
 }
+
+/**
+ * 根据ids获取库位信息
+ * @param ids 库位ids
+ * @return 库位信息列表
+ */
+export function getStoragesByIds(ids: string[]): Promise<Result<Storage[]>> {
+  return new Promise((resolve, reject) => {
+    // 将数组转换为逗号分隔的字符串
+    const idsString = ids.join(',');
+    axios
+      .get('/location/storage/getStoragesByIds', { 
+        params: { 
+          ids: idsString // 后端Spring会自动将逗号分隔的字符串转换为List<String>
+        } 
+      })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
