@@ -214,9 +214,12 @@ const MenuDrawer: React.FC<MenuDrawerProps> = ({
               <TreeSelect
                 treeData={menus}
                 placeholder='请选择上级菜单'
-                treeDefaultExpandAll
+                treeDefaultExpandAll={false}
+                defaultOpen={false}
                 allowClear
                 style={styles.treeSelect}
+                dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+                dropdownMatchSelectWidth={false}
                 fieldNames={{
                   label: 'title',
                   value: 'menuId',
