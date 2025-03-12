@@ -165,10 +165,10 @@ const Index = observer(() => {
           </Space>
 
           {/* 用户操作栏 */}
-          <Space size="large">
+          <Space size="large" align="center" style={{ height: '100%' }}>
             <MessageNotifier />
             <Dropdown menu={{ items: userMenuItems }} trigger={['hover']}>
-              <div style={{ cursor: 'pointer', padding: '0 16px' }}>
+              <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                 <Space>
                   <Avatar
                     src={user.user?.avatar}

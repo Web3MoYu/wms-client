@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Badge, Popover, List, Typography, notification } from 'antd';
+import { Badge, Popover, List, Typography, notification, Avatar } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
 import { getUnReadMsgCount } from '../../api/msg-service/MsgController';
 import { WSModel, Msg } from '../../api/msg-service/MsgController';
@@ -20,12 +20,20 @@ const MessageNotifier: React.FC = () => {
 
   // 样式定义
   const styles = {
-    bellIcon: {
-      fontSize: 20,
+    container: {
+      display: 'flex',
+      alignItems: 'center',
+      height: '100%',
+    },
+    clickableArea: {
       cursor: 'pointer',
-      padding: '8px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(0, 0, 0, 0.03)',
+      display: 'flex',
+      alignItems: 'center',
+      padding: '4px 0',
+      borderRadius: '4px',
+    },
+    bellAvatar: {
+      backgroundColor: 'transparent',
       color: 'rgba(0, 0, 0, 0.65)',
     },
     listItem: {
@@ -68,6 +76,12 @@ const MessageNotifier: React.FC = () => {
     },
     priorityNormal: {
       color: '#52c41a',
+    },
+    popoverTitle: {
+      fontWeight: 'bold',
+      fontSize: '16px',
+      padding: '12px 16px',
+      borderBottom: '1px solid #f0f0f0',
     },
   };
 
@@ -167,6 +181,11 @@ const MessageNotifier: React.FC = () => {
     };
   }, [userId]);
 
+  // 清除未读状态
+  const clearUnreadStatus = () => {
+    setHasUnread(false);
+  };
+
   // 检查是否有未读消息
   const checkUnreadMessages = async () => {
     try {
@@ -254,17 +273,33 @@ const MessageNotifier: React.FC = () => {
   );
 
   return (
-    <Popover
-      content={notificationContent}
-      title='消息通知'
-      placement='bottomRight'
-      trigger='click'
-      overlayStyle={{ width: 360 }}
-    >
-      <Badge dot={hasUnread} offset={[-3, 3]}>
-        <BellOutlined style={styles.bellIcon} />
-      </Badge>
-    </Popover>
+    <div style={styles.container}>
+      <Popover
+        content={notificationContent}
+        title={<div style={styles.popoverTitle}>消息通知</div>}
+        placement='bottomRight'
+        trigger='click'
+        overlayStyle={{ width: 360 }}
+        onOpenChange={(visible) => {
+          if (visible) {
+            clearUnreadStatus();
+          }
+        }}
+      >
+        <div 
+          className="notification-icon-wrapper"
+          style={{ padding: '0 8px', cursor: 'pointer' }}
+        >
+          <Badge dot={hasUnread} offset={[-4, 4]}>
+            <Avatar 
+              icon={<BellOutlined />} 
+              style={styles.bellAvatar} 
+              size="default"
+            />
+          </Badge>
+        </div>
+      </Popover>
+    </div>
   );
 };
 
