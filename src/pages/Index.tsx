@@ -24,6 +24,7 @@ import { logout as authLogout } from '../api/auth-service/AuthController';
 import { Link } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import userStore from '../store/userStore';
+import MessageNotifier from '../components/notice/MessageNotifier';
 const { Header, Sider, Content } = Layout;
 
 const Index = observer(() => {
@@ -164,7 +165,8 @@ const Index = observer(() => {
           </Space>
 
           {/* 用户操作栏 */}
-          <Space>
+          <Space size="large">
+            <MessageNotifier />
             <Dropdown menu={{ items: userMenuItems }} trigger={['hover']}>
               <div style={{ cursor: 'pointer', padding: '0 16px' }}>
                 <Space>

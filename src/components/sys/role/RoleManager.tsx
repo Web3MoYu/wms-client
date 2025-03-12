@@ -135,7 +135,6 @@ const RoleManager: React.FC = () => {
         setLoading(true);
         const resp: any = await pageSearch(page, pageSize, searchText);
         const data = resp.data;
-        console.log(data);
 
         setRoles(data.records);
         setPagination({ ...pagination, total: data.total });
