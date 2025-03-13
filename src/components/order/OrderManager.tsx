@@ -13,23 +13,34 @@ import {
   Col,
   Tag,
 } from 'antd';
-import {
-  SearchOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
 // 导入中文语言包
 import locale from 'antd/es/date-picker/locale/zh_CN';
-import { 
-  queryOrders, 
-  OrderVo, 
-  OrderQueryDto 
+import {
+  queryOrders,
+  OrderVo
 } from '../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../api/sys-service/UserController';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
+
+// 修改 OrderQueryDto 类型，使日期字段为字符串类型
+interface OrderQueryDtoWithStringDates {
+  page: number;
+  pageSize: number;
+  orderType: number;
+  orderNo: string;
+  inspectionStatus: number;
+  creatorId: string;
+  approverId: string;
+  inspectorId: string;
+  startTime: string;  // 改为字符串类型
+  endTime: string;    // 改为字符串类型
+  createTimeAsc: boolean;
+}
 
 export default function OrderManager() {
   // 状态定义
@@ -37,12 +48,12 @@ export default function OrderManager() {
   const [orders, setOrders] = useState<OrderVo[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [form] = Form.useForm();
-  
+
   // 用户搜索相关状态
   const [creatorOptions, setCreatorOptions] = useState<User[]>([]);
   const [approverOptions, setApproverOptions] = useState<User[]>([]);
   const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
-  
+
   // 分页配置
   const [pagination, setPagination] = useState({
     current: 1,
@@ -58,34 +69,39 @@ export default function OrderManager() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      
+
       // 获取表单数据
       const values = form.getFieldsValue();
-      
+
       // 处理日期范围
-      let startTime = null;
-      let endTime = null;
-      if (values.dateRange && values.dateRange.length === 2) {
-        startTime = values.dateRange[0].startOf('day').toDate();
-        endTime = values.dateRange[1].endOf('day').toDate();
-      }
+      let startTime: string = '1970-01-01 00:00:00'; // 默认起始时间
+      let endTime: string = moment().format('YYYY-MM-DD HH:mm:ss'); // 默认当前时间
       
-      const queryDto: OrderQueryDto = {
+      if (values.dateRange && values.dateRange.length === 2) {
+        // 直接格式化为字符串，格式为 yyyy-MM-dd HH:mm:ss
+        startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
+        endTime = values.dateRange[1].format('YYYY-MM-DD HH:mm:ss');
+      }
+
+      const queryDto: OrderQueryDtoWithStringDates = {
         page: pagination.current,
         pageSize: pagination.pageSize,
         orderType: values.orderType !== undefined ? values.orderType : null,
         orderNo: values.orderNo || '',
-        inspectionStatus: values.inspectionStatus !== undefined ? values.inspectionStatus : null,
+        inspectionStatus:
+          values.inspectionStatus !== undefined
+            ? values.inspectionStatus
+            : null,
         creatorId: values.creatorId || '',
         approverId: values.approverId || '',
         inspectorId: values.inspectorId || '',
-        startTime: startTime,
-        endTime: endTime,
+        startTime: startTime, // 直接使用字符串格式
+        endTime: endTime,     // 直接使用字符串格式
         createTimeAsc: false, // 默认降序，最新的在前面
       };
-      
-      const result = await queryOrders(queryDto);
-      
+
+      const result = await queryOrders(queryDto as any); // 类型断言为任意类型，以兼容原接口
+
       if (result.code === 200) {
         setOrders(result.data.records);
         setTotal(result.data.total);
@@ -114,7 +130,7 @@ export default function OrderManager() {
       setCreatorOptions([]);
       return;
     }
-    
+
     try {
       const res = await getUsersByName(name);
       if (res.code === 200) {
@@ -131,7 +147,7 @@ export default function OrderManager() {
       setApproverOptions([]);
       return;
     }
-    
+
     try {
       const res = await getUsersByName(name);
       if (res.code === 200) {
@@ -148,7 +164,7 @@ export default function OrderManager() {
       setInspectorOptions([]);
       return;
     }
-    
+
     try {
       const res = await getUsersByName(name);
       if (res.code === 200) {
@@ -182,17 +198,17 @@ export default function OrderManager() {
   const renderOrderStatus = (status: number) => {
     switch (status) {
       case 0:
-        return <Tag color="blue">待审核</Tag>;
+        return <Tag color='blue'>待审核</Tag>;
       case 1:
-        return <Tag color="green">已审核</Tag>;
+        return <Tag color='green'>已审核</Tag>;
       case 2:
-        return <Tag color="orange">部分完成</Tag>;
+        return <Tag color='orange'>部分完成</Tag>;
       case 3:
-        return <Tag color="green">已完成</Tag>;
+        return <Tag color='green'>已完成</Tag>;
       case -1:
-        return <Tag color="red">已取消</Tag>;
+        return <Tag color='red'>已取消</Tag>;
       default:
-        return <Tag color="default">未知状态</Tag>;
+        return <Tag color='default'>未知状态</Tag>;
     }
   };
 
@@ -200,19 +216,23 @@ export default function OrderManager() {
   const renderQualityStatus = (status: number) => {
     switch (status) {
       case 0:
-        return <Tag color="default">未质检</Tag>;
+        return <Tag color='default'>未质检</Tag>;
       case 1:
-        return <Tag color="green">质检通过</Tag>;
+        return <Tag color='green'>质检通过</Tag>;
       case 2:
-        return <Tag color="red">质检不通过</Tag>;
+        return <Tag color='red'>质检不通过</Tag>;
       default:
-        return <Tag color="default">未知状态</Tag>;
+        return <Tag color='default'>未知状态</Tag>;
     }
   };
 
   // 订单类型渲染
   const renderOrderType = (type: number) => {
-    return type === 1 ? <Tag color="blue">入库订单</Tag> : <Tag color="orange">出库订单</Tag>;
+    return type === 1 ? (
+      <Tag color='blue'>入库订单</Tag>
+    ) : (
+      <Tag color='orange'>出库订单</Tag>
+    );
   };
 
   // 表格列定义
@@ -274,13 +294,14 @@ export default function OrderManager() {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
-      render: (text: string) => text ? moment(text).format('YYYY-MM-DD HH:mm:ss') : '-',
+      render: (text: string) =>
+        text ? moment(text).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
       title: '操作',
       key: 'action',
       render: () => (
-        <Space size="middle">
+        <Space size='middle'>
           <a>查看详情</a>
         </Space>
       ),
@@ -288,30 +309,26 @@ export default function OrderManager() {
   ];
 
   return (
-    <div className="order-manager">
+    <div className='order-manager'>
       <Card>
-        <Form
-          form={form}
-          layout="horizontal"
-          onFinish={handleSearch}
-        >
+        <Form form={form} layout='horizontal' onFinish={handleSearch}>
           <Row gutter={16}>
             <Col span={6}>
-              <Form.Item name="orderNo" label="订单编号">
-                <Input placeholder="请输入订单编号" />
+              <Form.Item name='orderNo' label='订单编号'>
+                <Input placeholder='请输入订单编号' />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="orderType" label="订单类型">
-                <Select placeholder="请选择订单类型" allowClear>
+              <Form.Item name='orderType' label='订单类型'>
+                <Select placeholder='请选择订单类型' allowClear>
                   <Option value={1}>入库订单</Option>
                   <Option value={0}>出库订单</Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="inspectionStatus" label="质检状态">
-                <Select placeholder="请选择质检状态" allowClear>
+              <Form.Item name='inspectionStatus' label='质检状态'>
+                <Select placeholder='请选择质检状态' allowClear>
                   <Option value={0}>未质检</Option>
                   <Option value={1}>质检通过</Option>
                   <Option value={2}>质检不通过</Option>
@@ -319,26 +336,28 @@ export default function OrderManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="dateRange" label="创建时间">
-                <RangePicker 
-                  style={{ width: '100%' }} 
+              <Form.Item name='dateRange' label='创建时间'>
+                <RangePicker
+                  style={{ width: '100%' }}
                   locale={locale}
                   placeholder={['开始日期', '结束日期']}
+                  showTime={{ format: 'HH:mm:ss' }}
+                  format='YYYY-MM-DD HH:mm:ss'
                 />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={6}>
-              <Form.Item name="creatorId" label="创建人">
+              <Form.Item name='creatorId' label='创建人'>
                 <Select
                   showSearch
-                  placeholder="请输入创建人姓名"
+                  placeholder='请输入创建人姓名'
                   filterOption={false}
                   onSearch={handleCreatorSearch}
                   allowClear
                 >
-                  {creatorOptions.map(user => (
+                  {creatorOptions.map((user) => (
                     <Option key={user.userId} value={user.userId}>
                       {user.realName}
                     </Option>
@@ -347,15 +366,15 @@ export default function OrderManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="approverId" label="审批人">
+              <Form.Item name='approverId' label='审批人'>
                 <Select
                   showSearch
-                  placeholder="请输入审批人姓名"
+                  placeholder='请输入审批人姓名'
                   filterOption={false}
                   onSearch={handleApproverSearch}
                   allowClear
                 >
-                  {approverOptions.map(user => (
+                  {approverOptions.map((user) => (
                     <Option key={user.userId} value={user.userId}>
                       {user.realName}
                     </Option>
@@ -364,15 +383,15 @@ export default function OrderManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="inspectorId" label="质检员">
+              <Form.Item name='inspectorId' label='质检员'>
                 <Select
                   showSearch
-                  placeholder="请输入质检员姓名"
+                  placeholder='请输入质检员姓名'
                   filterOption={false}
                   onSearch={handleInspectorSearch}
                   allowClear
                 >
-                  {inspectorOptions.map(user => (
+                  {inspectorOptions.map((user) => (
                     <Option key={user.userId} value={user.userId}>
                       {user.realName}
                     </Option>
@@ -383,7 +402,11 @@ export default function OrderManager() {
             <Col span={6}>
               <div style={{ textAlign: 'right' }}>
                 <Space>
-                  <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
+                  <Button
+                    type='primary'
+                    htmlType='submit'
+                    icon={<SearchOutlined />}
+                  >
                     查询
                   </Button>
                   <Button icon={<ReloadOutlined />} onClick={handleReset}>
@@ -400,12 +423,13 @@ export default function OrderManager() {
         <Table
           columns={columns}
           dataSource={orders}
-          rowKey="id"
+          rowKey='id'
           loading={loading}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
             total: total,
+            pageSizeOptions: [5, 10, 20, 50, 100],
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条记录`,
