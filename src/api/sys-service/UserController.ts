@@ -191,3 +191,21 @@ export function getAllUsers(): Promise<Result<User[]>> {
       });
   });
 }
+
+/**
+ * 根据姓名模糊查询用户列表
+ * @param realName 姓名
+ * @returns Promise，包含用户列表
+ */
+export function getUsersByName(realName: string): Promise<Result<User[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/sys/user/getListByRealName`, { params: { realName } })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
