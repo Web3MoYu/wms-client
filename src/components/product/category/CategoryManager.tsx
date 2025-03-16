@@ -436,7 +436,6 @@ export default function CategoryManager() {
 
   // 处理添加子分类
   const handleAddSubCategory = () => {
-    console.log('添加子分类被点击，父节点:', currentNode);
     setOperationType('add');
     setParentNode(currentNode);
     setCurrentNode(null);
@@ -455,7 +454,6 @@ export default function CategoryManager() {
 
   // 处理编辑分类
   const handleEditCategory = () => {
-    console.log('编辑分类被点击:', currentNode);
     setOperationType('edit');
     setHoverActionVisible(false);
 
@@ -474,7 +472,6 @@ export default function CategoryManager() {
 
   // 处理删除分类
   const handleDeleteCategory = () => {
-    console.log('删除分类被点击:', currentNode);
     setOperationType('delete');
     setHoverActionVisible(false);
 
@@ -515,7 +512,6 @@ export default function CategoryManager() {
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
-      console.log('表单数据:', values);
 
       // 显示加载状态
       setLoading(true);
@@ -795,7 +791,6 @@ export default function CategoryManager() {
                 icon={<PlusOutlined />}
                 onClick={() => {
                   // 添加顶级分类
-                  console.log('添加顶级分类');
                   setOperationType('add');
                   setParentNode(null);
                   setCurrentNode(null);

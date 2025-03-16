@@ -129,7 +129,7 @@ export interface OrderOutItem {
 export interface OrderDto<O, OI> {
   order: O;
   orderItems: OI[];
-  productIds: Map<string, Product>;
+  products: Map<string, Product>;
 }
 
 /**

@@ -124,7 +124,6 @@ const MessageNotifier: React.FC = () => {
 
     // 连接打开时的处理
     newSocket.onopen = () => {
-      console.log('WebSocket连接已建立');
     };
 
     // 接收消息时的处理
@@ -133,7 +132,6 @@ const MessageNotifier: React.FC = () => {
       // 如果是简单字符串消息（如"connectok"）则不进行JSON解析
       if (typeof event.data === 'string' && 
           (event.data === 'connectok' || event.data === 'ping' || event.data === 'pong')) {
-        console.log('收到WebSocket连接确认或心跳消息:', event.data);
         return;
       }
       
@@ -143,7 +141,6 @@ const MessageNotifier: React.FC = () => {
         
         // 忽略心跳包
         if (data.type === 0) {
-          console.log('收到WebSocket心跳包');
           return;
         }
         
@@ -165,7 +162,6 @@ const MessageNotifier: React.FC = () => {
 
     // 连接关闭时的处理
     newSocket.onclose = () => {
-      console.log('WebSocket连接已关闭');
     };
 
     // 连接错误时的处理

@@ -251,7 +251,6 @@ export default function StockManager() {
         if (res.code === 200 && res.data) {
           // 更新详情数据
           setDetailStock(res.data);
-          console.log('详情数据已更新', res.data);
         } else {
           message.warning('获取最新库存数据失败，请重新打开详情查看');
         }

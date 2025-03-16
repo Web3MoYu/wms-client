@@ -165,11 +165,6 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
         const mergedStorages = Array.from(storageMap.values());
         
         // 记录库位信息
-        if (occupiedStorages.length > 0) {
-          console.log('已占用的库位:', occupiedStorages.map(s => `${s.id}:${s.locationName}`).join(', '));
-        } else {
-          console.log(`警告: 未找到已占用的库位，storageIds: ${storageIds.join(',')}`);
-        }
         
         // 将库位数据设置到表单中，更新Map中对应货架的库位信息
         setStoragesByShelf(prev => ({
@@ -343,23 +338,12 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
           // 等待所有加载完成
           await Promise.all(loadPromises);
           
-          console.log('该批次商品已占用的所有库位ID:', allOccupiedStorageIds.join(', '));
         }
       }
 
-      // 如果存在 locationVo，确保显示位置信息的名称而不是ID
-      if (existingStock.locationVo && existingStock.locationVo.length > 0) {
-        console.log('位置信息：', existingStock.locationVo);
-        
-        // 使用locationVo显示货架和库位的名称
-        existingStock.locationVo.forEach((location, index) => {
-          console.log(`位置${index+1}: ${location.shelfName}, 库位: ${location.storageNames.join(', ')}`);
-        });
-      }
     } else {
       // 清除原始库存，表示这是一个新的批次号
       setOriginalStock(null);
-      message.info(`您输入的是新批次号：${batchNumber}，将创建新的库存记录`);
 
       // 确保批次号值被正确设置
       form.setFieldsValue({ batchNumber });
@@ -726,7 +710,6 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                             const storage = storagesByShelf[shelfId]?.find(s => s.id === props.value);
                             const displayName = storage ? storage.locationName : props.value;
                             
-                            console.log(`渲染库位标签: 货架=${shelfId}, ID=${props.value}, 名称=${displayName}`);
                             
                             return (
                               <Tag
@@ -754,7 +737,6 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                               
                               // 确保选项显示的是库位名称
                               const displayName = storage.locationName || storage.id;
-                              console.log(`渲染库位选项: 货架=${shelfId}, ID=${storage.id}, 名称=${displayName}, 是否占用=${isOccupied}`);
                               
                               return (
                                 <Option

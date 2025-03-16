@@ -66,7 +66,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
       // 如果找到目标值
       if (option.value === targetValue) {
         // 找到匹配的路径，设置表单值
-        console.log('找到分类路径:', currentPath);
         form.setFieldsValue({ categoryId: currentPath });
         return currentPath;
       }
@@ -112,7 +111,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
     // 处理级联选择器的值，取最后一级
     const formData = { ...values };
     if (formData.categoryId && Array.isArray(formData.categoryId)) {
-      console.log('提交分类ID数组:', formData.categoryId);
       formData.categoryId = formData.categoryId[formData.categoryId.length - 1];
     } else if (!formData.categoryId) {
       // 如果分类为空，设置为空字符串

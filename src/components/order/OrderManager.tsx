@@ -16,16 +16,13 @@ import {
 import {
   SearchOutlined,
   ReloadOutlined,
-  PlusOutlined
+  PlusOutlined,
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
 // 导入中文语言包
 import locale from 'antd/es/date-picker/locale/zh_CN';
-import {
-  queryOrders,
-  OrderVo
-} from '../../api/order-service/OrderController';
+import { queryOrders, OrderVo } from '../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../api/sys-service/UserController';
 import OrderDrawer from './OrderDrawer';
 
@@ -42,8 +39,8 @@ interface OrderQueryDtoWithStringDates {
   creatorId: string;
   approverId: string;
   inspectorId: string;
-  startTime: string;  // 改为字符串类型
-  endTime: string;    // 改为字符串类型
+  startTime: string; // 改为字符串类型
+  endTime: string; // 改为字符串类型
   createTimeAsc: boolean;
 }
 
@@ -73,6 +70,10 @@ export default function OrderManager() {
     fetchOrders();
   }, [pagination.current, pagination.pageSize]);
 
+  // 监听orders状态变化，确保UI更新
+  useEffect(() => {
+  }, [orders]);
+
   // 查询订单数据
   const fetchOrders = async () => {
     try {
@@ -80,11 +81,10 @@ export default function OrderManager() {
 
       // 获取表单数据
       const values = form.getFieldsValue();
-
       // 处理日期范围
       let startTime: string = '1970-01-01 00:00:00'; // 默认起始时间
       let endTime: string = moment().format('YYYY-MM-DD HH:mm:ss'); // 默认当前时间
-      
+
       if (values.dateRange && values.dateRange.length === 2) {
         // 直接格式化为字符串，格式为 yyyy-MM-dd HH:mm:ss
         startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
@@ -104,7 +104,7 @@ export default function OrderManager() {
         approverId: values.approverId || '',
         inspectorId: values.inspectorId || '',
         startTime: startTime, // 直接使用字符串格式
-        endTime: endTime,     // 直接使用字符串格式
+        endTime: endTime, // 直接使用字符串格式
         createTimeAsc: false, // 默认降序，最新的在前面
       };
 
@@ -206,12 +206,14 @@ export default function OrderManager() {
   const handleAddOrder = () => {
     setDrawerVisible(true);
   };
-  
+
   // 关闭新增订单抽屉
   const handleCloseDrawer = () => {
     setDrawerVisible(false);
+    // 在抽屉关闭后，延迟500ms再次刷新表格数据
+    fetchOrders();
   };
-  
+
   // 新增订单成功后刷新列表
   const handleOrderSuccess = () => {
     fetchOrders();
@@ -444,9 +446,9 @@ export default function OrderManager() {
 
       <Card style={{ marginTop: 16 }}>
         <div style={{ marginBottom: 16 }}>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+          <Button
+            type='primary'
+            icon={<PlusOutlined />}
             onClick={handleAddOrder}
           >
             新增订单
@@ -469,13 +471,13 @@ export default function OrderManager() {
           onChange={handleTableChange}
         />
       </Card>
-      
+
       {/* 新增订单抽屉 */}
       <OrderDrawer
         visible={drawerVisible}
         onClose={handleCloseDrawer}
         onSuccess={handleOrderSuccess}
-        currentUserId="admin" // 这里应该传入当前登录用户的ID
+        currentUserId='admin' // 这里应该传入当前登录用户的ID
       />
     </div>
   );

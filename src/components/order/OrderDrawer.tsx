@@ -23,14 +23,12 @@ import {
   SaveOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
-import moment from 'moment';
 import debounce from 'lodash/debounce';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import { 
   insertOrderIn,
   OrderIn,
   OrderInItem,
-  OrderDto,
 } from '../../api/order-service/OrderController';
 import { 
   searchProducts, 
@@ -111,7 +109,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         amount: 0,
         isCustomProduct: false,
         batchNumber: '',
-        productionDate: moment(),
+        productionDate: null, // 改为null，让组件自己处理默认日期
         status: 0, // 待开始
         qualityStatus: 0, // 未质检
       }];
@@ -120,7 +118,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         orderItems: defaultOrderItems,
         creatorId: currentUserId,
         orderType: 1, // 采购入库
-        expectedTime: moment().add(7, 'days'),
+        expectedTime: null, // 改为null，让组件自己处理默认日期
         status: 0, // 待审核
         qualityStatus: 0, // 未质检
       });
@@ -129,7 +127,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         orderItems: defaultOrderItems,
         creatorId: currentUserId,
         orderType: 1, // 销售出库
-        expectedTime: moment().add(7, 'days'),
+        expectedTime: null,
         status: 0, // 待审核
         qualityStatus: 0, // 未质检
       });
@@ -311,6 +309,9 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         [index]: true
       }));
       
+      // 重新计算总金额
+      calculateTotals(formName);
+      
       // 清空批次号选项
       setBatchNumberOptions([]);
     }
@@ -385,9 +386,20 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     let totalQuantity = 0;
     
     orderItems.forEach((item: any) => {
-      totalAmount += Number(item.amount) || 0;
-      totalQuantity += Number(item.expectedQuantity) || 0;
+      // 确保每个商品的金额都是使用当前的数量和单价重新计算
+      const quantity = Number(item.expectedQuantity) || 0;
+      const price = Number(item.price) || 0;
+      const itemAmount = quantity * price;
+      
+      // 更新每个商品的金额
+      item.amount = itemAmount;
+      
+      totalAmount += itemAmount;
+      totalQuantity += quantity;
     });
+    
+    // 更新表单中的金额
+    form.setFieldsValue({ orderItems });
     
     return {
       totalAmount,
@@ -410,6 +422,22 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     try {
       setProductCodeValidating({ ...productCodeValidating, [index]: true });
       
+      // 先检查表单内部是否有重复的产品编码
+      const orderItems = orderInForm.getFieldValue('orderItems') || [];
+      const duplicateIndex = orderItems.findIndex((item: any, i: number) => 
+        i !== index && 
+        item.isCustomProduct && 
+        item.productCode === productCode
+      );
+      
+      if (duplicateIndex !== -1) {
+        setProductCodeValid({ ...productCodeValid, [index]: false });
+        setProductCodeError({ ...productCodeError, [index]: '表单中已存在相同产品编码，请更换' });
+        setProductCodeValidating({ ...productCodeValidating, [index]: false });
+        return;
+      }
+      
+      // 再检查系统中是否已存在该产品编码
       const res = await checkProductCode(productCode);
       
       if (res.code === 200) {
@@ -460,6 +488,17 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     }
   };
   
+  // 监听orderItems的变化，重新计算金额
+  useEffect(() => {
+    if (visible) {
+      const orderItems = orderInForm.getFieldValue('orderItems');
+      if (orderItems && orderItems.length > 0) {
+        // 重新计算所有商品的金额
+        calculateTotals('inbound');
+      }
+    }
+  }, [orderInForm, visible]);
+  
   // 提交表单
   const handleSubmit = async (formName: string) => {
     try {
@@ -479,6 +518,26 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         return;
       }
       
+      // 检查所有系统商品是否已选择产品
+      const hasMissingProduct = values.orderItems.some((item: any) => {
+        return !item.isCustomProduct && !item.productId;
+      });
+      
+      if (hasMissingProduct) {
+        message.error('存在未选择产品的系统商品，请选择产品后重试');
+        return;
+      }
+      
+      // 检查所有商品是否有批次号
+      const hasMissingBatchNumber = values.orderItems.some((item: any) => {
+        return !item.batchNumber;
+      });
+      
+      if (hasMissingBatchNumber) {
+        message.error('存在未设置批次号的商品，请完善后重试');
+        return;
+      }
+      
       setLoading(true);
       
       // 处理入库订单
@@ -494,44 +553,59 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
           creator: values.creatorId,
           approver: values.approverId || '',
           inspector: values.inspectorId || '',
-          expectedTime: values.expectedTime ? moment(values.expectedTime).format('YYYY-MM-DD HH:mm:ss') : null as any,
+          expectedTime: values.expectedTime ? values.expectedTime.format('YYYY-MM-DD HH:mm:ss') : null as any,
           actualTime: null as any, // 实际到达时间为空
           totalAmount,
           totalQuantity,
           status: 0, // 状态：0-待审核
           qualityStatus: 0, // 质检状态：0-未质检
           remark: values.remark || '',
-          createTime: moment().format('YYYY-MM-DD HH:mm:ss'),
-          updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+          createTime: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+          updateTime: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
         };
         
-        // 准备订单明细数据
-        const orderItems: OrderInItem[] = values.orderItems.map((item: any) => ({
-          id: '',
-          orderId: '',
-          productId: item.productId || '',
-          productName: item.productName || '',
-          productCode: item.productCode || '',
-          expectedQuantity: item.expectedQuantity || 0,
-          actualQuantity: 0, // 实际数量为0
-          price: item.price || 0,
-          amount: item.amount || 0,
-          areaId: '',
-          location: [],
-          batchNumber: item.batchNumber || '',
-          productionDate: item.productionDate ? moment(item.productionDate).format('YYYY-MM-DD') : null as any,
-          expiryDate: null as any, // 过期日期为空
-          status: 0, // 状态：0-待开始
-          qualityStatus: 0, // 质检状态：0-未质检
-          remark: item.remark || '',
-          createTime: moment().format('YYYY-MM-DD HH:mm:ss'),
-          updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
-        }));
+        // 准备订单明细数据，将系统商品的ID放入orderItems中
+        const orderItems: OrderInItem[] = values.orderItems.map((item: any, idx: number) => {
+          // 对于系统商品，仍然确保已选择了产品
+          if (!item.isCustomProduct && !item.productId) {
+            message.error(`第${idx + 1}个系统商品没有选择产品！`);
+            throw new Error('系统商品必须选择产品');
+          }
+          
+          return {
+            id: '',
+            orderId: '',
+            productId: !item.isCustomProduct ? item.productId : '', // 系统商品需要携带productId，自定义产品为空
+            productName: item.productName || '',
+            productCode: item.productCode || '',
+            expectedQuantity: item.expectedQuantity || 0,
+            actualQuantity: 0, // 实际数量为0
+            price: item.price || 0,
+            amount: item.amount || 0,
+            areaId: '',
+            location: [],
+            batchNumber: item.batchNumber || '',
+            productionDate: item.productionDate ? item.productionDate.format('YYYY-MM-DD') : null as any,
+            expiryDate: null as any, // 过期日期为空
+            status: 0, // 状态：0-待开始
+            qualityStatus: 0, // 质检状态：0-未质检
+            remark: item.remark || '',
+            createTime: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+            updateTime: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+          };
+        });
         
-        // 准备自定义产品数据，存入 productIds Map 集合
+        // 创建JavaScript原生Map对象来存储产品数据
         const productIds = new Map<string, Product>();
         
+        // 遍历所有产品，添加到Map中
         values.orderItems.forEach((item: any) => {
+          // 确保productCode存在
+          if (!item.productCode) {
+            throw new Error('产品编码不能为空');
+          }
+          
+          // 对于自定义产品，添加完整的产品信息
           if (item.isCustomProduct) {
             // 处理级联选择器的值，取最后一级
             let categoryId = '';
@@ -539,7 +613,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
               categoryId = item.categoryId[item.categoryId.length - 1];
             }
             
-            // 将自定义产品信息添加到 productIds Map 中
+            // 将自定义产品信息添加到 productIds Map 中，使用productCode作为key
             productIds.set(item.productCode, {
               id: '', // 新产品 ID 为空
               productName: item.productName,
@@ -553,23 +627,51 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
               maxStock: 999, // 最大库存
               imageUrl: '', // 图片URL
               description: item.remark || '',
-              createTime: moment().format('YYYY-MM-DD HH:mm:ss'),
-              updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+              createTime: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+              updateTime: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+            });
+          } 
+          // 对于系统产品，仅添加ID和编码
+          else if (item.productId) {
+            productIds.set(item.productCode, {
+              id: item.productId,
+              productCode: item.productCode,
+              productName: item.productName || '',
+              // 其他字段使用默认值或空值
+              brand: '',
+              model: '',
+              spec: '',
+              categoryId: '',
+              price: item.price || 0,
+              minStock: 0,
+              maxStock: 0,
+              imageUrl: '',
+              description: '',
+              createTime: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+              updateTime: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
             });
           }
         });
         
-        // 提交订单
-        const orderDto: OrderDto<OrderIn, OrderInItem> = {
+        // 转换Map为JSON对象进行传输（因为Map不能直接序列化）
+        const productIdsObject: Record<string, Product> = {};
+        productIds.forEach((value, key) => {
+          productIdsObject[key] = value;
+        });
+        
+        // 提交订单，包含转换后的Map数据
+        const orderDto = {
           order: orderIn,
           orderItems,
-          productIds: productIds,
+          products: productIdsObject
         };
         
-        const result = await insertOrderIn(orderDto);
+        
+        const result = await insertOrderIn(orderDto as any);
         
         if (result.code === 200) {
           message.success('入库订单创建成功');
+          // 先调用onSuccess刷新表格数据，再关闭抽屉
           onSuccess();
           onClose();
         } else {
@@ -590,6 +692,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   
   // 入库订单表单内容
   const renderInboundForm = () => {
+    // 每次渲染前重新计算总金额和总数量
     const { totalAmount, totalQuantity } = calculateTotals('inbound');
     
     return (
@@ -622,6 +725,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                 locale={locale}
                 showTime
                 format="YYYY-MM-DD HH:mm:ss"
+                defaultValue={null}
               />
             </Form.Item>
           </Col>
@@ -641,6 +745,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             <Form.Item
               name="approverId"
               label="审批人"
+              rules={[{ required: true, message: '请选择审批人' }]}
             >
               <Select
                 showSearch
@@ -661,6 +766,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             <Form.Item
               name="inspectorId"
               label="质检员"
+              rules={[{ required: true, message: '请选择质检员' }]}
             >
               <Select
                 showSearch
@@ -769,6 +875,8 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                         rules={[{ required: true, message: '请输入产品编码' }]}
                         validateStatus={productCodeError[index] ? 'error' : undefined}
                         help={productCodeError[index] || undefined}
+                        extra={orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct']) ? 
+                          "产品编码必须唯一，不能与系统中的产品编码或表单中其他自定义产品编码重复" : undefined}
                       >
                         <Input 
                           placeholder="请输入产品编码" 
@@ -938,11 +1046,12 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                         name={[name, 'productionDate']}
                         label="生产日期"
                         rules={[{ required: true, message: '请选择生产日期' }]}
-                        initialValue={moment()}
                       >
                         <DatePicker
                           style={{ width: '100%' }}
                           locale={locale}
+                          format="YYYY-MM-DD"
+                          defaultValue={null}
                         />
                       </Form.Item>
                     </Col>
@@ -965,11 +1074,11 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                     key: generateId(),
                     expectedQuantity: 1,
                     price: 0,
-                    amount: 0,
+                    amount: 0, // 初始金额会在添加后自动计算
                     isCustomProduct: false,
                     status: 0,
                     qualityStatus: 0,
-                    productionDate: moment(),
+                    productionDate: null, // 改为null，让组件自己处理默认日期
                   })}
                   block
                   icon={<PlusOutlined />}
