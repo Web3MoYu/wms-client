@@ -1,6 +1,7 @@
 import axios from '../../utils/mxAxios';
 import { User } from '../sys-service/UserController';
 import { Page, Result } from '../Model';
+import { Product } from '../product-service/ProductController';
 
 export interface OrderVo {
   id: string; // id
@@ -40,6 +41,97 @@ export interface OrderQueryDto {
   createTimeAsc: boolean; // 创建时间排序 true-升序 false-降序
 }
 
+export interface OrderIn {
+  id: string; // 入库订单id
+  orderNo: string; // 订单编号
+  type: number; // 类型：0-出库，1入库
+  orderType: number; // 订单类型：1-采购入库，2-自动入库
+  creator: string; // 创建人
+  approver: string; // 审核人
+  inspector: string; // 质检员
+  expectedTime: Date; // 预计到达时间
+  actualTime: Date; // 实际到达时间
+  totalAmount: number; // 总金额
+  totalQuantity: number; // 总数量
+  status: number; // 状态：0-待审核，1-已审核，2-部分完成，3-已完成，-1-已取消
+  qualityStatus: number; // 质检状态：质检状态：0-未质检，1-质检通过，2-质检不通过
+  remark: string; // 备注
+  createTime: string; // 创建时间
+  updateTime: string; // 更新时间
+}
+
+export interface OrderInItem {
+  id: string; // 明细id
+  orderId: string; // 入库订单ID
+  productId: string; // 产品ID
+  productName: string; // 产品名称
+  productCode: string; // 产品编码
+  expectedQuantity: number; // 预期数量
+  actualQuantity: number; // 实际数量
+  price: number; // 单价
+  amount: number; // 金额
+  areaId: string; // 区域ID
+  location: Location[]; // 具体位置
+  batchNumber: string; // 批次号
+  productionDate: Date; // 生产日期
+  expiryDate: Date; // 过期日期
+  status: number; // 状态：0-待开始，1-部分完成，2-已完成
+  qualityStatus: number; // 质检状态：0-未质检，1-质检通过，2-质检不通过
+  remark: string; // 备注
+  createTime: string; // 创建时间
+  updateTime: string; // 更新时间
+}
+
+export interface OrderOut {
+  id: string; // 出库订单id
+  orderNo: string; // 订单编号
+  type: number; // 类型：0-出库，1入库
+  orderType: number; // 订单类型：1-销售出库，2-调拨出库，3-其他出库
+  creator: string; // 创建人
+  approver: string; // 审核人
+  inspector: string; // 质检员
+  expectedTime: Date; // 预计到达时间
+  actualTime: Date; // 实际到达时间
+  totalAmount: number; // 总金额
+  totalQuantity: number; // 总数量
+  status: number; // 状态：0-待审核，1-已审核，2-部分完成，3-已完成，-1-已取消
+  qualityStatus: number; // 质检状态：质检状态：0-未质检，1-质检通过，2-质检不通过
+  deliveryAddress: string; // 配送地址
+  contactName: string; // 联系人
+  contactPhone: string; // 联系电话
+  remark: string; // 备注
+  createTime: string; // 创建时间
+  updateTime: string; // 更新时间
+}
+
+export interface OrderOutItem {
+  id: string; // 明细ID
+  orderId: string; // 出库订单ID
+  productId: string; // 产品ID
+  productName: string; // 产品名称
+  productCode: string; // 产品编码
+  expectedQuantity: number; // 预期数量
+  actualQuantity: number; // 实际数量
+  price: number; // 单价
+  amount: number; // 金额
+  areaId: string; // 区域ID
+  location: Location[]; // 具体位置
+  batchNumber: string; // 批次号
+  productionDate: Date; // 生产日期
+  expiryDate: Date; // 过期日期
+  status: number; // 状态：0-待开始，1-部分完成，2-已完成
+  qualityStatus: number; // 质检状态：0-未质检，1-质检通过，2-质检不通过
+  remark: string; // 备注
+  createTime: string; // 创建时间
+  updateTime: string; // 更新时间
+}
+
+export interface OrderDto<O, OI> {
+  order: O;
+  orderItems: OI[];
+  productIds: Map<string, Product>;
+}
+
 /**
  * 按照条件查询订单列表
  * @param queryDto 查询条件
@@ -51,6 +143,25 @@ export function queryOrders(
   return new Promise((resolve, reject) => {
     axios
       .post('/order/pageOrder', queryDto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 插入入库订单
+ * @param order 入库订单
+ */
+export function insertOrderIn(
+  order: OrderDto<OrderIn, OrderInItem>
+): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/order/addOrderIn', order)
       .then((res) => {
         resolve(res.data);
       })

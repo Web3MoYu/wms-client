@@ -1,0 +1,930 @@
+import { useState, useEffect } from 'react';
+import {
+  Drawer,
+  Form,
+  Input,
+  Button,
+  Select,
+  DatePicker,
+  InputNumber,
+  message,
+  Space,
+  Divider,
+  Typography,
+  Row,
+  Col,
+  Tabs,
+  Cascader,
+} from 'antd';
+import { 
+  PlusOutlined, 
+  MinusCircleOutlined, 
+  SaveOutlined,
+} from '@ant-design/icons';
+import moment from 'moment';
+import debounce from 'lodash/debounce';
+import locale from 'antd/es/date-picker/locale/zh_CN';
+import { 
+  insertOrderIn,
+  OrderIn,
+  OrderInItem,
+  OrderDto,
+} from '../../api/order-service/OrderController';
+import { 
+  searchProducts, 
+  Product, 
+  checkProductCode 
+} from '../../api/product-service/ProductController';
+import { getProductCatTree, ProductCatTree } from '../../api/product-service/ProductCatController';
+import { getBatchNumber } from '../../api/stock-service/StockController';
+import { getUsersByName, User } from '../../api/sys-service/UserController';
+
+const { Option } = Select;
+const { TextArea } = Input;
+const { Title, Text } = Typography;
+const { TabPane } = Tabs;
+
+// 抽屉属性接口
+interface OrderDrawerProps {
+  visible: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  currentUserId: string; // 当前用户ID
+}
+
+// 为表单项创建唯一ID
+const generateId = () => {
+  return Math.random().toString(36).substring(2, 9);
+};
+
+// 订单抽屉组件
+const OrderDrawer: React.FC<OrderDrawerProps> = ({
+  visible,
+  onClose,
+  onSuccess,
+  currentUserId,
+}) => {
+  // 状态定义
+  const [activeTab, setActiveTab] = useState<string>('inbound');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [orderInForm] = Form.useForm();
+  const [orderOutForm] = Form.useForm();
+  
+  // 用户搜索相关状态
+  const [approverOptions, setApproverOptions] = useState<User[]>([]);
+  const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
+  
+  // 产品搜索相关状态
+  const [productOptions, setProductOptions] = useState<Product[]>([]);
+  
+  // 批次号搜索相关状态
+  const [batchNumberOptions, setBatchNumberOptions] = useState<string[]>([]);
+  
+  // 新增自定义产品编码校验状态
+  const [productCodeValidating, setProductCodeValidating] = useState<Record<string, boolean>>({});
+  const [productCodeValid, setProductCodeValid] = useState<Record<string, boolean>>({});
+  const [productCodeError, setProductCodeError] = useState<Record<string, string>>({});
+  
+  // 添加分类树状态
+  const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
+  
+  // 清空表单
+  useEffect(() => {
+    if (visible) {
+      orderInForm.resetFields();
+      orderOutForm.resetFields();
+      
+      // 设置默认值
+      const defaultOrderItems = [{ 
+        key: generateId(),
+        productId: '',
+        productName: '',
+        productCode: '',
+        expectedQuantity: 1,
+        price: 0,
+        amount: 0,
+        isCustomProduct: false,
+        batchNumber: '',
+        productionDate: moment(),
+        status: 0, // 待开始
+        qualityStatus: 0, // 未质检
+      }];
+      
+      orderInForm.setFieldsValue({
+        orderItems: defaultOrderItems,
+        creatorId: currentUserId,
+        orderType: 1, // 采购入库
+        expectedTime: moment().add(7, 'days'),
+        status: 0, // 待审核
+        qualityStatus: 0, // 未质检
+      });
+      
+      orderOutForm.setFieldsValue({
+        orderItems: defaultOrderItems,
+        creatorId: currentUserId,
+        orderType: 1, // 销售出库
+        expectedTime: moment().add(7, 'days'),
+        status: 0, // 待审核
+        qualityStatus: 0, // 未质检
+      });
+    }
+  }, [visible, currentUserId, orderInForm, orderOutForm]);
+  
+  // 获取产品分类树
+  useEffect(() => {
+    if (visible) {
+      fetchCategoryTree();
+    }
+  }, [visible]);
+  
+  // 获取产品分类树
+  const fetchCategoryTree = async () => {
+    try {
+      const res = await getProductCatTree();
+      if (res.code === 200) {
+        // 将分类树转换为级联选择器需要的格式
+        const formatCategoryTree = (items: ProductCatTree[]): any[] => {
+          return items.map(item => ({
+            value: item.category.id,
+            label: item.category.categoryName,
+            children: item.children && item.children.length > 0 
+              ? formatCategoryTree(item.children) 
+              : undefined,
+            isLeaf: !item.children || item.children.length === 0,
+          }));
+        };
+        
+        const options = formatCategoryTree(res.data);
+        setCategoryOptions(options);
+      } else {
+        message.error(res.msg || '获取产品分类失败');
+      }
+    } catch (error) {
+      console.error('获取产品分类失败:', error);
+    }
+  };
+  
+  // 自定义级联选择器显示
+  const displayRender = (labels: string[]) => {
+    return labels.join('-');
+  };
+  
+  // 防抖搜索审批人
+  const handleApproverSearch = debounce(async (name: string) => {
+    if (!name || name.length < 1) {
+      setApproverOptions([]);
+      return;
+    }
+    
+    try {
+      const res = await getUsersByName(name);
+      if (res.code === 200) {
+        setApproverOptions(res.data);
+      }
+    } catch (error) {
+      console.error('搜索审批人失败:', error);
+    }
+  }, 500);
+  
+  // 防抖搜索质检员
+  const handleInspectorSearch = debounce(async (name: string) => {
+    if (!name || name.length < 1) {
+      setInspectorOptions([]);
+      return;
+    }
+    
+    try {
+      const res = await getUsersByName(name);
+      if (res.code === 200) {
+        setInspectorOptions(res.data);
+      }
+    } catch (error) {
+      console.error('搜索质检员失败:', error);
+    }
+  }, 500);
+  
+  // 防抖搜索产品
+  const handleProductSearch = debounce(async (productName: string) => {
+    if (!productName || productName.length < 1) {
+      setProductOptions([]);
+      return;
+    }
+    
+    try {
+      const res = await searchProducts(productName);
+      if (res.code === 200) {
+        setProductOptions(res.data);
+      }
+    } catch (error) {
+      console.error('搜索产品失败:', error);
+    }
+  }, 500);
+  
+  // 防抖搜索批次号
+  const handleBatchNumberSearch = debounce(async (batchNumber: string) => {
+    if (!batchNumber || batchNumber.length < 1) {
+      setBatchNumberOptions([]);
+      return;
+    }
+    
+    try {
+      const res = await getBatchNumber(batchNumber);
+      if (res.code === 200 && res.data) {
+        const batchList = Array.isArray(res.data)
+          ? res.data
+          : typeof res.data === 'string'
+          ? res.data.split(',')
+          : [String(res.data)];
+          
+        setBatchNumberOptions(batchList);
+      } else {
+        setBatchNumberOptions([batchNumber]);
+      }
+    } catch (error) {
+      console.error('搜索批次号失败:', error);
+      setBatchNumberOptions([batchNumber]);
+    }
+  }, 500);
+  
+  // 处理产品选择
+  const handleProductSelect = (productId: string, index: number, formName: string) => {
+    const form = formName === 'inbound' ? orderInForm : orderOutForm;
+    const selectedProduct = productOptions.find(p => p.id === productId);
+    
+    if (selectedProduct) {
+      // 更新产品信息
+      const orderItems = form.getFieldValue('orderItems');
+      orderItems[index] = {
+        ...orderItems[index],
+        productId: selectedProduct.id,
+        productName: selectedProduct.productName,
+        productCode: selectedProduct.productCode,
+        price: selectedProduct.price || 0,
+        isCustomProduct: false, // 标记为系统产品
+      };
+      
+      // 计算金额
+      orderItems[index].amount = (orderItems[index].expectedQuantity || 0) * (orderItems[index].price || 0);
+      
+      form.setFieldsValue({
+        orderItems,
+      });
+    }
+  };
+  
+  // 处理自定义产品切换
+  const handleCustomProductChange = (isCustom: boolean, index: number, formName: string) => {
+    const form = formName === 'inbound' ? orderInForm : orderOutForm;
+    const orderItems = form.getFieldValue('orderItems');
+    
+    if (isCustom) {
+      // 切换为自定义产品
+      orderItems[index] = {
+        ...orderItems[index],
+        productId: '', // 清空产品ID
+        isCustomProduct: true,
+      };
+    } else {
+      // 切换为系统产品
+      orderItems[index] = {
+        ...orderItems[index],
+        isCustomProduct: false,
+      };
+    }
+    
+    form.setFieldsValue({
+      orderItems,
+    });
+  };
+  
+  // 处理数量或价格变化
+  const handleQuantityOrPriceChange = (index: number, formName: string) => {
+    const form = formName === 'inbound' ? orderInForm : orderOutForm;
+    const orderItems = form.getFieldValue('orderItems');
+    
+    // 计算金额
+    const quantity = orderItems[index].expectedQuantity || 0;
+    const price = orderItems[index].price || 0;
+    orderItems[index].amount = quantity * price;
+    
+    form.setFieldsValue({
+      orderItems,
+    });
+  };
+  
+  // 计算总金额和总数量
+  const calculateTotals = (formName: string) => {
+    const form = formName === 'inbound' ? orderInForm : orderOutForm;
+    const orderItems = form.getFieldValue('orderItems') || [];
+    
+    let totalAmount = 0;
+    let totalQuantity = 0;
+    
+    orderItems.forEach((item: any) => {
+      totalAmount += Number(item.amount) || 0;
+      totalQuantity += Number(item.expectedQuantity) || 0;
+    });
+    
+    return {
+      totalAmount,
+      totalQuantity,
+    };
+  };
+  
+  // 处理自定义产品编码校验
+  const handleProductCodeCheck = debounce(async (productCode: string, index: number) => {
+    if (!productCode || productCode.length < 1) {
+      return;
+    }
+    
+    // 只有自定义产品才需要验证编码
+    const isCustomProduct = orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct']);
+    if (!isCustomProduct) {
+      return;
+    }
+    
+    try {
+      setProductCodeValidating({ ...productCodeValidating, [index]: true });
+      
+      const res = await checkProductCode(productCode);
+      
+      if (res.code === 200) {
+        // 如果返回 true，表示编码已存在
+        const exists = res.data;
+        
+        if (exists) {
+          setProductCodeValid({ ...productCodeValid, [index]: false });
+          setProductCodeError({ ...productCodeError, [index]: '产品编码已存在，请更换' });
+        } else {
+          setProductCodeValid({ ...productCodeValid, [index]: true });
+          setProductCodeError({ ...productCodeError, [index]: '' });
+        }
+      }
+    } catch (error) {
+      console.error('检查产品编码失败:', error);
+    } finally {
+      setProductCodeValidating({ ...productCodeValidating, [index]: false });
+    }
+  }, 500);
+  
+  // 提交表单
+  const handleSubmit = async (formName: string) => {
+    try {
+      const form = formName === 'inbound' ? orderInForm : orderOutForm;
+      const values = await form.validateFields();
+      
+      // 检查所有自定义产品的编码是否有效
+      const hasInvalidCode = values.orderItems.some((item: any, index: number) => {
+        if (item.isCustomProduct && !productCodeValid[index]) {
+          return true;
+        }
+        return false;
+      });
+      
+      if (hasInvalidCode) {
+        message.error('存在无效的产品编码，请修改后重试');
+        return;
+      }
+      
+      setLoading(true);
+      
+      // 处理入库订单
+      if (formName === 'inbound') {
+        // 准备订单数据
+        const { totalAmount, totalQuantity } = calculateTotals('inbound');
+        
+        const orderIn: OrderIn = {
+          id: '',
+          orderNo: '', // 后端生成
+          type: 1, // 入库订单
+          orderType: values.orderType, // 订单类型：1-采购入库，2-自动入库
+          creator: values.creatorId,
+          approver: values.approverId || '',
+          inspector: values.inspectorId || '',
+          expectedTime: values.expectedTime ? moment(values.expectedTime).format('YYYY-MM-DD HH:mm:ss') : null as any,
+          actualTime: null as any, // 实际到达时间为空
+          totalAmount,
+          totalQuantity,
+          status: 0, // 状态：0-待审核
+          qualityStatus: 0, // 质检状态：0-未质检
+          remark: values.remark || '',
+          createTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+          updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+        };
+        
+        // 准备订单明细数据
+        const orderItems: OrderInItem[] = values.orderItems.map((item: any) => ({
+          id: '',
+          orderId: '',
+          productId: item.productId || '',
+          productName: item.productName || '',
+          productCode: item.productCode || '',
+          expectedQuantity: item.expectedQuantity || 0,
+          actualQuantity: 0, // 实际数量为0
+          price: item.price || 0,
+          amount: item.amount || 0,
+          areaId: '',
+          location: [],
+          batchNumber: item.batchNumber || '',
+          productionDate: item.productionDate ? moment(item.productionDate).format('YYYY-MM-DD') : null as any,
+          expiryDate: null as any, // 过期日期为空
+          status: 0, // 状态：0-待开始
+          qualityStatus: 0, // 质检状态：0-未质检
+          remark: item.remark || '',
+          createTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+          updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }));
+        
+        // 准备自定义产品数据，存入 productIds Map 集合
+        const productIds = new Map<string, Product>();
+        
+        values.orderItems.forEach((item: any) => {
+          if (item.isCustomProduct) {
+            // 处理级联选择器的值，取最后一级
+            let categoryId = '';
+            if (item.categoryId && Array.isArray(item.categoryId)) {
+              categoryId = item.categoryId[item.categoryId.length - 1];
+            }
+            
+            // 将自定义产品信息添加到 productIds Map 中
+            productIds.set(item.productCode, {
+              id: '', // 新产品 ID 为空
+              productName: item.productName,
+              productCode: item.productCode,
+              brand: item.brand || '',
+              model: item.model || '',
+              spec: item.spec || '', // 规格
+              categoryId: categoryId, // 使用处理后的分类ID
+              price: item.price || 0,
+              minStock: 0, // 最小库存
+              maxStock: 999, // 最大库存
+              imageUrl: '', // 图片URL
+              description: item.remark || '',
+              createTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+              updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+            });
+          }
+        });
+        
+        // 提交订单
+        const orderDto: OrderDto<OrderIn, OrderInItem> = {
+          order: orderIn,
+          orderItems,
+          productIds: productIds,
+        };
+        
+        const result = await insertOrderIn(orderDto);
+        
+        if (result.code === 200) {
+          message.success('入库订单创建成功');
+          onSuccess();
+          onClose();
+        } else {
+          message.error(result.msg || '入库订单创建失败');
+        }
+      }
+      // 处理出库订单 - 需要补充出库订单的接口和实现
+      else {
+        message.info('出库订单功能尚未实现');
+      }
+    } catch (error) {
+      console.error('提交订单失败:', error);
+      message.error('提交订单失败，请检查表单数据');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 入库订单表单内容
+  const renderInboundForm = () => {
+    const { totalAmount, totalQuantity } = calculateTotals('inbound');
+    
+    return (
+      <Form
+        form={orderInForm}
+        layout="vertical"
+        requiredMark={true}
+      >
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="orderType"
+              label="订单类型"
+              rules={[{ required: true, message: '请选择订单类型' }]}
+            >
+              <Select placeholder="请选择订单类型">
+                <Option value={1}>采购入库</Option>
+                <Option value={2}>退货入库</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="expectedTime"
+              label="预计到达时间"
+              rules={[{ required: true, message: '请选择预计到达时间' }]}
+            >
+              <DatePicker
+                style={{ width: '100%' }}
+                locale={locale}
+                showTime
+                format="YYYY-MM-DD HH:mm:ss"
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item
+              name="creatorId"
+              label="创建人"
+              rules={[{ required: true, message: '请输入创建人' }]}
+            >
+              <Input disabled />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="approverId"
+              label="审批人"
+            >
+              <Select
+                showSearch
+                placeholder="请输入审批人姓名"
+                filterOption={false}
+                onSearch={handleApproverSearch}
+                allowClear
+              >
+                {approverOptions.map(user => (
+                  <Option key={user.userId} value={user.userId}>
+                    {user.realName}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="inspectorId"
+              label="质检员"
+            >
+              <Select
+                showSearch
+                placeholder="请输入质检员姓名"
+                filterOption={false}
+                onSearch={handleInspectorSearch}
+                allowClear
+              >
+                {inspectorOptions.map(user => (
+                  <Option key={user.userId} value={user.userId}>
+                    {user.realName}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+        
+        <Form.Item
+          name="remark"
+          label="备注"
+        >
+          <TextArea rows={2} placeholder="请输入备注信息" />
+        </Form.Item>
+        
+        <Divider orientation="left">订单明细</Divider>
+        
+        <Form.List name="orderItems">
+          {(fields, { add, remove }) => (
+            <>
+              {fields.map(({ key, name, ...restField }, index) => (
+                <div key={key} style={{ marginBottom: 16, border: '1px dashed #d9d9d9', padding: 16, borderRadius: 4 }}>
+                  <Row gutter={16} align="middle">
+                    <Col span={22}>
+                      <Title level={5}>商品 #{index + 1}</Title>
+                    </Col>
+                    <Col span={2} style={{ textAlign: 'right' }}>
+                      {fields.length > 1 && (
+                        <MinusCircleOutlined
+                          onClick={() => remove(name)}
+                          style={{ fontSize: 18, color: '#ff4d4f' }}
+                        />
+                      )}
+                    </Col>
+                  </Row>
+                  
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'isCustomProduct']}
+                        label="商品来源"
+                        initialValue={false}
+                      >
+                        <Select 
+                          onChange={(value) => handleCustomProductChange(value as boolean, index, 'inbound')}
+                        >
+                          <Option value={false}>系统产品</Option>
+                          <Option value={true}>自定义产品</Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    
+                    <Col span={12}>
+                      {!orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct']) ? (
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'productId']}
+                          label="产品"
+                          rules={[{ required: true, message: '请选择产品' }]}
+                        >
+                          <Select
+                            showSearch
+                            placeholder="请输入产品名称搜索"
+                            filterOption={false}
+                            onSearch={handleProductSearch}
+                            onChange={(value) => handleProductSelect(value as string, index, 'inbound')}
+                            allowClear
+                          >
+                            {productOptions.map(product => (
+                              <Option key={product.id} value={product.id}>
+                                {product.productName} ({product.productCode})
+                              </Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+                      ) : (
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'productName']}
+                          label="产品名称"
+                          rules={[{ required: true, message: '请输入产品名称' }]}
+                        >
+                          <Input placeholder="请输入产品名称" />
+                        </Form.Item>
+                      )}
+                    </Col>
+                  </Row>
+                  
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'productCode']}
+                        label="产品编码"
+                        rules={[{ required: true, message: '请输入产品编码' }]}
+                        validateStatus={productCodeError[index] ? 'error' : undefined}
+                        help={productCodeError[index] || undefined}
+                      >
+                        <Input 
+                          placeholder="请输入产品编码" 
+                          disabled={!orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct'])}
+                          onChange={(e) => {
+                            if (orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct'])) {
+                              handleProductCodeCheck(e.target.value, index);
+                            }
+                          }}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'expectedQuantity']}
+                        label="预期数量"
+                        rules={[{ required: true, message: '请输入预期数量' }]}
+                        initialValue={1}
+                      >
+                        <InputNumber
+                          min={1}
+                          style={{ width: '100%' }}
+                          placeholder="请输入预期数量"
+                          onChange={() => handleQuantityOrPriceChange(index, 'inbound')}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'price']}
+                        label="单价"
+                        rules={[{ required: true, message: '请输入单价' }]}
+                        initialValue={0}
+                      >
+                        <InputNumber
+                          min={0}
+                          step={0.01}
+                          style={{ width: '100%' }}
+                          placeholder="请输入单价"
+                          onChange={() => handleQuantityOrPriceChange(index, 'inbound')}
+                          disabled={!orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct']) && 
+                                  !!orderInForm.getFieldValue(['orderItems', index, 'productId'])}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  
+                  {/* 自定义产品额外字段 */}
+                  {orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct']) && (
+                    <Row gutter={16}>
+                      <Col span={6}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'brand']}
+                          label="品牌"
+                          rules={[{ required: true, message: '请输入品牌' }]}
+                        >
+                          <Input placeholder="请输入品牌" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'model']}
+                          label="型号"
+                          rules={[{ required: true, message: '请输入型号' }]}
+                        >
+                          <Input placeholder="请输入型号" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'spec']}
+                          label="规格"
+                          rules={[{ required: true, message: '请输入规格' }]}
+                        >
+                          <Input placeholder="请输入规格" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'categoryId']}
+                          label="分类"
+                          rules={[{ required: true, message: '请选择分类' }]}
+                        >
+                          <Cascader
+                            options={categoryOptions}
+                            placeholder="请选择产品分类"
+                            changeOnSelect
+                            expandTrigger="hover"
+                            displayRender={displayRender}
+                            showSearch={{
+                              filter: (inputValue, path) => {
+                                return path.some(option => 
+                                  option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1
+                                );
+                              }
+                            }}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  )}
+                  
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'amount']}
+                        label="金额"
+                      >
+                        <InputNumber
+                          disabled
+                          style={{ width: '100%' }}
+                          formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'batchNumber']}
+                        label="批次号"
+                        rules={[{ required: true, message: '请输入批次号' }]}
+                      >
+                        <Select
+                          showSearch
+                          placeholder="请输入批次号"
+                          filterOption={false}
+                          onSearch={handleBatchNumberSearch}
+                          allowClear
+                        >
+                          {batchNumberOptions.map(batchNumber => (
+                            <Option key={batchNumber} value={batchNumber}>
+                              {batchNumber}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'productionDate']}
+                        label="生产日期"
+                        rules={[{ required: true, message: '请选择生产日期' }]}
+                        initialValue={moment()}
+                      >
+                        <DatePicker
+                          style={{ width: '100%' }}
+                          locale={locale}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  
+                  <Form.Item
+                    {...restField}
+                    name={[name, 'remark']}
+                    label="备注"
+                  >
+                    <Input placeholder="请输入备注" />
+                  </Form.Item>
+                </div>
+              ))}
+              
+              <Form.Item>
+                <Button
+                  type="dashed"
+                  onClick={() => add({ 
+                    key: generateId(),
+                    expectedQuantity: 1,
+                    price: 0,
+                    amount: 0,
+                    isCustomProduct: false,
+                    status: 0,
+                    qualityStatus: 0,
+                    productionDate: moment(),
+                  })}
+                  block
+                  icon={<PlusOutlined />}
+                >
+                  添加商品
+                </Button>
+              </Form.Item>
+            </>
+          )}
+        </Form.List>
+        
+        <Divider />
+        
+        <Row gutter={16}>
+          <Col span={12}>
+            <Text strong>总数量：{totalQuantity}</Text>
+          </Col>
+          <Col span={12} style={{ textAlign: 'right' }}>
+            <Text strong>总金额：¥ {totalAmount.toFixed(2)}</Text>
+          </Col>
+        </Row>
+      </Form>
+    );
+  };
+  
+  // 出库订单表单内容
+  const renderOutboundForm = () => {
+    return (
+      <div>
+        <Text>出库订单表单 - 待实现</Text>
+      </div>
+    );
+  };
+  
+  return (
+    <Drawer
+      title="新增订单"
+      width={720}
+      onClose={onClose}
+      visible={visible}
+      bodyStyle={{ paddingBottom: 80 }}
+      footer={
+        <div style={{ textAlign: 'right' }}>
+          <Space>
+            <Button onClick={onClose}>取消</Button>
+            <Button 
+              type="primary" 
+              onClick={() => handleSubmit(activeTab)}
+              loading={loading}
+              icon={<SaveOutlined />}
+            >
+              提交
+            </Button>
+          </Space>
+        </div>
+      }
+    >
+      <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)}>
+        <TabPane tab="入库订单" key="inbound">
+          {renderInboundForm()}
+        </TabPane>
+        <TabPane tab="出库订单" key="outbound">
+          {renderOutboundForm()}
+        </TabPane>
+      </Tabs>
+    </Drawer>
+  );
+};
+
+export default OrderDrawer; 

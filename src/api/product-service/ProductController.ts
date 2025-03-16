@@ -153,3 +153,19 @@ export function searchProducts(
       });
   });
 }
+
+/**
+ * 生成一个批次号
+ */
+export function generateBatchNumber(): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/product/batchNumber')
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

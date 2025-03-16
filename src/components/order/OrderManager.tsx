@@ -13,7 +13,11 @@ import {
   Col,
   Tag,
 } from 'antd';
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  SearchOutlined,
+  ReloadOutlined,
+  PlusOutlined
+} from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
 // 导入中文语言包
@@ -23,6 +27,7 @@ import {
   OrderVo
 } from '../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../api/sys-service/UserController';
+import OrderDrawer from './OrderDrawer';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -53,6 +58,9 @@ export default function OrderManager() {
   const [creatorOptions, setCreatorOptions] = useState<User[]>([]);
   const [approverOptions, setApproverOptions] = useState<User[]>([]);
   const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
+
+  // 新增订单抽屉状态
+  const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
 
   // 分页配置
   const [pagination, setPagination] = useState({
@@ -191,6 +199,21 @@ export default function OrderManager() {
       current: 1,
       pageSize: 10,
     });
+    fetchOrders();
+  };
+
+  // 打开新增订单抽屉
+  const handleAddOrder = () => {
+    setDrawerVisible(true);
+  };
+  
+  // 关闭新增订单抽屉
+  const handleCloseDrawer = () => {
+    setDrawerVisible(false);
+  };
+  
+  // 新增订单成功后刷新列表
+  const handleOrderSuccess = () => {
     fetchOrders();
   };
 
@@ -420,6 +443,15 @@ export default function OrderManager() {
       </Card>
 
       <Card style={{ marginTop: 16 }}>
+        <div style={{ marginBottom: 16 }}>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />} 
+            onClick={handleAddOrder}
+          >
+            新增订单
+          </Button>
+        </div>
         <Table
           columns={columns}
           dataSource={orders}
@@ -437,6 +469,14 @@ export default function OrderManager() {
           onChange={handleTableChange}
         />
       </Card>
+      
+      {/* 新增订单抽屉 */}
+      <OrderDrawer
+        visible={drawerVisible}
+        onClose={handleCloseDrawer}
+        onSuccess={handleOrderSuccess}
+        currentUserId="admin" // 这里应该传入当前登录用户的ID
+      />
     </div>
   );
 }
