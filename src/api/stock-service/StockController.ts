@@ -92,10 +92,10 @@ export function updateStock(stock: Stock): Promise<Result<string>> {
  * 查询批次号
  * @param batchNumber 批次号
  */
-export function getBatchNumber(batchNumber: string): Promise<Result<string>> {
+export function getBatchNumber(code: string, batchNumber: string): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
-      .get(`/stock/getBatchNumber/${batchNumber}`)
+      .get(`/stock/getBatchNumber/${code}/${batchNumber}`)
       .then((res) => resolve(res.data))
       .catch((err) => reject(err));
   });

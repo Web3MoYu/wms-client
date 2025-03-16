@@ -50,12 +50,15 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   const [storagesByShelf, setStoragesByShelf] = useState<{[shelfId: string]: any[]}>({});
   const [originalStock, setOriginalStock] = useState<any>(null);
   const [additionalQuantity, setAdditionalQuantity] = useState<number>(0);
+  const [hasSelectedProduct, setHasSelectedProduct] = useState<boolean>(false);
 
   // 初始化表单
   useEffect(() => {
     if (visible) {
       form.resetFields();
       setOriginalStock(null);
+      setHasSelectedProduct(false);
+      setBatchNumbers([]);
       fetchAreas();
     }
   }, [visible, form]);
@@ -203,11 +206,26 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       return;
     }
 
+    // 检查是否已选择产品
+    if (!hasSelectedProduct) {
+      message.warning('请先选择产品');
+      setBatchNumbers([batchNumber]);
+      return;
+    }
+
+    const productCode = form.getFieldValue('productCode');
+    
+    if (!productCode) {
+      message.warning('产品编码获取失败，请重新选择产品');
+      setBatchNumbers([batchNumber]);
+      return;
+    }
+
     try {
-      // 这里使用查询批次号的API
+      // 使用产品编码和批次号调用API
       const res = await import(
         '../../../api/stock-service/StockController'
-      ).then((module) => module.getBatchNumber(batchNumber));
+      ).then((module) => module.getBatchNumber(productCode, batchNumber));
 
       if (res.code === 200 && res.data) {
         const batchList = Array.isArray(res.data)
@@ -237,24 +255,39 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   const handleProductChange = (productId: string) => {
     // 清空批次号
     form.setFieldsValue({ batchNumber: undefined });
+    setBatchNumbers([]);
 
     // 获取选中的产品信息
     const product = products.find((p) => p.id === productId);
     if (product) {
       form.setFieldsValue({ productCode: product.productCode });
+      setHasSelectedProduct(true);
     } else {
       form.setFieldsValue({ productCode: '' });
+      setHasSelectedProduct(false);
     }
   };
 
   // 批次号变更
   const handleBatchNumberChange = async (batchNumber: string) => {
-    if (!batchNumber || !form.getFieldValue('productId')) {
+    if (!batchNumber) {
+      return;
+    }
+
+    // 检查是否已选择产品
+    if (!hasSelectedProduct) {
+      message.warning('请先选择产品');
+      return;
+    }
+
+    const productId = form.getFieldValue('productId');
+    
+    if (!productId) {
+      message.warning('产品ID获取失败，请重新选择产品');
       return;
     }
 
     // 查询该批次是否已存在库存
-    const productId = form.getFieldValue('productId');
     const { data: existingStock } = await getStockByProductIdAndBatchNumber(
       productId,
       batchNumber
@@ -332,6 +365,9 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       form.setFieldsValue({ batchNumber });
     }
   };
+
+  // 为批次号onChange添加防抖处理
+  const debouncedHandleBatchNumberChange = debounce(handleBatchNumberChange, 500);
 
   // 处理新增数量变更
   const handleAdditionalQuantityChange = (value: number | null) => {
@@ -498,7 +534,7 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
               name='batchNumber'
               label='批次号'
               rules={[{ required: true, message: '请输入或选择批次号' }]}
-              extra='批次号只能选择或输入一个，不存在的批次号将作为新批次号使用'
+              extra='请先选择产品后再选择或输入批次号，不存在的批次号将作为新批次号使用'
             >
               <AutoComplete
                 placeholder='请输入批次号'
@@ -506,13 +542,14 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                 onSearch={handleBatchNumberSearch}
                 onChange={(value) => {
                   if (value) {
-                    handleBatchNumberChange(value);
+                    debouncedHandleBatchNumberChange(value);
                   }
                 }}
                 allowClear
                 backfill
                 autoFocus={false}
                 style={{ width: '100%' }}
+                disabled={!hasSelectedProduct}
               />
             </Form.Item>
           </Col>
