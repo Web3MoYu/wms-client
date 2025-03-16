@@ -24,7 +24,7 @@ import { logout as authLogout } from '../api/auth-service/AuthController';
 import { Link } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import userStore from '../store/userStore';
-import MessageNotifier from '../components/notice/MessageNotifier';
+import MessageNotifier from '../components/msg/MessageNotifier';
 const { Header, Sider, Content } = Layout;
 
 const Index = observer(() => {
