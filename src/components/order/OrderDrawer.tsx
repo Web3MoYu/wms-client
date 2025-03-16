@@ -15,11 +15,13 @@ import {
   Col,
   Tabs,
   Cascader,
+  AutoComplete,
 } from 'antd';
 import { 
   PlusOutlined, 
   MinusCircleOutlined, 
   SaveOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import moment from 'moment';
 import debounce from 'lodash/debounce';
@@ -33,7 +35,8 @@ import {
 import { 
   searchProducts, 
   Product, 
-  checkProductCode 
+  checkProductCode,
+  generateBatchNumber
 } from '../../api/product-service/ProductController';
 import { getProductCatTree, ProductCatTree } from '../../api/product-service/ProductCatController';
 import { getBatchNumber } from '../../api/stock-service/StockController';
@@ -88,6 +91,9 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   // 添加分类树状态
   const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
   
+  // 添加产品选择状态跟踪
+  const [selectedProducts, setSelectedProducts] = useState<Record<number, boolean>>({});
+  
   // 清空表单
   useEffect(() => {
     if (visible) {
@@ -127,6 +133,10 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         status: 0, // 待审核
         qualityStatus: 0, // 未质检
       });
+      
+      // 重置产品选择状态
+      setSelectedProducts({});
+      setBatchNumberOptions([]);
     }
   }, [visible, currentUserId, orderInForm, orderOutForm]);
   
@@ -221,14 +231,32 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   }, 500);
   
   // 防抖搜索批次号
-  const handleBatchNumberSearch = debounce(async (batchNumber: string) => {
+  const handleBatchNumberSearch = debounce(async (batchNumber: string, index: number, formName: string) => {
     if (!batchNumber || batchNumber.length < 1) {
       setBatchNumberOptions([]);
       return;
     }
     
+    const form = formName === 'inbound' ? orderInForm : orderOutForm;
+    
+    // 检查是否已选择产品
+    if (!selectedProducts[index]) {
+      message.warning('请先选择产品');
+      setBatchNumberOptions([]);
+      return;
+    }
+    
+    // 获取产品编码
+    const productCode = form.getFieldValue(['orderItems', index, 'productCode']);
+    
+    if (!productCode) {
+      message.warning('产品编码获取失败，请重新选择产品');
+      setBatchNumberOptions([]);
+      return;
+    }
+    
     try {
-      const res = await getBatchNumber(batchNumber);
+      const res = await getBatchNumber(productCode, batchNumber);
       if (res.code === 200 && res.data) {
         const batchList = Array.isArray(res.data)
           ? res.data
@@ -236,8 +264,14 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
           ? res.data.split(',')
           : [String(res.data)];
           
+        // 确保当前输入的批次号也在列表中
+        if (batchNumber && !batchList.includes(batchNumber)) {
+          batchList.unshift(batchNumber);
+        }
+        
         setBatchNumberOptions(batchList);
       } else {
+        // 如果没有找到匹配的批次号，仍然允许用户使用当前输入的值
         setBatchNumberOptions([batchNumber]);
       }
     } catch (error) {
@@ -261,6 +295,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         productCode: selectedProduct.productCode,
         price: selectedProduct.price || 0,
         isCustomProduct: false, // 标记为系统产品
+        batchNumber: '', // 清空批次号
       };
       
       // 计算金额
@@ -269,6 +304,15 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
       form.setFieldsValue({
         orderItems,
       });
+      
+      // 更新产品选择状态
+      setSelectedProducts(prev => ({
+        ...prev,
+        [index]: true
+      }));
+      
+      // 清空批次号选项
+      setBatchNumberOptions([]);
     }
   };
   
@@ -283,18 +327,38 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         ...orderItems[index],
         productId: '', // 清空产品ID
         isCustomProduct: true,
+        batchNumber: '', // 清空批次号
       };
+      
+      // 更新产品选择状态 - 自定义产品也设置为已选择，这样可以输入批次号
+      setSelectedProducts(prev => ({
+        ...prev,
+        [index]: true
+      }));
     } else {
       // 切换为系统产品
       orderItems[index] = {
         ...orderItems[index],
         isCustomProduct: false,
+        productId: '', // 确保清空产品ID
+        productName: '', // 清空产品名称
+        productCode: '', // 清空产品编码
+        batchNumber: '', // 清空批次号
       };
+      
+      // 更新产品选择状态 - 系统产品需要选择后才能输入批次号
+      setSelectedProducts(prev => ({
+        ...prev,
+        [index]: false
+      }));
     }
     
     form.setFieldsValue({
       orderItems,
     });
+    
+    // 清空批次号选项
+    setBatchNumberOptions([]);
   };
   
   // 处理数量或价格变化
@@ -366,6 +430,35 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
       setProductCodeValidating({ ...productCodeValidating, [index]: false });
     }
   }, 500);
+  
+  // 生成批次号
+  const handleGenerateBatchNumber = async (index: number, formName: string) => {
+    try {
+      const form = formName === 'inbound' ? orderInForm : orderOutForm;
+      const res = await generateBatchNumber();
+      
+      if (res.code === 200 && res.data) {
+        // 获取批次号
+        const newBatchNumber = res.data;
+        
+        // 直接设置字段值
+        form.setFields([{
+          name: ['orderItems', index, 'batchNumber'],
+          value: newBatchNumber
+        }]);
+        
+        // 将生成的批次号添加到选项中
+        setBatchNumberOptions([newBatchNumber]);
+        
+        message.success('批次号生成成功');
+      } else {
+        message.error(res.msg || '批次号生成失败');
+      }
+    } catch (error) {
+      console.error('生成批次号失败:', error);
+      message.error('生成批次号失败');
+    }
+  };
   
   // 提交表单
   const handleSubmit = async (formName: string) => {
@@ -804,20 +897,39 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                         name={[name, 'batchNumber']}
                         label="批次号"
                         rules={[{ required: true, message: '请输入批次号' }]}
+                        extra={
+                          <div>
+                            <Text type="secondary">请输入批次号 或 </Text>
+                            <Button 
+                              type="link" 
+                              size="small" 
+                              icon={<ReloadOutlined />}
+                              onClick={() => handleGenerateBatchNumber(index, 'inbound')}
+                              disabled={!selectedProducts[index] && !orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct'])}
+                              style={{ padding: 0 }}
+                            >
+                              生成批次号
+                            </Button>
+                          </div>
+                        }
                       >
-                        <Select
-                          showSearch
+                        <AutoComplete
                           placeholder="请输入批次号"
-                          filterOption={false}
-                          onSearch={handleBatchNumberSearch}
+                          options={batchNumberOptions.map((batch) => ({ value: batch }))}
+                          onSearch={(value) => handleBatchNumberSearch(value, index, 'inbound')}
+                          onChange={(value) => {
+                            if (value) {
+                              // 设置批次号的值到表单中
+                              const orderItems = orderInForm.getFieldValue('orderItems');
+                              orderItems[index].batchNumber = value;
+                              orderInForm.setFieldsValue({ orderItems });
+                            }
+                          }}
+                          disabled={!selectedProducts[index] && !orderInForm.getFieldValue(['orderItems', index, 'isCustomProduct'])}
+                          style={{ width: '100%' }}
                           allowClear
-                        >
-                          {batchNumberOptions.map(batchNumber => (
-                            <Option key={batchNumber} value={batchNumber}>
-                              {batchNumber}
-                            </Option>
-                          ))}
-                        </Select>
+                          backfill
+                        />
                       </Form.Item>
                     </Col>
                     <Col span={8}>
