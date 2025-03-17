@@ -56,6 +56,9 @@ export default function MsgManager() {
     // 如果URL中包含readStatus参数，设置表单的初始值
     if (readStatusParam !== null) {
       form.setFieldsValue({ readStatus: parseInt(readStatusParam) });
+    } else {
+      // 如果URL中没有readStatus参数，默认设置为未读(0)
+      form.setFieldsValue({ readStatus: 0 });
     }
     
     fetchMessages();
@@ -74,7 +77,7 @@ export default function MsgManager() {
         senderId: values.senderId || '',
         type: values.type || '',
         title: values.title || '',
-        readStatus: values.readStatus !== undefined ? values.readStatus : null,
+        readStatus: values.readStatus !== undefined ? values.readStatus : 0, // 默认为未读状态
         priority: values.priority !== undefined ? values.priority : null,
         page: pagination.current,
         pageSize: pagination.pageSize,
