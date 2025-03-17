@@ -132,6 +132,11 @@ export interface OrderDto<O, OI> {
   products: Map<string, Product>;
 }
 
+export interface OrderDetailVo<T> {
+  product: Product;
+  orderItems: T;
+}
+
 /**
  * 按照条件查询订单列表
  * @param queryDto 查询条件
@@ -162,6 +167,47 @@ export function insertOrderIn(
   return new Promise((resolve, reject) => {
     axios
       .post('/order/addOrderIn', order)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 查询入库订单详情
+ *
+ * @param id 订单ID
+ * @return 入库订单详情
+ */
+export function inDetail(
+  id: string
+): Promise<Result<OrderDetailVo<OrderInItem>[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/order/inDetail', { params: { id } })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+/**
+ * 查询出库订单详情
+ *
+ * @param id 订单ID
+ * @return 出库订单详情
+ */
+export function outDetail(
+  id: string
+): Promise<Result<OrderDetailVo<OrderOutItem>[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/order/outDetail', { params: { id } })
       .then((res) => {
         resolve(res.data);
       })

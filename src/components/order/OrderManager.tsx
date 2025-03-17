@@ -25,6 +25,7 @@ import locale from 'antd/es/date-picker/locale/zh_CN';
 import { queryOrders, OrderVo } from '../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../api/sys-service/UserController';
 import OrderDrawer from './OrderDrawer';
+import OrderDetailDrawer from './OrderDetailDrawer';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -58,6 +59,10 @@ export default function OrderManager() {
 
   // 新增订单抽屉状态
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
+  
+  // 订单详情抽屉状态
+  const [detailDrawerVisible, setDetailDrawerVisible] = useState<boolean>(false);
+  const [currentOrder, setCurrentOrder] = useState<OrderVo | null>(null);
 
   // 分页配置
   const [pagination, setPagination] = useState({
@@ -219,6 +224,18 @@ export default function OrderManager() {
     fetchOrders();
   };
 
+  // 打开订单详情抽屉
+  const handleViewDetail = (order: OrderVo) => {
+    setCurrentOrder(order);
+    setDetailDrawerVisible(true);
+  };
+
+  // 关闭订单详情抽屉
+  const handleCloseDetailDrawer = () => {
+    setDetailDrawerVisible(false);
+    setCurrentOrder(null);
+  };
+
   // 订单状态渲染
   const renderOrderStatus = (status: number) => {
     switch (status) {
@@ -325,9 +342,9 @@ export default function OrderManager() {
     {
       title: '操作',
       key: 'action',
-      render: () => (
+      render: (text: string, record: OrderVo) => (
         <Space size='middle'>
-          <a>查看详情</a>
+          <a onClick={() => handleViewDetail(record)}>查看详情</a>
         </Space>
       ),
     },
@@ -479,6 +496,15 @@ export default function OrderManager() {
         onSuccess={handleOrderSuccess}
         currentUserId='admin' // 这里应该传入当前登录用户的ID
       />
+
+      {/* 订单详情抽屉 */}
+      {currentOrder && (
+        <OrderDetailDrawer
+          visible={detailDrawerVisible}
+          onClose={handleCloseDetailDrawer}
+          order={currentOrder}
+        />
+      )}
     </div>
   );
 }
