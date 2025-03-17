@@ -7,6 +7,8 @@ import {
   Divider,
   Spin,
   message,
+  Tabs,
+  Badge,
 } from 'antd';
 import moment from 'moment';
 import { inDetail, outDetail, OrderVo, OrderInItem, OrderOutItem, OrderDetailVo } from '../../api/order-service/OrderController';
@@ -24,6 +26,45 @@ export default function OrderDetailDrawer({
 }: OrderDetailDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [detailData, setDetailData] = useState<OrderDetailVo<OrderInItem | OrderOutItem>[]>([]);
+
+  // 获取订单详情
+  const fetchOrderDetail = async () => {
+    if (!order?.id) return;
+
+    try {
+      setLoading(true);
+      let result;
+      if (order.type === 1) {
+        // 入库订单
+        result = await inDetail(order.id);
+        if (result.code === 200) {
+          setDetailData(result.data);
+        }
+      } else {
+        // 出库订单
+        result = await outDetail(order.id);
+        if (result.code === 200) {
+          setDetailData(result.data);
+        }
+      }
+
+      if (result.code !== 200) {
+        message.error(result.msg || '获取订单详情失败');
+      }
+    } catch (error) {
+      console.error('获取订单详情失败:', error);
+      message.error('获取订单详情失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 监听visible变化，当抽屉打开时获取详情
+  useEffect(() => {
+    if (visible) {
+      fetchOrderDetail();
+    }
+  }, [visible, order]);
 
   // 订单状态渲染
   const renderOrderStatus = (status: number) => {
@@ -66,161 +107,156 @@ export default function OrderDetailDrawer({
     );
   };
 
-  // 获取订单详情
-  const fetchOrderDetail = async () => {
-    if (!order?.id) return;
-
-    try {
-      setLoading(true);
-      let result;
-      if (order.type === 1) {
-        // 入库订单
-        result = await inDetail(order.id);
-        if (result.code === 200) {
-          setDetailData(result.data);
-        }
-      } else {
-        // 出库订单
-        result = await outDetail(order.id);
-        if (result.code === 200) {
-          setDetailData(result.data);
-        }
-      }
-
-      if (result.code !== 200) {
-        message.error(result.msg || '获取订单详情失败');
-      }
-    } catch (error) {
-      console.error('获取订单详情失败:', error);
-      message.error('获取订单详情失败，请稍后重试');
-    } finally {
-      setLoading(false);
-    }
+  // 渲染基本信息选项卡内容
+  const renderBasicInfo = () => {
+    return (
+      <Card title='基本信息' size='small'>
+        <Descriptions column={3} bordered>
+          <Descriptions.Item label='订单编号' span={1}>{order?.orderNo}</Descriptions.Item>
+          <Descriptions.Item label='订单类型' span={1}>
+            {renderOrderType(order?.type)}
+          </Descriptions.Item>
+          <Descriptions.Item label='创建时间' span={1}>
+            {order?.createTime
+              ? moment(order.createTime).format('YYYY-MM-DD HH:mm:ss')
+              : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='创建人' span={1}>
+            {order?.creator?.realName}
+          </Descriptions.Item>
+          <Descriptions.Item label='创建人手机号' span={2}>
+            {order?.creator?.phone || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='审批人' span={1}>
+            {order?.approver?.realName || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='审批人手机号' span={2}>
+            {order?.approver?.phone || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='质检员' span={1}>
+            {order?.inspector?.realName || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='质检员手机号' span={2}>
+            {order?.inspector?.phone || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='订单状态' span={1}>
+            {renderOrderStatus(order?.status)}
+          </Descriptions.Item>
+          <Descriptions.Item label='质检状态' span={1}>
+            {renderQualityStatus(order?.qualityStatus)}
+          </Descriptions.Item>
+          <Descriptions.Item label='总金额' span={1}>
+            ¥{order?.totalAmount?.toFixed(2) || '0.00'}
+          </Descriptions.Item>
+        </Descriptions>
+      </Card>
+    );
   };
 
-  // 监听visible变化，当抽屉打开时获取详情
-  useEffect(() => {
-    if (visible) {
-      fetchOrderDetail();
-    }
-  }, [visible, order]);
-
-  return (
-    <Drawer
-      title='订单详情'
-      placement='right'
-      width={800}
-      onClose={onClose}
-      open={visible}
-      destroyOnClose
-    >
-      <Spin spinning={loading}>
-        {/* 订单基本信息 */}
-        <Card title='基本信息' size='small'>
-          <Descriptions column={2}>
-            <Descriptions.Item label='订单编号'>{order?.orderNo}</Descriptions.Item>
-            <Descriptions.Item label='订单类型'>
-              {renderOrderType(order?.type)}
-            </Descriptions.Item>
-            <Descriptions.Item label='创建人'>
-              {order?.creator?.realName}
-            </Descriptions.Item>
-            <Descriptions.Item label='创建人手机号'>
-              {order?.creator?.phone || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='审批人'>
-              {order?.approver?.realName || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='审批人手机号'>
-              {order?.approver?.phone || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='质检员'>
-              {order?.inspector?.realName || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='质检员手机号'>
-              {order?.inspector?.phone || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='创建时间'>
-              {order?.createTime
-                ? moment(order.createTime).format('YYYY-MM-DD HH:mm:ss')
-                : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='订单状态'>
-              {renderOrderStatus(order?.status)}
-            </Descriptions.Item>
-            <Descriptions.Item label='质检状态'>
-              {renderQualityStatus(order?.qualityStatus)}
-            </Descriptions.Item>
-            <Descriptions.Item label='总金额'>
-              ¥{order?.totalAmount?.toFixed(2) || '0.00'}
-            </Descriptions.Item>
-            <Descriptions.Item label='总数量'>
-              {order?.totalQuantity || 0}
-            </Descriptions.Item>
-          </Descriptions>
-        </Card>
-
-        <Divider />
-
-        {/* 商品明细列表 */}
+  // 渲染商品明细选项卡内容
+  const renderProductDetails = () => {
+    return (
+      <>
         {detailData.map((detail, index) => (
-          <div key={index}>
-            {/* 商品信息和订单项信息 */}
-            <Card title='商品信息' size='small' style={{ marginBottom: '16px' }}>
-              <Descriptions column={2}>
-                <Descriptions.Item label='商品名称'>
+          <div key={index} style={{ marginBottom: 16 }}>
+            <Card 
+              title={`商品 ${index + 1}: ${detail.product.productName}`}
+              size='small' 
+              bordered
+              style={{ marginBottom: 8 }}
+              type="inner"
+            >
+              <Descriptions column={4} bordered size="small">
+                <Descriptions.Item label='商品名称' span={2}>
                   {detail.product.productName}
                 </Descriptions.Item>
-                <Descriptions.Item label='商品编码'>
+                <Descriptions.Item label='商品编码' span={2}>
                   {detail.product.productCode}
                 </Descriptions.Item>
-                <Descriptions.Item label='品牌'>
+                <Descriptions.Item label='品牌' span={1}>
                   {detail.product.brand}
                 </Descriptions.Item>
-                <Descriptions.Item label='型号'>
+                <Descriptions.Item label='型号' span={1}>
                   {detail.product.model}
                 </Descriptions.Item>
-                <Descriptions.Item label='规格'>
+                <Descriptions.Item label='规格' span={1}>
                   {detail.product.spec}
                 </Descriptions.Item>
-                <Descriptions.Item label='单价'>
+                <Descriptions.Item label='单价' span={1}>
                   ¥{detail.product.price}
                 </Descriptions.Item>
               </Descriptions>
 
               <Divider style={{ margin: '12px 0' }} />
 
-              <Descriptions column={2}>
-                <Descriptions.Item label='预期数量'>
+              <Descriptions column={4} bordered size="small">
+                <Descriptions.Item label='预期数量' span={1}>
                   {detail.orderItems.expectedQuantity}
                 </Descriptions.Item>
-                <Descriptions.Item label='实际数量'>
+                <Descriptions.Item label='实际数量' span={1}>
                   {detail.orderItems.actualQuantity}
                 </Descriptions.Item>
-                <Descriptions.Item label='单价'>
+                <Descriptions.Item label='单价' span={1}>
                   ¥{detail.orderItems.price?.toFixed(2) || '0.00'}
                 </Descriptions.Item>
-                <Descriptions.Item label='金额'>
+                <Descriptions.Item label='金额' span={1}>
                   ¥{detail.orderItems.amount?.toFixed(2) || '0.00'}
                 </Descriptions.Item>
-                <Descriptions.Item label='库区'>
+                <Descriptions.Item label='库区' span={2}>
                   {detail.orderItems.areaId || '-'}
                 </Descriptions.Item>
-                <Descriptions.Item label='货位'>
+                <Descriptions.Item label='货位' span={2}>
                   {detail.orderItems.location?.join(', ') || '-'}
                 </Descriptions.Item>
-                <Descriptions.Item label='批次号'>
+                <Descriptions.Item label='批次号' span={2}>
                   {detail.orderItems.batchNumber || '-'}
                 </Descriptions.Item>
-                <Descriptions.Item label='生产日期'>
+                <Descriptions.Item label='生产日期' span={2}>
                   {detail.orderItems.productionDate ? moment(detail.orderItems.productionDate).format('YYYY-MM-DD') : '-'}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
-
-            {index < detailData.length - 1 && <Divider />}
           </div>
         ))}
+      </>
+    );
+  };
+
+  // 定义选项卡项
+  const tabItems = [
+    {
+      key: 'basic',
+      label: '基本信息',
+      children: renderBasicInfo(),
+    },
+    {
+      key: 'products',
+      label: (
+        <Badge count={detailData.length} offset={[10, 0]}>
+          商品明细
+        </Badge>
+      ),
+      children: renderProductDetails(),
+    },
+  ];
+
+  return (
+    <Drawer
+      title='订单详情'
+      placement='right'
+      width={1200}
+      onClose={onClose}
+      open={visible}
+      destroyOnClose
+    >
+      <Spin spinning={loading}>
+        <Tabs 
+          defaultActiveKey="basic" 
+          items={tabItems}
+          style={{ marginBottom: 32 }}
+          size="large"
+          type="card"
+        />
       </Spin>
     </Drawer>
   );
