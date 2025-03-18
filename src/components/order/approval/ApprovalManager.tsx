@@ -275,6 +275,22 @@ export default function ApprovalManager() {
     setApprovalDrawerVisible(false);
   };
   
+  // 处理订单拒绝
+  const handleApprovalReject = () => {
+    // 先关闭审批抽屉
+    setApprovalDrawerVisible(false);
+    
+    // 使用setTimeout确保状态更新先后顺序正确
+    setTimeout(() => {
+      // 关闭详情抽屉
+      setDetailDrawerVisible(false);
+      // 清空当前订单
+      setCurrentOrder(null);
+      // 刷新订单列表
+      fetchOrders();
+    }, 100);
+  };
+  
   // 审批成功回调
   const handleApprovalSuccess = () => {
     // 刷新订单列表
@@ -550,6 +566,7 @@ export default function ApprovalManager() {
           onClose={handleCloseApproval}
           order={currentOrder}
           onSuccess={handleApprovalSuccess}
+          onReject={handleApprovalReject}
         />
       )}
     </div>

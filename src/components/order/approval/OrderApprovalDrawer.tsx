@@ -21,6 +21,7 @@ interface OrderApprovalDrawerProps {
   order: OrderVo | null;
   onClose: () => void;
   onSuccess: () => void;
+  onReject?: () => void;
 }
 
 export default function OrderApprovalDrawer({
@@ -28,6 +29,7 @@ export default function OrderApprovalDrawer({
   order,
   onClose,
   onSuccess,
+  onReject,
 }: OrderApprovalDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -63,10 +65,14 @@ export default function OrderApprovalDrawer({
         const result = await reject(order?.id as string, order?.type as number, values.rejectReason);
         if (result.code === 200) {
           message.success('已拒绝该订单');
-          // 先调用成功回调刷新列表数据
-          onSuccess();
-          // 然后关闭抽屉
-          onClose();
+          // 如果存在拒绝回调，则调用拒绝回调，不再调用成功回调
+          if (onReject) {
+            onReject();
+          } else {
+            // 否则调用成功回调并关闭当前抽屉
+            onSuccess();
+            onClose();
+          }
         } else {
           message.error(result.msg || '拒绝失败');
         }
