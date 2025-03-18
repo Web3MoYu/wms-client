@@ -107,6 +107,22 @@ export default function OrderDetailDrawer({
     );
   };
 
+  // 渲染商品项状态
+  const renderItemStatus = (status: number) => {
+    switch (status) {
+      case 0:
+        return <Tag color='blue'>待开始</Tag>;
+      case 1:
+        return <Tag color='orange'>部分完成</Tag>;
+      case 2:
+        return <Tag color='green'>已完成</Tag>;
+      case -1:
+        return <Tag color='red'>已取消</Tag>;
+      default:
+        return <Tag color='default'>未知状态</Tag>;
+    }
+  };
+
   // 渲染基本信息选项卡内容
   const renderBasicInfo = () => {
     return (
@@ -163,7 +179,12 @@ export default function OrderDetailDrawer({
         {detailData.map((detail, index) => (
           <div key={index} style={{ marginBottom: 16 }}>
             <Card 
-              title={`商品 ${index + 1}: ${detail.product.productName}`}
+              title={
+                <span>
+                  {`商品 ${index + 1}: ${detail.product.productName} `}
+                  {renderItemStatus(detail.orderItems.status)}
+                </span>
+              }
               size='small' 
               bordered
               style={{ marginBottom: 8 }}

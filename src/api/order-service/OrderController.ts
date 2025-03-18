@@ -76,7 +76,7 @@ export interface OrderInItem {
   batchNumber: string; // 批次号
   productionDate: Date; // 生产日期
   expiryDate: Date; // 过期日期
-  status: number; // 状态：0-待开始，1-部分完成，2-已完成
+  status: number; // 状态：0-待开始，1-部分完成，2-已完成,-1-已取消
   qualityStatus: number; // 质检状态：0-未质检，1-质检通过，2-质检不通过
   remark: string; // 备注
   createTime: string; // 创建时间
@@ -120,7 +120,7 @@ export interface OrderOutItem {
   batchNumber: string; // 批次号
   productionDate: Date; // 生产日期
   expiryDate: Date; // 过期日期
-  status: number; // 状态：0-待开始，1-部分完成，2-已完成
+  status: number; // 状态：0-待开始，1-部分完成，2-已完成,-1-已取消
   qualityStatus: number; // 质检状态：0-未质检，1-质检通过，2-质检不通过
   remark: string; // 备注
   createTime: string; // 创建时间
