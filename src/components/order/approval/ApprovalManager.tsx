@@ -307,6 +307,8 @@ export default function ApprovalManager() {
         return <Tag color='green'>已完成</Tag>;
       case -1:
         return <Tag color='red'>已取消</Tag>;
+      case -2:
+        return <Tag color='red'>审批拒绝</Tag>;
       default:
         return <Tag color='default'>未知状态</Tag>;
     }

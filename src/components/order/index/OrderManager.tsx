@@ -341,6 +341,8 @@ export default function OrderManager() {
         return <Tag color='green'>已完成</Tag>;
       case -1:
         return <Tag color='red'>已取消</Tag>;
+      case -2:
+        return <Tag color='red'>审批拒绝</Tag>;
       default:
         return <Tag color='default'>未知状态</Tag>;
     }
@@ -476,6 +478,7 @@ export default function OrderManager() {
                   <Option value={2}>入库中</Option>
                   <Option value={3}>已完成</Option>
                   <Option value={-1}>已取消</Option>
+                  <Option value={-2}>审批拒绝</Option>
                 </Select>
               </Form.Item>
             </Col>
