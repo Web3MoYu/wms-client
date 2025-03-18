@@ -159,6 +159,14 @@ export default function OrderDetailDrawer({
             {order?.remark || '-'}
           </Descriptions.Item>
         </Descriptions>
+        
+        {showApprovalButton && order?.status === 0 && (
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
+            <Button type="primary" onClick={() => onApproval && onApproval(order)} size="large">
+              审批
+            </Button>
+          </div>
+        )}
       </Card>
     );
   };
@@ -269,13 +277,6 @@ export default function OrderDetailDrawer({
       onClose={onClose}
       open={visible}
       destroyOnClose
-      extra={
-        showApprovalButton && order?.status === 0 ? (
-          <Button type="primary" onClick={() => onApproval && onApproval(order)}>
-            审批
-          </Button>
-        ) : null
-      }
     >
       <Spin spinning={loading}>
         <Tabs 
