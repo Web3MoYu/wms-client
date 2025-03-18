@@ -58,7 +58,6 @@ export default function ApprovalManager() {
   const [form] = Form.useForm();
 
   // 用户搜索相关状态
-  const [creatorOptions, setCreatorOptions] = useState<User[]>([]);
   const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
   const [approverOptions, setApproverOptions] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<{ userId: string, realName: string } | null>(null);
@@ -181,23 +180,6 @@ export default function ApprovalManager() {
     }
   };
 
-  // 防抖搜索创建人
-  const handleCreatorSearch = debounce(async (name: string) => {
-    if (!name || name.length < 1) {
-      setCreatorOptions([]);
-      return;
-    }
-
-    try {
-      const res = await getUsersByName(name);
-      if (res.code === 200) {
-        setCreatorOptions(res.data);
-      }
-    } catch (error) {
-      console.error('搜索创建人失败:', error);
-    }
-  }, 500);
-
   // 防抖搜索质检员
   const handleInspectorSearch = debounce(async (name: string) => {
     if (!name || name.length < 1) {
@@ -249,7 +231,8 @@ export default function ApprovalManager() {
     
     // 设置默认值
     form.setFieldsValue({ 
-      createTimeAsc: false 
+      createTimeAsc: false,
+      status: 0 // 重置后将订单状态设置为待审核(0)
     });
     
     // 如果当前用户存在，设置为默认审批人
@@ -458,16 +441,10 @@ export default function ApprovalManager() {
                 <Select placeholder='请选择订单状态' allowClear>
                   <Option value={0}>待审核</Option>
                   <Option value={1}>审批通过</Option>
+                  <Option value={2}>入库中</Option>
+                  <Option value={3}>已完成</Option>
+                  <Option value={-1}>已取消</Option>
                   <Option value={-2}>审批拒绝</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name='inspectionStatus' label='质检状态'>
-                <Select placeholder='请选择质检状态' allowClear>
-                  <Option value={0}>未质检</Option>
-                  <Option value={1}>质检通过</Option>
-                  <Option value={2}>质检不通过</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -484,23 +461,6 @@ export default function ApprovalManager() {
             </Col>
           </Row>
           <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item name='creatorId' label='创建人'>
-                <Select
-                  showSearch
-                  placeholder='请输入创建人姓名'
-                  filterOption={false}
-                  onSearch={handleCreatorSearch}
-                  allowClear
-                >
-                  {creatorOptions.map((user) => (
-                    <Option key={user.userId} value={user.userId}>
-                      {user.realName}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
             <Col span={6}>
               <Form.Item name='inspectorId' label='质检员'>
                 <Select
@@ -535,21 +495,19 @@ export default function ApprovalManager() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <div style={{ textAlign: 'right' }}>
-                <Space>
-                  <Button
-                    type='primary'
-                    htmlType='submit'
-                    icon={<SearchOutlined />}
-                  >
-                    查询
-                  </Button>
-                  <Button icon={<ReloadOutlined />} onClick={handleReset}>
-                    重置
-                  </Button>
-                </Space>
-              </div>
+            <Col span={12} style={{ textAlign: 'right' }}>
+              <Space>
+                <Button
+                  type='primary'
+                  htmlType='submit'
+                  icon={<SearchOutlined />}
+                >
+                  查询
+                </Button>
+                <Button icon={<ReloadOutlined />} onClick={handleReset}>
+                  重置
+                </Button>
+              </Space>
             </Col>
           </Row>
         </Form>
