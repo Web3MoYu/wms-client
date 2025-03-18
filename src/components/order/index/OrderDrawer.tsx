@@ -29,16 +29,16 @@ import {
   insertOrderIn,
   OrderIn,
   OrderInItem,
-} from '../../api/order-service/OrderController';
+} from '../../../api/order-service/OrderController';
 import { 
   searchProducts, 
   Product, 
   checkProductCode,
   generateBatchNumber
-} from '../../api/product-service/ProductController';
-import { getProductCatTree, ProductCatTree } from '../../api/product-service/ProductCatController';
-import { getBatchNumber } from '../../api/stock-service/StockController';
-import { getUsersByName, User } from '../../api/sys-service/UserController';
+} from '../../../api/product-service/ProductController';
+import { getProductCatTree, ProductCatTree } from '../../../api/product-service/ProductCatController';
+import { getBatchNumber } from '../../../api/stock-service/StockController';
+import { getUsersByName, User } from '../../../api/sys-service/UserController';
 
 const { Option } = Select;
 const { TextArea } = Input;

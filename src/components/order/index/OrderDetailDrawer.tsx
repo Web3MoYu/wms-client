@@ -9,20 +9,25 @@ import {
   message,
   Tabs,
   Badge,
+  Button,
 } from 'antd';
 import moment from 'moment';
-import { inDetail, outDetail, OrderVo, OrderInItem, OrderOutItem, OrderDetailVo } from '../../api/order-service/OrderController';
+import { inDetail, outDetail, OrderVo, OrderInItem, OrderOutItem, OrderDetailVo } from '../../../api/order-service/OrderController';
 
 interface OrderDetailDrawerProps {
   visible: boolean;
   onClose: () => void;
   order: OrderVo;
+  showApprovalButton?: boolean;
+  onApproval?: (order: OrderVo) => void;
 }
 
 export default function OrderDetailDrawer({
   visible,
   onClose,
   order,
+  showApprovalButton = false,
+  onApproval,
 }: OrderDetailDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [detailData, setDetailData] = useState<OrderDetailVo<OrderInItem | OrderOutItem>[]>([]);
@@ -272,6 +277,13 @@ export default function OrderDetailDrawer({
       onClose={onClose}
       open={visible}
       destroyOnClose
+      extra={
+        showApprovalButton && order?.status === 0 ? (
+          <Button type="primary" onClick={() => onApproval && onApproval(order)}>
+            审批
+          </Button>
+        ) : null
+      }
     >
       <Spin spinning={loading}>
         <Tabs 

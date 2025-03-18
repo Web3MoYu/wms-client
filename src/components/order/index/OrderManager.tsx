@@ -25,8 +25,8 @@ import debounce from 'lodash/debounce';
 import moment from 'moment';
 // 导入中文语言包
 import locale from 'antd/es/date-picker/locale/zh_CN';
-import { queryOrders, OrderVo, cancel } from '../../api/order-service/OrderController';
-import { getUsersByName, User } from '../../api/sys-service/UserController';
+import { queryOrders, OrderVo, cancel } from '../../../api/order-service/OrderController';
+import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import OrderDrawer from './OrderDrawer';
 import OrderDetailDrawer from './OrderDetailDrawer';
 
