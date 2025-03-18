@@ -217,3 +217,28 @@ export function outDetail(
       });
   });
 }
+
+/**
+ * 取消订单
+ *
+ * @param id     订单ID
+ * @param type   订单类型
+ * @param remark 备注
+ * @return 取消结果
+ */
+export function cancel(
+  id: string,
+  type: number,
+  remark: string
+): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .delete(`/order/cancel/${type}/${id}`, { params: { remark } })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

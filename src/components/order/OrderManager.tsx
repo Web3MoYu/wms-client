@@ -12,23 +12,28 @@ import {
   Row,
   Col,
   Tag,
+  Modal,
+  Typography
 } from 'antd';
 import {
   SearchOutlined,
   ReloadOutlined,
   PlusOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
 // 导入中文语言包
 import locale from 'antd/es/date-picker/locale/zh_CN';
-import { queryOrders, OrderVo } from '../../api/order-service/OrderController';
+import { queryOrders, OrderVo, cancel } from '../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../api/sys-service/UserController';
 import OrderDrawer from './OrderDrawer';
 import OrderDetailDrawer from './OrderDetailDrawer';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
+const { TextArea } = Input;
+const { Text } = Typography;
 
 // 修改 OrderQueryDto 类型，使日期字段为字符串类型
 interface OrderQueryDtoWithStringDates {
@@ -73,12 +78,22 @@ export default function OrderManager() {
 
   // 初始化
   useEffect(() => {
+    // 设置默认状态为待审核(0)
+    form.setFieldsValue({ 
+      status: 0,
+      createTimeAsc: false 
+    });
     fetchOrders();
-  }, [pagination.current, pagination.pageSize]);
+  }, []);
 
   // 监听orders状态变化，确保UI更新
   useEffect(() => {
   }, [orders]);
+
+  // 监听分页变化
+  useEffect(() => {
+    fetchOrders();
+  }, [pagination.current, pagination.pageSize]);
 
   // 查询订单数据
   const fetchOrders = async () => {
@@ -88,8 +103,8 @@ export default function OrderManager() {
       // 获取表单数据
       const values = form.getFieldsValue();
       // 处理日期范围
-      let startTime: string = '1970-01-01 00:00:00'; // 默认起始时间
-      let endTime: string = moment().format('YYYY-MM-DD HH:mm:ss'); // 默认当前时间
+      let startTime = null;
+      let endTime = null;
 
       if (values.dateRange && values.dateRange.length === 2) {
         // 直接格式化为字符串，格式为 yyyy-MM-dd HH:mm:ss
@@ -109,10 +124,10 @@ export default function OrderManager() {
         creatorId: values.creatorId || '',
         approverId: values.approverId || '',
         inspectorId: values.inspectorId || '',
-        startTime: startTime, // 直接使用字符串格式
-        endTime: endTime, // 直接使用字符串格式
-        createTimeAsc: false, // 默认降序，最新的在前面
-        status: values.status !== undefined ? values.status : null,
+        startTime: startTime,
+        endTime: endTime,
+        createTimeAsc: values.createTimeAsc !== undefined ? values.createTimeAsc : false,
+        status: values.status !== undefined ? values.status : null, // 允许status为null
       };
 
       const result = await queryOrders(queryDto as any); // 类型断言为任意类型，以兼容原接口
@@ -132,11 +147,24 @@ export default function OrderManager() {
   };
 
   // 表格分页、排序、筛选变化时的回调
-  const handleTableChange = (pagination: any) => {
+  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+    // 处理排序
+    if (sorter && sorter.field === 'createTime') {
+      // 设置createTimeAsc表单值
+      form.setFieldsValue({
+        createTimeAsc: sorter.order === 'ascend',
+      });
+    }
+    
     setPagination({
       current: pagination.current,
       pageSize: pagination.pageSize,
     });
+    
+    // 只有切换分页时才会自动触发fetchOrders，排序时需要手动触发
+    if (sorter && sorter.field === 'createTime') {
+      fetchOrders();
+    }
   };
 
   // 防抖搜索创建人
@@ -201,11 +229,19 @@ export default function OrderManager() {
 
   // 重置表单
   const handleReset = () => {
+    // 先重置表单（清空所有表单值）
     form.resetFields();
+    // 然后设置默认值
+    form.setFieldsValue({ 
+      status: 0,
+      createTimeAsc: false 
+    });
+    // 重置分页
     setPagination({
       current: 1,
       pageSize: 10,
     });
+    // 最后获取数据
     fetchOrders();
   };
 
@@ -236,6 +272,60 @@ export default function OrderManager() {
   const handleCloseDetailDrawer = () => {
     setDetailDrawerVisible(false);
     setCurrentOrder(null);
+  };
+
+  // 取消订单
+  const handleCancelOrder = (record: OrderVo) => {
+    // 只有待审核、已审核或入库中的订单可以取消
+    if (record.status !== 0 && record.status !== 1 && record.status !== 2) {
+      message.error('只有待审核、已审核或入库中的订单可以取消');
+      return;
+    }
+
+    // 弹出确认取消对话框
+    let remark = '';
+    Modal.confirm({
+      title: '确定要取消该订单吗？',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <Text type="warning">警告：订单取消后将无法恢复，请谨慎操作！</Text>
+          <div style={{ marginTop: 10 }}>
+            <TextArea 
+              rows={3} 
+              placeholder="请输入取消原因（必填）" 
+              onChange={(e) => remark = e.target.value}
+            />
+          </div>
+        </div>
+      ),
+      okText: '确认取消',
+      cancelText: '返回',
+      onOk: async () => {
+        if (!remark.trim()) {
+          message.error('请输入取消原因');
+          return Promise.reject('请输入取消原因');
+        }
+
+        try {
+          setLoading(true);
+          const result = await cancel(record.id, record.type, remark);
+          console.log(result);
+          if (result.code === 200) {
+            message.success('订单已成功取消');
+            // 刷新订单列表
+            fetchOrders();
+          } else {
+            message.error(result.msg || '取消订单失败');
+          }
+        } catch (error) {
+          console.error('取消订单失败:', error);
+          message.error('取消订单失败，请稍后重试');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   };
 
   // 订单状态渲染
@@ -338,6 +428,7 @@ export default function OrderManager() {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
+      sorter: true,
       render: (text: string) =>
         text ? moment(text).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
@@ -347,6 +438,9 @@ export default function OrderManager() {
       render: (text: string, record: OrderVo) => (
         <Space size='middle'>
           <a onClick={() => handleViewDetail(record)}>查看详情</a>
+          {(record.status === 0 || record.status === 1 || record.status === 2) && (
+            <a onClick={() => handleCancelOrder(record)}>取消订单</a>
+          )}
         </Space>
       ),
     },
@@ -356,6 +450,10 @@ export default function OrderManager() {
     <div className='order-manager'>
       <Card>
         <Form form={form} layout='horizontal' onFinish={handleSearch}>
+          {/* 隐藏的排序字段 */}
+          <Form.Item name='createTimeAsc' hidden>
+            <Input />
+          </Form.Item>
           <Row gutter={16}>
             <Col span={6}>
               <Form.Item name='orderNo' label='订单编号'>
