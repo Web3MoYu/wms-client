@@ -27,6 +27,7 @@ import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import OrderDetailDrawer from '../index/OrderDetailDrawer';
 import OrderApprovalDrawer from './OrderApprovalDrawer';
 import userStore from '../../../store/userStore';
+import { useLocation } from 'react-router-dom';
 
 // 创建store实例
 const userStoreInstance = new userStore();
@@ -56,6 +57,12 @@ export default function ApprovalManager() {
   const [orders, setOrders] = useState<OrderVo[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [form] = Form.useForm();
+  const location = useLocation();
+
+  // URL参数解析
+  const query = new URLSearchParams(location.search);
+  const orderNoFromQuery = query.get('orderNo');
+  const statusFromQuery = query.get('status');
 
   // 用户搜索相关状态
   const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
@@ -90,14 +97,37 @@ export default function ApprovalManager() {
     setApproverOptions([currentUserInfo as unknown as User]);
     
     // 设置默认值：审批人为当前用户，状态为待审核(0)
-    form.setFieldsValue({ 
+    const initialValues: any = { 
       approverId: currentUserInfo.userId,
       createTimeAsc: false,
-      status: 0 // 默认选择待审核状态
-    });
+    };
     
+    // 如果URL中有orderNo参数，则设置订单编号
+    if (orderNoFromQuery) {
+      initialValues.orderNo = orderNoFromQuery;
+    }
+    
+    // 如果URL中有status参数，则设置订单状态
+    if (statusFromQuery) {
+      // 如果状态为null字符串，则设置为undefined，表示不筛选状态
+      initialValues.status = statusFromQuery === 'null' ? undefined : Number(statusFromQuery);
+    } else {
+      // 默认设置为待审核(0)
+      initialValues.status = 0;
+    }
+    
+    // 设置表单初始值
+    form.setFieldsValue(initialValues);
+    
+    // 执行第一次查询
     fetchOrders();
-  }, []);
+    
+    // 如果是从消息点击进来的（有orderNo参数），则修改URL但不触发导航
+    if (orderNoFromQuery || statusFromQuery) {
+      const newUrl = window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [form]);
 
   // 监听orders状态变化，确保UI更新
   useEffect(() => {

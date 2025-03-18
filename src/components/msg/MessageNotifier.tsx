@@ -160,6 +160,106 @@ const MessageNotifier: React.FC = () => {
     }
   };
 
+  // 标记消息为已读
+  const handleReadMessage = async (msgId: string) => {
+    Modal.confirm({
+      title: '确认标记已读',
+      content: '确定要将此消息标记为已读吗？',
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          const response = await readMsg(msgId);
+          if (response.code === 200) {
+            // 从未读列表中移除该消息
+            const updatedMsg = unreadMessages.find(msg => msg.id === msgId);
+            setUnreadMessages(prevMessages => prevMessages.filter(msg => msg.id !== msgId));
+            
+            // 添加到已读列表
+            if (updatedMsg) {
+              setReadMessages(prevMessages => [updatedMsg, ...prevMessages]);
+            }
+            
+            // 检查是否还有未读消息
+            if (unreadMessages.length <= 1) {
+              setHasUnread(false);
+            }
+            
+            message.success('消息已标记为已读');
+          } else {
+            message.error(response.msg || '标记已读失败');
+          }
+        } catch (error) {
+          console.error('标记消息已读失败:', error);
+          message.error('标记已读失败，请稍后重试');
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  // 直接标记消息为已读（不显示确认框）
+  const markMessageAsReadDirectly = async (msgId: string) => {
+    try {
+      const response = await readMsg(msgId);
+      if (response.code === 200) {
+        // 从未读列表中移除该消息
+        const updatedMsg = unreadMessages.find(msg => msg.id === msgId);
+        setUnreadMessages(prevMessages => prevMessages.filter(msg => msg.id !== msgId));
+        
+        // 添加到已读列表
+        if (updatedMsg) {
+          setReadMessages(prevMessages => [updatedMsg, ...prevMessages]);
+        }
+        
+        // 检查是否还有未读消息
+        if (unreadMessages.length <= 1) {
+          setHasUnread(false);
+        }
+      }
+    } catch (error) {
+      console.error('标记消息已读失败:', error);
+    }
+  };
+
+  // 处理消息点击，根据业务类型跳转到不同页面
+  const handleMessageClick = (msg: Msg) => {
+    // 如果没有关联的业务ID，则不跳转
+    if (!msg.relatedBizId) {
+      return;
+    }
+
+    // 根据业务类型跳转到不同页面
+    switch (msg.relatedBizType) {
+      case 1: // 入库单
+        // 跳转到审批页面，设置订单编号为业务ID，订单状态为null
+        navigate(`/order/approval?orderNo=${msg.relatedBizId}&status=null`);
+        break;
+      case 2: // 出库单
+        // 目前暂不处理，可以后续添加
+        break;
+      case 3: // 质检单
+        // 目前暂不处理，可以后续添加
+        break;
+      case 4: // 异常标记
+        // 目前暂不处理，可以后续添加
+        break;
+      case 5: // 库存预警
+        // 目前暂不处理，可以后续添加
+        break;
+      default:
+        console.log('未知业务类型：', msg.relatedBizType);
+        break;
+    }
+
+    // 如果是未读消息，自动标记为已读（但不显示确认框）
+    if (activeTab === 'unread') {
+      markMessageAsReadDirectly(msg.id);
+    }
+  };
+
   // 初始化检查未读消息
   useEffect(() => {
     checkUnreadMessages();
@@ -269,46 +369,6 @@ const MessageNotifier: React.FC = () => {
     }
   };
 
-  // 标记消息为已读
-  const handleReadMessage = async (msgId: string) => {
-    Modal.confirm({
-      title: '确认标记已读',
-      content: '确定要将此消息标记为已读吗？',
-      okText: '确认',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          setLoading(true);
-          const response = await readMsg(msgId);
-          if (response.code === 200) {
-            // 从未读列表中移除该消息
-            const updatedMsg = unreadMessages.find(msg => msg.id === msgId);
-            setUnreadMessages(prevMessages => prevMessages.filter(msg => msg.id !== msgId));
-            
-            // 添加到已读列表
-            if (updatedMsg) {
-              setReadMessages(prevMessages => [updatedMsg, ...prevMessages]);
-            }
-            
-            // 检查是否还有未读消息
-            if (unreadMessages.length <= 1) {
-              setHasUnread(false);
-            }
-            
-            message.success('消息已标记为已读');
-          } else {
-            message.error(response.msg || '标记已读失败');
-          }
-        } catch (error) {
-          console.error('标记消息已读失败:', error);
-          message.error('标记已读失败，请稍后重试');
-        } finally {
-          setLoading(false);
-        }
-      }
-    });
-  };
-
   // 检查是否有未读消息
   const checkUnreadMessages = async () => {
     try {
@@ -413,7 +473,10 @@ const MessageNotifier: React.FC = () => {
   // 渲染消息项
   const renderMessageItem = (item: Msg, isUnread: boolean) => {
     return (
-      <List.Item style={styles.listItem}>
+      <List.Item 
+        style={styles.listItem}
+        onClick={() => handleMessageClick(item)}
+      >
         <div style={styles.listItemContent}>
           <div
             style={{
