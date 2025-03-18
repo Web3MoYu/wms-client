@@ -47,6 +47,7 @@ interface OrderQueryDtoWithStringDates {
   startTime: string;
   endTime: string;
   createTimeAsc: boolean;
+  status: number | null;
 }
 
 export default function ApprovalManager() {
@@ -89,10 +90,11 @@ export default function ApprovalManager() {
     // 设置当前用户为可选项
     setApproverOptions([currentUserInfo as unknown as User]);
     
-    // 设置默认审批人为当前用户，但可以清除
+    // 设置默认值：审批人为当前用户，状态为待审核(0)
     form.setFieldsValue({ 
       approverId: currentUserInfo.userId,
-      createTimeAsc: false 
+      createTimeAsc: false,
+      status: 0 // 默认选择待审核状态
     });
     
     fetchOrders();
@@ -139,6 +141,7 @@ export default function ApprovalManager() {
         startTime: startTime,
         endTime: endTime,
         createTimeAsc: values.createTimeAsc !== undefined ? values.createTimeAsc : false,
+        status: values.status !== undefined ? values.status : null,
       };
 
       const result = await pageOrder(queryDto as any); // 类型断言为任意类型，以兼容原接口
@@ -291,7 +294,24 @@ export default function ApprovalManager() {
   
   // 审批成功回调
   const handleApprovalSuccess = () => {
+    // 刷新订单列表
     fetchOrders();
+    
+    // 如果当前有打开的订单详情，也需要刷新详情内容
+    if (detailDrawerVisible && currentOrder) {
+      // 重新获取最新的订单信息
+      const orderId = currentOrder.id;
+      // 关闭再打开详情抽屉来触发重新加载
+      setDetailDrawerVisible(false);
+      setTimeout(() => {
+        // 查找对应的订单
+        const updatedOrder = orders.find(order => order.id === orderId);
+        if (updatedOrder) {
+          setCurrentOrder(updatedOrder);
+          setDetailDrawerVisible(true);
+        }
+      }, 300); // 短暂延迟确保DOM更新
+    }
   };
 
   // 订单状态渲染
@@ -300,7 +320,7 @@ export default function ApprovalManager() {
       case 0:
         return <Tag color='blue'>待审核</Tag>;
       case 1:
-        return <Tag color='green'>已审核</Tag>;
+        return <Tag color='green'>审批通过</Tag>;
       case 2:
         return <Tag color='orange'>入库中</Tag>;
       case 3:
@@ -430,6 +450,15 @@ export default function ApprovalManager() {
                 <Select placeholder='请选择订单类型' allowClear>
                   <Option value={1}>入库订单</Option>
                   <Option value={0}>出库订单</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name='status' label='订单状态'>
+                <Select placeholder='请选择订单状态' allowClear>
+                  <Option value={0}>待审核</Option>
+                  <Option value={1}>审批通过</Option>
+                  <Option value={-2}>审批拒绝</Option>
                 </Select>
               </Form.Item>
             </Col>

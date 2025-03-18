@@ -48,7 +48,7 @@ interface OrderQueryDtoWithStringDates {
   startTime: string; // 改为字符串类型
   endTime: string; // 改为字符串类型
   createTimeAsc: boolean;
-  status: number; // 状态：0-待审核，1-已审核，2-部分完成，3-已完成，-1-已取消
+  status: number; // 状态：0-待审核，1-审批通过，2-部分完成，3-已完成，-1-已取消
 }
 
 export default function OrderManager() {
@@ -276,9 +276,9 @@ export default function OrderManager() {
 
   // 取消订单
   const handleCancelOrder = (record: OrderVo) => {
-    // 只有待审核、已审核或入库中的订单可以取消
+    // 只有待审核、审批通过或入库中的订单可以取消
     if (record.status !== 0 && record.status !== 1 && record.status !== 2) {
-      message.error('只有待审核、已审核或入库中的订单可以取消');
+      message.error('只有待审核、审批通过或入库中的订单可以取消');
       return;
     }
 
@@ -334,7 +334,7 @@ export default function OrderManager() {
       case 0:
         return <Tag color='blue'>待审核</Tag>;
       case 1:
-        return <Tag color='green'>已审核</Tag>;
+        return <Tag color='green'>审批通过</Tag>;
       case 2:
         return <Tag color='orange'>入库中</Tag>;
       case 3:
@@ -474,7 +474,7 @@ export default function OrderManager() {
               <Form.Item name='status' label='订单状态'>
                 <Select placeholder='请选择订单状态' allowClear>
                   <Option value={0}>待审核</Option>
-                  <Option value={1}>已审核</Option>
+                  <Option value={1}>审批通过</Option>
                   <Option value={2}>入库中</Option>
                   <Option value={3}>已完成</Option>
                   <Option value={-1}>已取消</Option>

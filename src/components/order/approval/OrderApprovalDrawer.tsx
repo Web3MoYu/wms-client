@@ -11,6 +11,7 @@ import {
 } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { OrderVo } from '../../../api/order-service/OrderController';
+import { approve, reject } from '../../../api/order-service/ApprovalController';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -45,7 +46,9 @@ export default function OrderApprovalDrawer({
         const result = await approve(order?.id as string);
         if (result.code === 200) {
           message.success('订单审批通过');
+          // 先调用成功回调刷新列表数据
           onSuccess();
+          // 然后关闭抽屉
           onClose();
         } else {
           message.error(result.msg || '审批失败');
@@ -56,11 +59,13 @@ export default function OrderApprovalDrawer({
           setLoading(false);
           return;
         }
-        // 调用拒绝API
-        const result = await reject(order?.id as string, values.rejectReason);
+        // 调用拒绝API - 状态将变为-2（审批拒绝）
+        const result = await reject(order?.id as string, order?.type as number, values.rejectReason);
         if (result.code === 200) {
           message.success('已拒绝该订单');
+          // 先调用成功回调刷新列表数据
           onSuccess();
+          // 然后关闭抽屉
           onClose();
         } else {
           message.error(result.msg || '拒绝失败');

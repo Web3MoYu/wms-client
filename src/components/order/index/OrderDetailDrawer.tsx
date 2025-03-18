@@ -77,7 +77,7 @@ export default function OrderDetailDrawer({
       case 0:
         return <Tag color='blue'>待审核</Tag>;
       case 1:
-        return <Tag color='green'>已审核</Tag>;
+        return <Tag color='green'>审批通过</Tag>;
       case 2:
         return <Tag color='orange'>入库中</Tag>;
       case 3:
@@ -112,22 +112,6 @@ export default function OrderDetailDrawer({
     ) : (
       <Tag color='orange'>出库订单</Tag>
     );
-  };
-
-  // 渲染商品项状态
-  const renderItemStatus = (status: number) => {
-    switch (status) {
-      case 0:
-        return <Tag color='blue'>待开始</Tag>;
-      case 1:
-        return <Tag color='orange'>部分完成</Tag>;
-      case 2:
-        return <Tag color='green'>已完成</Tag>;
-      case -1:
-        return <Tag color='red'>已取消</Tag>;
-      default:
-        return <Tag color='default'>未知状态</Tag>;
-    }
   };
 
   // 渲染基本信息选项卡内容
@@ -183,72 +167,78 @@ export default function OrderDetailDrawer({
   const renderProductDetails = () => {
     return (
       <>
-        {detailData.map((detail, index) => (
-          <div key={index} style={{ marginBottom: 16 }}>
-            <Card 
-              title={
-                <span>
-                  {`商品 ${index + 1}: ${detail.product.productName} `}
-                  {renderItemStatus(detail.orderItems.status)}
-                </span>
-              }
-              size='small' 
-              bordered
-              style={{ marginBottom: 8 }}
-              type="inner"
-            >
-              <Descriptions column={4} bordered size="small">
-                <Descriptions.Item label='商品名称' span={2}>
-                  {detail.product.productName}
-                </Descriptions.Item>
-                <Descriptions.Item label='商品编码' span={2}>
-                  {detail.product.productCode}
-                </Descriptions.Item>
-                <Descriptions.Item label='品牌' span={1}>
-                  {detail.product.brand}
-                </Descriptions.Item>
-                <Descriptions.Item label='型号' span={1}>
-                  {detail.product.model}
-                </Descriptions.Item>
-                <Descriptions.Item label='规格' span={1}>
-                  {detail.product.spec}
-                </Descriptions.Item>
-                <Descriptions.Item label='单价' span={1}>
-                  ¥{detail.product.price}
-                </Descriptions.Item>
-              </Descriptions>
+        {detailData.map((detail, index) => {
+          // 检查状态值并确保是数字类型
+          console.log(`商品${index+1}状态:`, detail.orderItems.status, typeof detail.orderItems.status);
+          const itemStatus = Number(detail.orderItems.status);
+            
+          return (
+            <div key={index} style={{ marginBottom: 16 }}>
+              <Card 
+                title={
+                  <span>
+                    {`商品 ${index + 1}: ${detail.product.productName} `}
+                    {renderOrderStatus(itemStatus)}
+                  </span>
+                }
+                size='small' 
+                bordered
+                style={{ marginBottom: 8 }}
+                type="inner"
+              >
+                <Descriptions column={4} bordered size="small">
+                  <Descriptions.Item label='商品名称' span={2}>
+                    {detail.product.productName}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='商品编码' span={2}>
+                    {detail.product.productCode}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='品牌' span={1}>
+                    {detail.product.brand}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='型号' span={1}>
+                    {detail.product.model}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='规格' span={1}>
+                    {detail.product.spec}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='单价' span={1}>
+                    ¥{detail.product.price}
+                  </Descriptions.Item>
+                </Descriptions>
 
-              <Divider style={{ margin: '12px 0' }} />
+                <Divider style={{ margin: '12px 0' }} />
 
-              <Descriptions column={4} bordered size="small">
-                <Descriptions.Item label='预期数量' span={1}>
-                  {detail.orderItems.expectedQuantity}
-                </Descriptions.Item>
-                <Descriptions.Item label='实际数量' span={1}>
-                  {detail.orderItems.actualQuantity}
-                </Descriptions.Item>
-                <Descriptions.Item label='单价' span={1}>
-                  ¥{detail.orderItems.price?.toFixed(2) || '0.00'}
-                </Descriptions.Item>
-                <Descriptions.Item label='金额' span={1}>
-                  ¥{detail.orderItems.amount?.toFixed(2) || '0.00'}
-                </Descriptions.Item>
-                <Descriptions.Item label='库区' span={2}>
-                  {detail.orderItems.areaId || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label='货位' span={2}>
-                  {detail.orderItems.location?.join(', ') || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label='批次号' span={2}>
-                  {detail.orderItems.batchNumber || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label='生产日期' span={2}>
-                  {detail.orderItems.productionDate ? moment(detail.orderItems.productionDate).format('YYYY-MM-DD') : '-'}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </div>
-        ))}
+                <Descriptions column={4} bordered size="small">
+                  <Descriptions.Item label='预期数量' span={1}>
+                    {detail.orderItems.expectedQuantity}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='实际数量' span={1}>
+                    {detail.orderItems.actualQuantity}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='单价' span={1}>
+                    ¥{detail.orderItems.price?.toFixed(2) || '0.00'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='金额' span={1}>
+                    ¥{detail.orderItems.amount?.toFixed(2) || '0.00'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='库区' span={2}>
+                    {detail.orderItems.areaId || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='货位' span={2}>
+                    {detail.orderItems.location?.join(', ') || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='批次号' span={2}>
+                    {detail.orderItems.batchNumber || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='生产日期' span={2}>
+                    {detail.orderItems.productionDate ? moment(detail.orderItems.productionDate).format('YYYY-MM-DD') : '-'}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            </div>
+          );
+        })}
       </>
     );
   };
