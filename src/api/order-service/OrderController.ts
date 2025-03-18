@@ -32,6 +32,7 @@ export interface OrderQueryDto {
   creatorId: string; // 创建人ID
   approverId: string; // 审核人id
   inspectorId: string; // 质检人员ID
+  status: number; // 状态：0-待审核，1-已审核，2-入库中，3-已完成，-1-已取消
 
   // 时间范围
   startTime: Date; // 开始时间

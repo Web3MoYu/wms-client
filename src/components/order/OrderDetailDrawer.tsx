@@ -74,7 +74,7 @@ export default function OrderDetailDrawer({
       case 1:
         return <Tag color='green'>已审核</Tag>;
       case 2:
-        return <Tag color='orange'>部分完成</Tag>;
+        return <Tag color='orange'>入库中</Tag>;
       case 3:
         return <Tag color='green'>已完成</Tag>;
       case -1:
@@ -147,6 +147,9 @@ export default function OrderDetailDrawer({
           </Descriptions.Item>
           <Descriptions.Item label='总金额' span={1}>
             ¥{order?.totalAmount?.toFixed(2) || '0.00'}
+          </Descriptions.Item>
+          <Descriptions.Item label='备注' span={3}>
+            {order?.remark || '-'}
           </Descriptions.Item>
         </Descriptions>
       </Card>

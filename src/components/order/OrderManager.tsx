@@ -43,6 +43,7 @@ interface OrderQueryDtoWithStringDates {
   startTime: string; // 改为字符串类型
   endTime: string; // 改为字符串类型
   createTimeAsc: boolean;
+  status: number; // 状态：0-待审核，1-已审核，2-部分完成，3-已完成，-1-已取消
 }
 
 export default function OrderManager() {
@@ -111,6 +112,7 @@ export default function OrderManager() {
         startTime: startTime, // 直接使用字符串格式
         endTime: endTime, // 直接使用字符串格式
         createTimeAsc: false, // 默认降序，最新的在前面
+        status: values.status !== undefined ? values.status : null,
       };
 
       const result = await queryOrders(queryDto as any); // 类型断言为任意类型，以兼容原接口
@@ -244,7 +246,7 @@ export default function OrderManager() {
       case 1:
         return <Tag color='green'>已审核</Tag>;
       case 2:
-        return <Tag color='orange'>部分完成</Tag>;
+        return <Tag color='orange'>入库中</Tag>;
       case 3:
         return <Tag color='green'>已完成</Tag>;
       case -1:
@@ -369,6 +371,17 @@ export default function OrderManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
+              <Form.Item name='status' label='订单状态'>
+                <Select placeholder='请选择订单状态' allowClear>
+                  <Option value={0}>待审核</Option>
+                  <Option value={1}>已审核</Option>
+                  <Option value={2}>入库中</Option>
+                  <Option value={3}>已完成</Option>
+                  <Option value={-1}>已取消</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={6}>
               <Form.Item name='inspectionStatus' label='质检状态'>
                 <Select placeholder='请选择质检状态' allowClear>
                   <Option value={0}>未质检</Option>
@@ -377,6 +390,8 @@ export default function OrderManager() {
                 </Select>
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={6}>
               <Form.Item name='dateRange' label='创建时间'>
                 <RangePicker
@@ -388,8 +403,6 @@ export default function OrderManager() {
                 />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={6}>
               <Form.Item name='creatorId' label='创建人'>
                 <Select
@@ -441,7 +454,9 @@ export default function OrderManager() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={6}>
+          </Row>
+          <Row gutter={16}>
+            <Col span={24}>
               <div style={{ textAlign: 'right' }}>
                 <Space>
                   <Button
