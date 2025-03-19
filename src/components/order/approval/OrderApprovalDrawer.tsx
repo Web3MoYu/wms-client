@@ -6,15 +6,15 @@ import {
   message,
   Form,
   Radio,
-  Input,
-  Typography,
+  Card,
+  Descriptions,
 } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { OrderVo } from '../../../api/order-service/OrderController';
 import { approve, reject } from '../../../api/order-service/ApprovalController';
-
-const { TextArea } = Input;
-const { Title, Text } = Typography;
+import OrderRejectForm from './OrderRejectForm';
+import InboundApproveForm from './InboundApproveForm';
+import OutboundApproveForm from './OutboundApproveForm';
 
 interface OrderApprovalDrawerProps {
   visible: boolean;
@@ -93,10 +93,26 @@ export default function OrderApprovalDrawer({
     onClose();
   };
 
+  // 根据订单类型和审批类型渲染对应的表单组件
+  const renderApprovalForm = () => {
+    if (!order) return null;
+
+    if (approvalType === 'reject') {
+      return <OrderRejectForm form={form} order={order} />;
+    } else {
+      // 根据订单类型显示不同的审批表单
+      return order.type === 1 ? (
+        <InboundApproveForm form={form} order={order} />
+      ) : (
+        <OutboundApproveForm form={form} order={order} />
+      );
+    }
+  };
+
   return (
     <Drawer
       title='订单审批'
-      width={500}
+      width={520}
       open={visible}
       onClose={handleClose}
       footer={
@@ -124,50 +140,40 @@ export default function OrderApprovalDrawer({
     >
       {order && (
         <div>
-          <Title level={4}>订单信息</Title>
-          <div style={{ marginBottom: 16 }}>
-            <Text strong>订单编号：</Text> {order.orderNo}
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <Text strong>订单类型：</Text>{' '}
-            {order.type === 1 ? '入库订单' : '出库订单'}
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <Text strong>创建人：</Text> {order.creator?.realName || '-'}
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <Text strong>创建时间：</Text> {order.createTime || '-'}
-          </div>
+          <Card title="订单基本信息" bordered={false}>
+            <Descriptions column={1}>
+              <Descriptions.Item label="订单编号">{order.orderNo}</Descriptions.Item>
+              <Descriptions.Item label="订单类型">
+                {order.type === 1 ? '入库订单' : '出库订单'}
+              </Descriptions.Item>
+              <Descriptions.Item label="创建人">
+                {order.creator?.realName || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="创建时间">
+                {order.createTime || '-'}
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            审批决定
-          </Title>
-
-          <Form form={form} layout='vertical'>
-            <Form.Item name='approvalType' initialValue='approve'>
-              <Radio.Group
-                onChange={(e) => setApprovalType(e.target.value)}
-                value={approvalType}
-              >
-                <Radio value='approve'>
-                  <CheckCircleOutlined style={{ color: '#52c41a' }} /> 通过
-                </Radio>
-                <Radio value='reject'>
-                  <CloseCircleOutlined style={{ color: '#ff4d4f' }} /> 拒绝
-                </Radio>
-              </Radio.Group>
-            </Form.Item>
-
-            {approvalType === 'reject' && (
-              <Form.Item
-                name='rejectReason'
-                label='拒绝理由'
-                rules={[{ required: true, message: '请输入拒绝理由' }]}
-              >
-                <TextArea rows={4} placeholder='请输入拒绝理由' />
+          <Card title="审批决定" bordered={false} style={{ marginTop: 16 }}>
+            <Form form={form} layout='vertical'>
+              <Form.Item name='approvalType' initialValue='approve'>
+                <Radio.Group
+                  onChange={(e) => setApprovalType(e.target.value)}
+                  value={approvalType}
+                >
+                  <Radio value='approve'>
+                    <CheckCircleOutlined style={{ color: '#52c41a' }} /> 通过
+                  </Radio>
+                  <Radio value='reject'>
+                    <CloseCircleOutlined style={{ color: '#ff4d4f' }} /> 拒绝
+                  </Radio>
+                </Radio.Group>
               </Form.Item>
-            )}
-          </Form>
+
+              {renderApprovalForm()}
+            </Form>
+          </Card>
         </div>
       )}
     </Drawer>
