@@ -11,7 +11,7 @@ import {
 } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { OrderVo } from '../../../api/order-service/OrderController';
-import { approve, reject } from '../../../api/order-service/ApprovalController';
+import { approve, reject, approveOrder } from '../../../api/order-service/ApprovalController';
 import OrderRejectForm from './OrderRejectForm';
 import InboundApproveForm from './InboundApproveForm';
 import OutboundApproveForm from './OutboundApproveForm';
@@ -44,8 +44,19 @@ export default function OrderApprovalDrawer({
       setLoading(true);
 
       if (approvalType === 'approve') {
-        // 调用审批通过API
-        const result = await approve(order?.id as string);
+        let result;
+        // 根据订单类型处理审批
+        if (order?.type === 1) { 
+          // 入库订单
+          const approvalItems = values.approvalItems || [];
+          // 调用入库订单批准API
+          result = await approveOrder(approvalItems, order.id, order.type);
+        } else {
+          // 出库订单
+          // 暂时使用旧的approve接口
+          result = await approve(order?.id as string);
+        }
+
         if (result.code === 200) {
           message.success('订单审批通过');
           // 先调用成功回调刷新列表数据
@@ -112,7 +123,7 @@ export default function OrderApprovalDrawer({
   return (
     <Drawer
       title='订单审批'
-      width={520}
+      width={800}
       open={visible}
       onClose={handleClose}
       footer={

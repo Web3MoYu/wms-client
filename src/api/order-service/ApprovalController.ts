@@ -1,6 +1,13 @@
 import axios from '../../utils/mxAxios';
 import { Page, Result } from '../Model';
+import { MyLocation } from '../stock-service/StockController';
 import { OrderQueryDto, OrderVo } from './OrderController';
+
+export interface ApprovalDto {
+  id: string; // 详情id
+  areaId: string; // 区域id
+  location: MyLocation[]; // 位置
+}
 
 /**
  * 分页查询审批订单信息
@@ -56,6 +63,31 @@ export function reject(
   return new Promise((resolve, reject) => {
     axios
       .put(`/order/approval/reject/${type}/${id}`, {}, { params: { remark } })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 审批订单
+ *
+ * @param dto 审批信息
+ * @param id 订单ID
+ * @param type 订单类型
+ * @return 审批结果
+ */
+export function approveOrder(
+  dto: ApprovalDto[],
+  id: string,
+  type: number
+): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post(`/order/approval/${type}/${id}`, dto)
       .then((res) => {
         resolve(res.data);
       })
