@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Select, Switch, Alert, Space } from 'antd';
+import { Form, Input, Select, Alert, Space } from 'antd';
 import { Area } from '../../../api/location-service/AreaController';
 import { Shelf } from '../../../api/location-service/ShelfController';
 import { StorageVo } from '../../../api/location-service/StorageController';
@@ -188,6 +188,7 @@ const StorageForm: React.FC<StorageFormProps> = ({
           defaultValue={editingStorage?.productId}
           filterOption={false}
           onSearch={handleProductSearch}
+          disabled={!!editingStorage}
         >
           {products.map((product) => (
             <Option key={product.id} value={product.id}>
@@ -200,10 +201,14 @@ const StorageForm: React.FC<StorageFormProps> = ({
       <Form.Item
         name='status'
         label='状态'
-        valuePropName='checked'
-        initialValue={true}
+        initialValue={1}
+        rules={[{ required: true, message: '请选择状态' }]}
       >
-        <Switch checkedChildren='空闲' unCheckedChildren='禁用' />
+        <Select placeholder='请选择状态' disabled={editingStorage?.status === 0}>
+          <Option value={1}>空闲</Option>
+          <Option value={0}>占用</Option>
+          <Option value={2}>禁用</Option>
+        </Select>
       </Form.Item>
     </Form>
   );

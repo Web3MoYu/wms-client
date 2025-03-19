@@ -174,7 +174,6 @@ export default function StorageManager() {
     // 设置表单值
     drawerForm.setFieldsValue({
       ...record,
-      status: record.status === 1, // 1-空闲，2-禁用
     });
     // 打开抽屉
     setDrawerVisible(true);

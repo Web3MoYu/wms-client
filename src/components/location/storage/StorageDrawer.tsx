@@ -210,7 +210,7 @@ const StorageDrawer: React.FC<DrawerProps> = ({
       // 转换状态值
       const storageData: Storage = {
         ...values,
-        status: values.status ? 1 : 2, // true对应空闲(1)，false对应禁用(2)
+        // status字段现在已经是正确的数值，不需要转换
         productId: values.productId || '', // 确保productId有值
       };
 

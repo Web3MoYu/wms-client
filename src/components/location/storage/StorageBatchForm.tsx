@@ -601,6 +601,7 @@ const StorageBatchForm = forwardRef<BatchFormRef, StorageBatchFormProps>(
             style={{ width: '100%' }}
           >
             <Option value={1}>空闲</Option>
+            <Option value={0}>占用</Option>
             <Option value={2}>禁用</Option>
           </Select>
         ),
