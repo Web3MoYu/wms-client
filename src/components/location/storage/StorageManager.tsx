@@ -407,6 +407,11 @@ export default function StorageManager() {
                   onClick={() => {
                     form.resetFields();
                     setShelves([]);
+                    // 重置分页数据
+                    setPagination({
+                      current: 1,
+                      pageSize: 10,
+                    });
                   }}
                   style={{ borderRadius: '4px' }}
                 >
