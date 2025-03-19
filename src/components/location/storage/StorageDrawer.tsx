@@ -7,7 +7,8 @@ import {
   addStorage, 
   updateStorage, 
   addBatchStorage, 
-  checkStorageExists 
+  checkStorageExists, 
+  StorageVo
 } from '../../../api/location-service/StorageController';
 import StorageForm from './StorageForm';
 import StorageBatchForm, { BatchFormRef } from './StorageBatchForm';
@@ -20,7 +21,7 @@ interface DrawerProps {
   onClose: () => void;
   onSuccess: () => void;
   areaList: Area[];
-  editingStorage: Storage | null;
+  editingStorage: StorageVo | null;
   drawerForm: any;
 }
 

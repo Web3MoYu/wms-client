@@ -24,7 +24,6 @@ import {
 import {
   pageStorages,
   StorageVo,
-  Storage,
   deleteStorage,
 } from '../../../api/location-service/StorageController';
 import {
@@ -51,7 +50,7 @@ export default function StorageManager() {
   const [total, setTotal] = useState<number>(0);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [drawerTitle, setDrawerTitle] = useState('');
-  const [editingStorage, setEditingStorage] = useState<Storage | null>(null);
+  const [editingStorage, setEditingStorage] = useState<StorageVo | null>(null);
 
   // 查询参数
   const [form] = Form.useForm();
@@ -169,7 +168,7 @@ export default function StorageManager() {
   };
 
   // 处理编辑库位
-  const handleEdit = (record: Storage) => {
+  const handleEdit = (record: StorageVo) => {
     setDrawerTitle('编辑库位');
     setEditingStorage(record);
     // 设置表单值
