@@ -514,7 +514,17 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                         type='text'
                                         danger
                                         icon={<MinusCircleOutlined />}
-                                        onClick={() => remove(locationIndex)}
+                                        onClick={() => {
+                                          remove(locationIndex);
+                                          // 删除位置后，强制刷新表单，触发重新渲染和库位占用状态更新
+                                          setTimeout(() => {
+                                            const currentValues =
+                                              form.getFieldsValue();
+                                            form.setFieldsValue({
+                                              ...currentValues,
+                                            });
+                                          }, 0);
+                                        }}
                                         style={{ marginTop: 8 }}
                                       />
                                     </Col>
