@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   Card,
@@ -99,7 +99,7 @@ export default function StockManager() {
     setLoading(true);
     try {
       const values = form.getFieldsValue();
-      
+
       const stockDto: StockDto = {
         page: pagination.current,
         pageSize: pagination.pageSize,
@@ -107,10 +107,18 @@ export default function StockManager() {
         areaId: values.areaId || '',
         status: values.status === undefined ? null : values.status,
         batchNumber: values.batchNumber || '',
-        ascSortByProdDate: sortConfig.prodDate === undefined ? false : sortConfig.prodDate,
-        ascSortByQuantity: sortConfig.quantity === undefined ? false : sortConfig.quantity,
-        ascSortByAvailableQuantity: sortConfig.availableQuantity === undefined ? false : sortConfig.availableQuantity,
-        ascSortByLockedQuantity: sortConfig.lockedQuantity === undefined ? false : sortConfig.lockedQuantity,
+        ascSortByProdDate:
+          sortConfig.prodDate === undefined ? false : sortConfig.prodDate,
+        ascSortByQuantity:
+          sortConfig.quantity === undefined ? false : sortConfig.quantity,
+        ascSortByAvailableQuantity:
+          sortConfig.availableQuantity === undefined
+            ? false
+            : sortConfig.availableQuantity,
+        ascSortByLockedQuantity:
+          sortConfig.lockedQuantity === undefined
+            ? false
+            : sortConfig.lockedQuantity,
       };
 
       const res = await getStockList(stockDto);
@@ -176,7 +184,7 @@ export default function StockManager() {
       current: pagination.current,
       pageSize: pagination.pageSize,
     });
-    
+
     // 清空之前的排序状态
     const newSortConfig: {
       prodDate?: boolean;
@@ -184,7 +192,7 @@ export default function StockManager() {
       availableQuantity?: boolean;
       lockedQuantity?: boolean;
     } = {};
-    
+
     // 根据当前排序字段设置排序状态
     if (sorter.field) {
       switch (sorter.field) {
@@ -202,7 +210,7 @@ export default function StockManager() {
           break;
       }
     }
-    
+
     setSortConfig(newSortConfig);
   };
 
@@ -238,7 +246,7 @@ export default function StockManager() {
   const handleDetailRefresh = async () => {
     // 先刷新库存列表保持列表数据最新
     await fetchStocks();
-    
+
     // 如果当前有正在查看的详情，直接通过API重新获取最新数据
     if (detailStock && detailVisible) {
       try {
@@ -247,7 +255,7 @@ export default function StockManager() {
           detailStock.productId,
           detailStock.batchNumber
         );
-        
+
         if (res.code === 200 && res.data) {
           // 更新详情数据
           setDetailStock(res.data);
@@ -305,13 +313,13 @@ export default function StockManager() {
       key: 'alertStatus',
       render: (status: number) => {
         if (status === 0) {
-          return <Tag color="green">正常</Tag>;
+          return <Tag color='green'>正常</Tag>;
         } else if (status === 1) {
-          return <Tag color="orange">低于最小库存</Tag>;
+          return <Tag color='orange'>低于最小库存</Tag>;
         } else if (status === 2) {
-          return <Tag color="red">超过最大库存</Tag>;
+          return <Tag color='red'>超过最大库存</Tag>;
         }
-        return <Tag color="default">未知</Tag>;
+        return <Tag color='default'>未知</Tag>;
       },
     },
     {
