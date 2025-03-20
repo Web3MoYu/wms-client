@@ -11,7 +11,11 @@ import {
 } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { OrderVo } from '../../../api/order-service/OrderController';
-import { approve, reject, approveInbound } from '../../../api/order-service/ApprovalController';
+import {
+  approve,
+  reject,
+  approveInbound,
+} from '../../../api/order-service/ApprovalController';
 import OrderRejectForm from './OrderRejectForm';
 import InboundApproveForm from './InboundApproveForm';
 import OutboundApproveForm from './OutboundApproveForm';
@@ -20,7 +24,7 @@ interface OrderApprovalDrawerProps {
   visible: boolean;
   order: OrderVo | null;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (orderNo?: string) => void;
   onReject?: () => void;
 }
 
@@ -46,7 +50,7 @@ export default function OrderApprovalDrawer({
       if (approvalType === 'approve') {
         let result;
         // 根据订单类型处理审批
-        if (order?.type === 1) { 
+        if (order?.type === 1) {
           // 入库订单
           const approvalItems = values.approvalItems || [];
           // 调用入库订单批准API
@@ -59,10 +63,10 @@ export default function OrderApprovalDrawer({
 
         if (result.code === 200) {
           message.success('订单审批通过');
-          // 先调用成功回调刷新列表数据
-          onSuccess();
-          // 然后关闭抽屉
+          // 先关闭抽屉
           onClose();
+          // 然后调用成功回调，并传递当前订单编号，以便父组件更新查询条件
+          onSuccess(order?.orderNo);
         } else {
           message.error(result.msg || '审批失败');
         }
@@ -73,7 +77,11 @@ export default function OrderApprovalDrawer({
           return;
         }
         // 调用拒绝API - 状态将变为-2（审批拒绝）
-        const result = await reject(order?.id as string, order?.type as number, values.rejectReason);
+        const result = await reject(
+          order?.id as string,
+          order?.type as number,
+          values.rejectReason
+        );
         if (result.code === 200) {
           message.success('已拒绝该订单');
           // 如果存在拒绝回调，则调用拒绝回调，不再调用成功回调
@@ -81,8 +89,8 @@ export default function OrderApprovalDrawer({
             onReject();
           } else {
             // 否则调用成功回调并关闭当前抽屉
-            onSuccess();
             onClose();
+            onSuccess();
           }
         } else {
           message.error(result.msg || '拒绝失败');
@@ -151,22 +159,24 @@ export default function OrderApprovalDrawer({
     >
       {order && (
         <div>
-          <Card title="订单基本信息" bordered={false}>
+          <Card title='订单基本信息' bordered={false}>
             <Descriptions column={1}>
-              <Descriptions.Item label="订单编号">{order.orderNo}</Descriptions.Item>
-              <Descriptions.Item label="订单类型">
+              <Descriptions.Item label='订单编号'>
+                {order.orderNo}
+              </Descriptions.Item>
+              <Descriptions.Item label='订单类型'>
                 {order.type === 1 ? '入库订单' : '出库订单'}
               </Descriptions.Item>
-              <Descriptions.Item label="创建人">
+              <Descriptions.Item label='创建人'>
                 {order.creator?.realName || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="创建时间">
+              <Descriptions.Item label='创建时间'>
                 {order.createTime || '-'}
               </Descriptions.Item>
             </Descriptions>
           </Card>
 
-          <Card title="审批决定" bordered={false} style={{ marginTop: 16 }}>
+          <Card title='审批决定' bordered={false} style={{ marginTop: 16 }}>
             <Form form={form} layout='vertical'>
               <Form.Item name='approvalType' initialValue='approve'>
                 <Radio.Group

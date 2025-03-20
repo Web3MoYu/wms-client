@@ -322,25 +322,22 @@ export default function ApprovalManager() {
   };
   
   // 审批成功回调
-  const handleApprovalSuccess = () => {
+  const handleApprovalSuccess = (orderNo?: string) => {
+    // 如果有订单编号传入，则更新查询条件
+    if (orderNo) {
+      // 设置查询条件：状态为null（查询全部）、订单编号为当前订单编号
+      form.setFieldsValue({
+        status: null,
+        orderNo: orderNo
+      });
+    }
+    
     // 刷新订单列表
     fetchOrders();
     
-    // 如果当前有打开的订单详情，也需要刷新详情内容
-    if (detailDrawerVisible && currentOrder) {
-      // 重新获取最新的订单信息
-      const orderId = currentOrder.id;
-      // 关闭再打开详情抽屉来触发重新加载
-      setDetailDrawerVisible(false);
-      setTimeout(() => {
-        // 查找对应的订单
-        const updatedOrder = orders.find(order => order.id === orderId);
-        if (updatedOrder) {
-          setCurrentOrder(updatedOrder);
-          setDetailDrawerVisible(true);
-        }
-      }, 300); // 短暂延迟确保DOM更新
-    }
+    // 关闭所有抽屉
+    setDetailDrawerVisible(false);
+    setCurrentOrder(null);
   };
 
   // 订单状态渲染
