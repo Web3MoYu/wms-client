@@ -10,6 +10,7 @@ import {
   Tabs,
   Badge,
   Button,
+  Space,
 } from 'antd';
 import moment from 'moment';
 import { inDetail, outDetail, OrderVo, OrderInItem, OrderOutItem, OrderDetailVo } from '../../../api/order-service/OrderController';
@@ -231,10 +232,21 @@ export default function OrderDetailDrawer({
                     ¥{detail.orderItems.amount?.toFixed(2) || '0.00'}
                   </Descriptions.Item>
                   <Descriptions.Item label='库区' span={2}>
-                    {detail.orderItems.areaId || '-'}
+                    <Tag color="blue">{detail.areaName || '-'}</Tag>
                   </Descriptions.Item>
                   <Descriptions.Item label='货位' span={2}>
-                    {detail.orderItems.location?.join(', ') || '-'}
+                    <Space size={[0, 4]} wrap>
+                      {detail.locationName?.map((loc, idx) => (
+                        <Tag 
+                          key={idx} 
+                          color="cyan"
+                          style={{ marginBottom: 4 }}
+                        >
+                          {`${loc.shelfName}: ${loc.storageNames.join(', ')}`}
+                        </Tag>
+                      ))}
+                      {(!detail.locationName || detail.locationName.length === 0) && '-'}
+                    </Space>
                   </Descriptions.Item>
                   <Descriptions.Item label='批次号' span={2}>
                     {detail.orderItems.batchNumber || '-'}

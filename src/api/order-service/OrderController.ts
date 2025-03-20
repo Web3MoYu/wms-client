@@ -2,6 +2,7 @@ import axios from '../../utils/mxAxios';
 import { User } from '../sys-service/UserController';
 import { Page, Result } from '../Model';
 import { Product } from '../product-service/ProductController';
+import { LocationVo } from '../stock-service/StockController';
 
 export interface OrderVo {
   id: string; // id
@@ -136,6 +137,8 @@ export interface OrderDto<O, OI> {
 export interface OrderDetailVo<T> {
   product: Product;
   orderItems: T;
+  areaName: string;
+  locationName: LocationVo[];
 }
 
 /**
