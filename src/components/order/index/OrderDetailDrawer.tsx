@@ -277,6 +277,16 @@ export default function OrderDetailDrawer({
       onClose={onClose}
       open={visible}
       destroyOnClose
+      extra={
+        showApprovalButton && order?.status === 0 ? (
+          <Button 
+            type="primary" 
+            onClick={() => onApproval && onApproval(order)}
+          >
+            审批
+          </Button>
+        ) : null
+      }
     >
       <Spin spinning={loading}>
         <Tabs 

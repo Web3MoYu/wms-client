@@ -112,8 +112,8 @@ export default function OrderApprovalDrawer({
     onClose();
   };
 
-  // 根据订单类型和审批类型渲染对应的表单组件
-  const renderApprovalForm = () => {
+  // 确保每次渲染都使用最新的order数据
+  const renderForm = () => {
     if (!order) return null;
 
     if (approvalType === 'reject') {
@@ -121,9 +121,17 @@ export default function OrderApprovalDrawer({
     } else {
       // 根据订单类型显示不同的审批表单
       return order.type === 1 ? (
-        <InboundApproveForm form={form} order={order} />
+        <InboundApproveForm 
+          form={form} 
+          order={order} 
+          key={`inbound-${order.id}`} 
+        />
       ) : (
-        <OutboundApproveForm form={form} order={order} />
+        <OutboundApproveForm 
+          form={form} 
+          order={order} 
+          key={`outbound-${order.id}`} 
+        />
       );
     }
   };
@@ -134,6 +142,7 @@ export default function OrderApprovalDrawer({
       width={800}
       open={visible}
       onClose={handleClose}
+      destroyOnClose={true}
       footer={
         <div style={{ textAlign: 'right' }}>
           <Space>
@@ -192,7 +201,7 @@ export default function OrderApprovalDrawer({
                 </Radio.Group>
               </Form.Item>
 
-              {renderApprovalForm()}
+              {renderForm()}
             </Form>
           </Card>
         </div>

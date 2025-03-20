@@ -294,12 +294,6 @@ export default function ApprovalManager() {
     setCurrentOrder(null);
   };
 
-  // 打开审批抽屉
-  const handleOpenApproval = (order: OrderVo) => {
-    setCurrentOrder(order);
-    setApprovalDrawerVisible(true);
-  };
-  
   // 关闭审批抽屉
   const handleCloseApproval = () => {
     setApprovalDrawerVisible(false);
@@ -338,6 +332,14 @@ export default function ApprovalManager() {
     // 关闭所有抽屉
     setDetailDrawerVisible(false);
     setCurrentOrder(null);
+  };
+
+  // 从详情页面打开审批抽屉
+  const handleOpenApprovalFromDetail = (order: OrderVo) => {
+    // 确保使用最新的订单数据
+    setCurrentOrder(order);
+    // 打开审批抽屉
+    setApprovalDrawerVisible(true);
   };
 
   // 订单状态渲染
@@ -582,7 +584,7 @@ export default function ApprovalManager() {
           onClose={handleCloseDetailDrawer}
           order={currentOrder}
           showApprovalButton={true}
-          onApproval={handleOpenApproval}
+          onApproval={handleOpenApprovalFromDetail}
         />
       )}
       
