@@ -19,7 +19,7 @@ import debounce from 'lodash/debounce';
 import moment from 'moment';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { addStock } from '../../../api/stock-service/StockController';
+import { addStock, getBatchNumberByCode } from '../../../api/stock-service/StockController';
 import { searchProducts } from '../../../api/product-service/ProductController';
 import { getAllAreas } from '../../../api/location-service/AreaController';
 import { getShelfListByAreaId } from '../../../api/location-service/ShelfController';
@@ -218,9 +218,7 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
 
     try {
       // 使用产品编码和批次号调用API
-      const res = await import(
-        '../../../api/stock-service/StockController'
-      ).then((module) => module.getBatchNumber(productCode, batchNumber));
+      const res = await getBatchNumberByCode(productCode, batchNumber);
 
       if (res.code === 200 && res.data) {
         const batchList = Array.isArray(res.data)

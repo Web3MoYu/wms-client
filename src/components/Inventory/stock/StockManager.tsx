@@ -171,7 +171,7 @@ export default function StockManager() {
   }, 500);
 
   // 分页变化处理
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+  const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
     setPagination({
       current: pagination.current,
       pageSize: pagination.pageSize,

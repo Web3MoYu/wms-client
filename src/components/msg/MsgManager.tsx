@@ -299,7 +299,7 @@ export default function MsgManager() {
     {
       title: '操作',
       key: 'action',
-      render: (text: string, record: Msg) => (
+      render: (_text: string, record: Msg) => (
         <Space size='middle'>
           {record.readStatus === 0 ? (
             <Button

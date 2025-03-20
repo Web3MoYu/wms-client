@@ -159,7 +159,7 @@ export default function OrderManager() {
   };
 
   // 表格分页、排序、筛选变化时的回调
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+  const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
     // 处理排序
     if (sorter && sorter.field === 'createTime') {
       // 设置createTimeAsc表单值
@@ -406,7 +406,7 @@ export default function OrderManager() {
     {
       title: '操作',
       key: 'action',
-      render: (text: string, record: OrderVo) => (
+      render: (_text: string, record: OrderVo) => (
         <Space size='middle'>
           <a onClick={() => handleViewDetail(record)}>查看详情</a>
           {(record.status === 0 ||

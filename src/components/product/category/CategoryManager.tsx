@@ -252,7 +252,7 @@ export default function CategoryManager() {
             top: '5%',
             bottom: '5%',
             symbol: 'emptyCircle',
-            symbolSize: function (value: any, params: any) {
+            symbolSize: function (_value: any, params: any) {
               // 虚拟根节点使用较大的圆圈
               return params.data.value === 'root' ? 20 : 14;
             },

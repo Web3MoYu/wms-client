@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button,
   Card,
@@ -48,7 +48,7 @@ export default function ShelfManager() {
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
   const [drawerTitle, setDrawerTitle] = useState<string>('');
   const [editingShelf, setEditingShelf] = useState<Shelf | null>(null);
-  
+
   // 搜索表单
   const [searchForm] = Form.useForm();
   // 抽屉表单
@@ -91,7 +91,7 @@ export default function ShelfManager() {
         formValues.areaId || '',
         formValues.status === undefined ? 1 : formValues.status
       );
-      
+
       if (res.code === 200) {
         setShelfList(res.data.records as (Shelf & ShelfVo)[]);
         setTotal(res.data.total);
@@ -133,7 +133,7 @@ export default function ShelfManager() {
     setEditingShelf(record);
     drawerForm.setFieldsValue({
       ...record,
-      status: record.status === 1
+      status: record.status === 1,
     });
     setDrawerVisible(true);
   };
@@ -176,16 +176,20 @@ export default function ShelfManager() {
   const validateShelfCode = async (_: any, value: string) => {
     // 不再检查空值，因为Form.Item的required规则会处理
     if (!value) return Promise.resolve();
-    
+
     const areaId = drawerForm.getFieldValue('areaId');
     if (!areaId) return Promise.reject(new Error('请先选择区域'));
-    
+
     try {
       // 如果是编辑状态且编码未修改，则不需要校验
-      if (editingShelf && editingShelf.shelfCode === value && editingShelf.areaId === areaId) {
+      if (
+        editingShelf &&
+        editingShelf.shelfCode === value &&
+        editingShelf.areaId === areaId
+      ) {
         return Promise.resolve();
       }
-      
+
       const res = await checkShelfCode(areaId, value);
       if (res.code === 200) {
         if (res.data === false) {
@@ -207,16 +211,20 @@ export default function ShelfManager() {
   const validateShelfName = async (_: any, value: string) => {
     // 不再检查空值，因为Form.Item的required规则会处理
     if (!value) return Promise.resolve();
-    
+
     const areaId = drawerForm.getFieldValue('areaId');
     if (!areaId) return Promise.reject(new Error('请先选择区域'));
-    
+
     try {
       // 如果是编辑状态且名称未修改，则不需要校验
-      if (editingShelf && editingShelf.shelfName === value && editingShelf.areaId === areaId) {
+      if (
+        editingShelf &&
+        editingShelf.shelfName === value &&
+        editingShelf.areaId === areaId
+      ) {
         return Promise.resolve();
       }
-      
+
       const res = await checkShelfName(areaId, value);
       if (res.code === 200) {
         if (res.data === false) {
@@ -275,27 +283,27 @@ export default function ShelfManager() {
       title: '操作',
       key: 'action',
       render: (_: any, record: Shelf) => (
-        <Space size="middle">
+        <Space size='middle'>
           <Button
-            type="primary"
+            type='primary'
             icon={<EditOutlined />}
-            size="small"
+            size='small'
             onClick={() => handleEdit(record)}
           >
             编辑
           </Button>
           <Popconfirm
-            title="确定要禁用这个货架吗?"
+            title='确定要禁用这个货架吗?'
             onConfirm={() => handleDisable(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okText='确定'
+            cancelText='取消'
             disabled={record.status === 0}
           >
-            <Button 
-              type="primary" 
-              danger 
-              icon={<DeleteOutlined />} 
-              size="small"
+            <Button
+              type='primary'
+              danger
+              icon={<DeleteOutlined />}
+              size='small'
               disabled={record.status === 0}
             >
               禁用
@@ -310,27 +318,29 @@ export default function ShelfManager() {
     <div className={styles.shelfManager}>
       <Card>
         <Title level={4}>货架管理</Title>
-        
+
         {/* 搜索表单 */}
-        <Form form={searchForm} layout="inline" className={styles.searchForm}>
+        <Form form={searchForm} layout='inline' className={styles.searchForm}>
           <Row gutter={[16, 16]} style={{ width: '100%' }}>
             <Col span={6}>
-              <Form.Item name="shelfName" label="货架名称">
-                <Input placeholder="请输入货架名称" allowClear />
+              <Form.Item name='shelfName' label='货架名称'>
+                <Input placeholder='请输入货架名称' allowClear />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="areaId" label="所属区域">
-                <Select placeholder="请选择区域" allowClear>
-                  {areaList.map(area => (
-                    <Option key={area.id} value={area.id}>{area.areaName}</Option>
+              <Form.Item name='areaId' label='所属区域'>
+                <Select placeholder='请选择区域' allowClear>
+                  {areaList.map((area) => (
+                    <Option key={area.id} value={area.id}>
+                      {area.areaName}
+                    </Option>
                   ))}
                 </Select>
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="status" label="状态" initialValue={1}>
-                <Select placeholder="请选择状态">
+              <Form.Item name='status' label='状态' initialValue={1}>
+                <Select placeholder='请选择状态'>
                   <Option value={null}>全部</Option>
                   <Option value={1}>启用</Option>
                   <Option value={0}>禁用</Option>
@@ -341,7 +351,7 @@ export default function ShelfManager() {
               <Form.Item>
                 <Space>
                   <Button
-                    type="primary"
+                    type='primary'
                     icon={<SearchOutlined />}
                     onClick={handleSearch}
                   >
@@ -351,7 +361,7 @@ export default function ShelfManager() {
                     重置
                   </Button>
                   <Button
-                    type="primary"
+                    type='primary'
                     icon={<PlusOutlined />}
                     onClick={handleAdd}
                   >
@@ -365,7 +375,7 @@ export default function ShelfManager() {
 
         {/* 数据表格 */}
         <Table
-          rowKey="id"
+          rowKey='id'
           columns={columns}
           dataSource={shelfList}
           loading={loading}
@@ -376,7 +386,7 @@ export default function ShelfManager() {
             showSizeChanger: true,
             showQuickJumper: true,
             pageSizeOptions: ['5', '10', '20', '50'],
-            showTotal: total => `共 ${total} 条记录`,
+            showTotal: (total) => `共 ${total} 条记录`,
             onChange: (page, size) => {
               setCurrent(page);
               setPageSize(size);
@@ -401,4 +411,3 @@ export default function ShelfManager() {
     </div>
   );
 }
-

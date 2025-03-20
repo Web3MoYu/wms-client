@@ -92,7 +92,10 @@ export function updateStock(stock: Stock): Promise<Result<string>> {
  * 查询批次号
  * @param batchNumber 批次号
  */
-export function getBatchNumber(code: string, batchNumber: string): Promise<Result<string>> {
+export function getBatchNumberByCode(
+  code: string,
+  batchNumber: string
+): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .get(`/stock/getBatchNumber/${code}/${batchNumber}`)
@@ -101,6 +104,18 @@ export function getBatchNumber(code: string, batchNumber: string): Promise<Resul
   });
 }
 
+/**
+ * 查询批次号
+ * @param batchNumber 批次号
+ */
+export function getBatchNumber(batchNumber: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/stock/getBatchNumber/${batchNumber}`)
+      .then((res) => resolve(res.data))
+      .catch((err) => reject(err));
+  });
+}
 /**
  * 根据商品id和批次号查询库存
  * @param productId 商品id
