@@ -12,8 +12,16 @@ import {
   Button,
   Alert,
   Spin,
+  Badge,
+  Tooltip,
+  Collapse,
 } from 'antd';
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  MinusCircleOutlined,
+  InfoCircleOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 import { OrderVo } from '../../../api/order-service/OrderController';
 import {
   Area,
@@ -30,8 +38,9 @@ import {
 } from '../../../api/order-service/OrderController';
 import { ApprovalDto } from '../../../api/order-service/ApprovalController';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 const { Option } = Select;
+const { Panel } = Collapse;
 
 interface InboundApproveFormProps {
   form: any;
@@ -48,8 +57,12 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
   const [storages, setStorages] = useState<{ [shelfId: string]: any[] }>({});
   const [orderDetails, setOrderDetails] = useState<OrderInItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [availableShelves, setAvailableShelves] = useState<{ [areaId: string]: Set<string> }>({});
+  const [availableShelves, setAvailableShelves] = useState<{
+    [areaId: string]: Set<string>;
+  }>({});
   const [initialized, setInitialized] = useState(false);
+  // 当前激活的面板
+  const [activeKey, setActiveKey] = useState<string | string[]>([]);
 
   // 组件加载时获取订单详情和区域列表
   useEffect(() => {
@@ -59,7 +72,8 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     setShelves({});
     setStorages({});
     setAvailableShelves({});
-    
+    setActiveKey([]);
+
     // 获取数据
     fetchOrderDetails();
     fetchAreas();
@@ -81,6 +95,9 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
           // 初始化表单数据
           initFormData(details);
           setInitialized(true);
+
+          // 默认全部关闭，不展开任何项目
+          setActiveKey([]);
         }
       }
     } catch (error) {
@@ -132,7 +149,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
           ...prev,
           [areaId]: res.data,
         }));
-        
+
         // 初始化该区域的可用货架集合
         setAvailableShelves((prev) => ({
           ...prev,
@@ -162,8 +179,10 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
         }));
 
         // 检查是否有状态为1的可用库位
-        const hasAvailableStorage = res.data.some(storage => storage.status === 1);
-        
+        const hasAvailableStorage = res.data.some(
+          (storage) => storage.status === 1
+        );
+
         // 如果有可用库位，将此货架ID添加到可用货架集合中
         if (hasAvailableStorage) {
           setAvailableShelves((prev) => {
@@ -341,292 +360,399 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     return selectedIds;
   };
 
+  // 处理面板变化
+  const handleCollapseChange = (key: string | string[]) => {
+    setActiveKey(key);
+  };
+
+  // 商品信息头部
+  const renderProductHeader = (detail: OrderInItem) => (
+    <Row align='middle' gutter={16} style={{ width: '100%' }}>
+      <Col flex='auto'>
+        <Space>
+          <Badge status='processing' />
+          <Text strong style={{ fontSize: 16 }}>
+            {detail?.productName || '商品'}
+          </Text>
+          <Text type='secondary'>
+            (ID: {detail?.productId || '-'})
+          </Text>
+        </Space>
+      </Col>
+      <Col>
+        <Space>
+          <Text>预期数量:</Text>
+          <Text strong>{detail?.expectedQuantity || 0}</Text>
+        </Space>
+      </Col>
+    </Row>
+  );
+
   return (
-    <Card title='入库订单审批表单' bordered={false} style={{ marginTop: 16 }}>
-      <Alert
-        message='库位分配规则'
-        description='同一个库位只能分配给一个商品的一个位置，不能重复选择相同的库位'
-        type='info'
-        showIcon
-        style={{ marginBottom: 16 }}
-      />
+    <Card bordered={false} className='inbound-approve-form'>
+      <Row gutter={[0, 16]}>
+        <Col span={24}>
+          <Title level={4}>入库订单审批</Title>
+          <Alert
+            message={
+              <Space>
+                <InfoCircleOutlined />
+                <Text strong>
+                  库位分配规则：同一个库位只能分配给一个商品的一个位置，不能重复选择相同的库位
+                </Text>
+              </Space>
+            }
+            type='info'
+            showIcon={false}
+            style={{
+              marginBottom: 16,
+              backgroundColor: '#f0f5ff',
+              border: '1px solid #d6e4ff',
+            }}
+          />
+        </Col>
 
-      {loading ? (
-        <Spin tip="加载中...">
-          <div style={{ height: 200 }}></div>
-        </Spin>
-      ) : !initialized || orderDetails.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <Text type='secondary'>正在加载订单数据，请稍候...</Text>
-        </div>
-      ) : (
-        <Form.List name='approvalItems'>
-          {(fields) => (
-            <>
-              {fields.map(({ key, name, ...restField }, index) => {
-                const detail = orderDetails[index];
-                const areaId = form.getFieldValue([
-                  'approvalItems',
-                  index,
-                  'areaId',
-                ]);
+        {loading ? (
+          <Col span={24}>
+            <Spin tip='加载中...' size='large'>
+              <div
+                style={{
+                  height: 200,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              ></div>
+            </Spin>
+          </Col>
+        ) : !initialized || orderDetails.length === 0 ? (
+          <Col span={24}>
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <Text type='secondary'>正在加载订单数据，请稍候...</Text>
+            </div>
+          </Col>
+        ) : (
+          <Col span={24}>
+            <Form.List name='approvalItems'>
+              {(fields) => (
+                <Collapse
+                  activeKey={activeKey}
+                  onChange={handleCollapseChange}
+                  expandIcon={({ isActive }) => (
+                    <RightOutlined
+                      rotate={isActive ? 90 : 0}
+                    />
+                  )}
+                  className='product-items-collapse'
+                >
+                  {fields.map(({ name, ...restField }, index) => {
+                    const detail = orderDetails[index];
+                    const areaId = form.getFieldValue([
+                      'approvalItems',
+                      index,
+                      'areaId',
+                    ]);
 
-                return (
-                  <Card
-                    key={key}
-                    type='inner'
-                    title={`${index + 1}. ${detail?.productName || '商品'}`}
-                    style={{ marginBottom: 16 }}
-                    extra={
-                      <Text type='secondary'>
-                        预期数量: {detail?.expectedQuantity || 0}
-                      </Text>
-                    }
-                  >
-                    <Row gutter={16}>
-                      <Col span={24}>
-                        <Space>
-                          <Text strong>商品ID:</Text>
-                          <Text>{detail?.productId || '-'}</Text>
-                        </Space>
-                      </Col>
-                    </Row>
-
-                    <Row gutter={16} style={{ marginTop: 16 }}>
-                      <Col span={24}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'areaId']}
-                          label='区域'
-                          rules={[{ required: true, message: '请选择区域' }]}
-                        >
-                          <Select
-                            placeholder='请选择区域'
-                            onChange={(value) => handleAreaChange(value, index)}
-                            loading={loading}
-                            style={{ width: '100%' }}
-                          >
-                            {areas.map((area) => (
-                              <Option key={area.id} value={area.id}>
-                                {area.areaName}
-                              </Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Form.List name={[name, 'location']}>
-                      {(locationFields, { add, remove }) => (
-                        <>
-                          {locationFields.map(
-                            (
-                              {
-                                key: locationKey,
-                                name: locationName,
-                                ...restLocationField
-                              },
-                              locationIndex
-                            ) => {
-                              const shelfId = form.getFieldValue([
-                                'approvalItems',
-                                index,
-                                'location',
-                                locationIndex,
-                                'shelfId',
-                              ]);
-                              // 获取当前查看的所有已选择的库位ID
-                              const selectedIds = getAllSelectedStorageIds(
-                                index,
-                                locationIndex
-                              );
-
-                              return (
-                                <div
-                                  key={locationKey}
-                                  style={{
-                                    marginBottom: 16,
-                                    padding: 16,
-                                    border: '1px dashed #d9d9d9',
-                                    borderRadius: 4,
-                                    position: 'relative',
-                                  }}
-                                >
-                                  <Row gutter={16}>
-                                    <Col
-                                      span={locationFields.length > 1 ? 10 : 12}
-                                    >
-                                      <Form.Item
-                                        {...restLocationField}
-                                        name={[locationName, 'shelfId']}
-                                        label='货架'
-                                        rules={[
-                                          {
-                                            required: true,
-                                            message: '请选择货架',
-                                          },
-                                        ]}
-                                      >
-                                        <Select
-                                          placeholder='请选择货架'
-                                          onChange={(value) =>
-                                            handleShelfChange(
-                                              value,
-                                              index,
-                                              locationIndex
-                                            )
-                                          }
-                                          disabled={!areaId}
-                                          style={{ width: '100%' }}
-                                        >
-                                          {(shelves[areaId] || []).map(
-                                            (shelf) => {
-                                              // 只显示有可用库位的货架
-                                              if (availableShelves[areaId]?.has(shelf.id)) {
-                                                return (
-                                                  <Option
-                                                    key={shelf.id}
-                                                    value={shelf.id}
-                                                  >
-                                                    {shelf.shelfName}
-                                                  </Option>
-                                                );
-                                              }
-                                              return null;
-                                            }
-                                          )}
-                                        </Select>
-                                      </Form.Item>
-                                    </Col>
-                                    <Col
-                                      span={locationFields.length > 1 ? 12 : 12}
-                                    >
-                                      <Form.Item
-                                        {...restLocationField}
-                                        name={[locationName, 'storageIds']}
-                                        label='库位'
-                                        rules={[
-                                          {
-                                            required: true,
-                                            message: '请选择至少一个库位',
-                                          },
-                                        ]}
-                                      >
-                                        <Select
-                                          mode='multiple'
-                                          placeholder='请选择库位'
-                                          disabled={!shelfId}
-                                          style={{ width: '100%' }}
-                                          onChange={(value) =>
-                                            handleStorageChange(
-                                              value,
-                                              index,
-                                              locationIndex
-                                            )
-                                          }
-                                          tagRender={(props) => {
-                                            const storage = storages[
-                                              shelfId
-                                            ]?.find((s) => s.id === props.value);
-                                            const displayName = storage
-                                              ? storage.locationName
-                                              : props.value;
-
-                                            return (
-                                              <Tag
-                                                closable={props.closable}
-                                                onClose={props.onClose}
-                                                style={{ marginRight: 3 }}
-                                              >
-                                                {displayName}
-                                              </Tag>
-                                            );
-                                          }}
-                                        >
-                                          {(storages[shelfId] || []).map(
-                                            (storage) => {
-                                              const displayName =
-                                                storage.locationName ||
-                                                storage.id;
-                                              const isUsed = selectedIds.has(
-                                                storage.id
-                                              );
-
-                                              // 只显示空闲状态的库位
-                                              if (storage.status === 1) {
-                                                return (
-                                                  <Option
-                                                    key={storage.id}
-                                                    value={storage.id}
-                                                    label={displayName}
-                                                    disabled={isUsed}
-                                                  >
-                                                    {isUsed
-                                                      ? `${displayName} (已被占用)`
-                                                      : displayName}
-                                                  </Option>
-                                                );
-                                              }
-                                              return null;
-                                            }
-                                          )}
-                                        </Select>
-                                      </Form.Item>
-                                    </Col>
-                                    {locationFields.length > 1 && (
-                                      <Col
-                                        span={2}
-                                        style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                        }}
-                                      >
-                                        <Button
-                                          type='text'
-                                          danger
-                                          icon={<MinusCircleOutlined />}
-                                          onClick={() => {
-                                            remove(locationIndex);
-                                            // 删除位置后，强制刷新表单，触发重新渲染和库位占用状态更新
-                                            setTimeout(() => {
-                                              const currentValues =
-                                                form.getFieldsValue();
-                                              form.setFieldsValue({
-                                                ...currentValues,
-                                              });
-                                            }, 0);
-                                          }}
-                                          style={{ marginTop: 8 }}
-                                        />
-                                      </Col>
-                                    )}
-                                  </Row>
-                                </div>
-                              );
-                            }
-                          )}
-
-                          <Form.Item style={{ marginBottom: 0 }}>
-                            <Button
-                              type='dashed'
-                              onClick={() => add()}
-                              block
-                              icon={<PlusOutlined />}
+                    return (
+                      <Panel
+                        key={index.toString()}
+                        header={renderProductHeader(detail)}
+                        className='product-item-panel'
+                      >
+                        <Row gutter={[16, 16]}>
+                          {/* 区域选择 */}
+                          <Col span={24}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'areaId']}
+                              label={<Text strong>选择区域</Text>}
+                              rules={[{ required: true, message: '请选择区域' }]}
+                              style={{ marginBottom: 16 }}
                             >
-                              添加更多位置
-                            </Button>
-                          </Form.Item>
-                        </>
-                      )}
-                    </Form.List>
-                  </Card>
-                );
-              })}
-            </>
-          )}
-        </Form.List>
-      )}
+                              <Select
+                                placeholder='请选择区域'
+                                onChange={(value) =>
+                                  handleAreaChange(value, index)
+                                }
+                                loading={loading}
+                                style={{ width: '100%' }}
+                                showSearch
+                                optionFilterProp='children'
+                              >
+                                {areas.map((area) => (
+                                  <Option key={area.id} value={area.id}>
+                                    {area.areaName}
+                                  </Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                          </Col>
+
+                          {/* 位置分配列表 */}
+                          <Col span={24}>
+                            <div className='location-allocation-section'>
+                              <Text
+                                strong
+                                style={{
+                                  marginBottom: 8,
+                                  display: 'block',
+                                }}
+                              >
+                                库位分配
+                              </Text>
+
+                              <Form.List name={[name, 'location']}>
+                                {(locationFields, { add, remove }) => (
+                                  <>
+                                    {locationFields.map(
+                                      (
+                                        {
+                                          key: locationKey,
+                                          name: locationName,
+                                          ...restLocationField
+                                        },
+                                        locationIndex
+                                      ) => {
+                                        const shelfId = form.getFieldValue([
+                                          'approvalItems',
+                                          index,
+                                          'location',
+                                          locationIndex,
+                                          'shelfId',
+                                        ]);
+                                        // 获取当前查看的所有已选择的库位ID
+                                        const selectedIds =
+                                          getAllSelectedStorageIds(
+                                            index,
+                                            locationIndex
+                                          );
+
+                                        return (
+                                          <div
+                                            key={locationKey}
+                                            className='location-item'
+                                            style={{
+                                              marginBottom: 12,
+                                              padding: 12,
+                                              backgroundColor: '#fafafa',
+                                              borderRadius: 4,
+                                              position: 'relative',
+                                            }}
+                                          >
+                                            <Row gutter={16} align='middle'>
+                                              <Col span={8}>
+                                                <Form.Item
+                                                  {...restLocationField}
+                                                  name={[
+                                                    locationName,
+                                                    'shelfId',
+                                                  ]}
+                                                  label={<Text strong>货架</Text>}
+                                                  rules={[
+                                                    {
+                                                      required: true,
+                                                      message: '请选择货架',
+                                                    },
+                                                  ]}
+                                                  style={{ marginBottom: 0 }}
+                                                >
+                                                  <Select
+                                                    placeholder='请选择货架'
+                                                    onChange={(value) =>
+                                                      handleShelfChange(
+                                                        value,
+                                                        index,
+                                                        locationIndex
+                                                      )
+                                                    }
+                                                    disabled={!areaId}
+                                                    style={{ width: '100%' }}
+                                                    showSearch
+                                                    optionFilterProp='children'
+                                                  >
+                                                    {(
+                                                      shelves[areaId] || []
+                                                    ).map((shelf) => {
+                                                      // 只显示有可用库位的货架
+                                                      if (
+                                                        availableShelves[
+                                                          areaId
+                                                        ]?.has(shelf.id)
+                                                      ) {
+                                                        return (
+                                                          <Option
+                                                            key={shelf.id}
+                                                            value={shelf.id}
+                                                          >
+                                                            {shelf.shelfName}
+                                                          </Option>
+                                                        );
+                                                      }
+                                                      return null;
+                                                    })}
+                                                  </Select>
+                                                </Form.Item>
+                                              </Col>
+                                              <Col span={14}>
+                                                <Form.Item
+                                                  {...restLocationField}
+                                                  name={[
+                                                    locationName,
+                                                    'storageIds',
+                                                  ]}
+                                                  label={<Text strong>库位</Text>}
+                                                  rules={[
+                                                    {
+                                                      required: true,
+                                                      message:
+                                                        '请选择至少一个库位',
+                                                    },
+                                                  ]}
+                                                  style={{ marginBottom: 0 }}
+                                                >
+                                                  <Select
+                                                    mode='multiple'
+                                                    placeholder='请选择库位'
+                                                    disabled={!shelfId}
+                                                    style={{ width: '100%' }}
+                                                    showSearch
+                                                    optionFilterProp='children'
+                                                    onChange={(value) =>
+                                                      handleStorageChange(
+                                                        value,
+                                                        index,
+                                                        locationIndex
+                                                      )
+                                                    }
+                                                    tagRender={(props) => {
+                                                      const storage =
+                                                        storages[
+                                                          shelfId
+                                                        ]?.find(
+                                                          (s) =>
+                                                            s.id ===
+                                                            props.value
+                                                        );
+                                                      const displayName =
+                                                        storage
+                                                          ? storage.locationName
+                                                          : props.value;
+
+                                                      return (
+                                                        <Tag
+                                                          color='blue'
+                                                          closable={
+                                                            props.closable
+                                                          }
+                                                          onClose={
+                                                            props.onClose
+                                                          }
+                                                          style={{
+                                                            marginRight: 3,
+                                                          }}
+                                                        >
+                                                          {displayName}
+                                                        </Tag>
+                                                      );
+                                                    }}
+                                                  >
+                                                    {(
+                                                      storages[shelfId] || []
+                                                    ).map((storage) => {
+                                                      const displayName =
+                                                        storage.locationName ||
+                                                        storage.id;
+                                                      const isUsed =
+                                                        selectedIds.has(
+                                                          storage.id
+                                                        );
+
+                                                      // 只显示空闲状态的库位
+                                                      if (
+                                                        storage.status === 1
+                                                      ) {
+                                                        return (
+                                                          <Option
+                                                            key={storage.id}
+                                                            value={storage.id}
+                                                            label={
+                                                              displayName
+                                                            }
+                                                            disabled={isUsed}
+                                                          >
+                                                            {isUsed
+                                                              ? `${displayName} (已被占用)`
+                                                              : displayName}
+                                                          </Option>
+                                                        );
+                                                      }
+                                                      return null;
+                                                    })}
+                                                  </Select>
+                                                </Form.Item>
+                                              </Col>
+                                              <Col
+                                                span={2}
+                                                style={{
+                                                  textAlign: 'center',
+                                                }}
+                                              >
+                                                {locationFields.length >
+                                                  1 && (
+                                                  <Tooltip title='删除此位置'>
+                                                    <Button
+                                                      type='link'
+                                                      danger
+                                                      icon={
+                                                        <MinusCircleOutlined />
+                                                      }
+                                                      onClick={() => {
+                                                        remove(locationIndex);
+                                                        // 删除位置后，强制刷新表单，触发重新渲染和库位占用状态更新
+                                                        setTimeout(() => {
+                                                          const currentValues =
+                                                            form.getFieldsValue();
+                                                          form.setFieldsValue(
+                                                            {
+                                                              ...currentValues,
+                                                            }
+                                                          );
+                                                        }, 0);
+                                                      }}
+                                                    />
+                                                  </Tooltip>
+                                                )}
+                                              </Col>
+                                            </Row>
+                                          </div>
+                                        );
+                                      }
+                                    )}
+
+                                    <Button
+                                      type='dashed'
+                                      onClick={() => add()}
+                                      block
+                                      icon={<PlusOutlined />}
+                                      style={{ marginBottom: 8 }}
+                                    >
+                                      添加更多位置
+                                    </Button>
+                                  </>
+                                )}
+                              </Form.List>
+                            </div>
+                          </Col>
+                        </Row>
+                      </Panel>
+                    );
+                  })}
+                </Collapse>
+              )}
+            </Form.List>
+          </Col>
+        )}
+      </Row>
     </Card>
   );
 };

@@ -121,16 +121,16 @@ export default function OrderApprovalDrawer({
     } else {
       // 根据订单类型显示不同的审批表单
       return order.type === 1 ? (
-        <InboundApproveForm 
-          form={form} 
-          order={order} 
-          key={`inbound-${order.id}`} 
+        <InboundApproveForm
+          form={form}
+          order={order}
+          key={`inbound-${order.id}`}
         />
       ) : (
-        <OutboundApproveForm 
-          form={form} 
-          order={order} 
-          key={`outbound-${order.id}`} 
+        <OutboundApproveForm
+          form={form}
+          order={order}
+          key={`outbound-${order.id}`}
         />
       );
     }
@@ -139,7 +139,7 @@ export default function OrderApprovalDrawer({
   return (
     <Drawer
       title='订单审批'
-      width={800}
+      width={1000}
       open={visible}
       onClose={handleClose}
       destroyOnClose={true}
