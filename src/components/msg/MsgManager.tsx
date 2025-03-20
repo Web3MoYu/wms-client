@@ -19,7 +19,12 @@ import debounce from 'lodash/debounce';
 import moment from 'moment';
 // 导入中文语言包
 import locale from 'antd/es/date-picker/locale/zh_CN';
-import { page, Msg, MsgPageDto, readMsg } from '../../api/msg-service/MsgController';
+import {
+  page,
+  Msg,
+  MsgPageDto,
+  readMsg,
+} from '../../api/msg-service/MsgController';
 import { getUsersByName, User } from '../../api/sys-service/UserController';
 import { useLocation } from 'react-router-dom';
 
@@ -35,7 +40,7 @@ export default function MsgManager() {
   // 获取URL查询参数
   const query = useQuery();
   const readStatusParam = query.get('readStatus');
-  
+
   // 状态定义
   const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -48,7 +53,7 @@ export default function MsgManager() {
   // 分页配置
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
+    pageSize: 5,
   });
 
   // 初始化
@@ -56,11 +61,8 @@ export default function MsgManager() {
     // 如果URL中包含readStatus参数，设置表单的初始值
     if (readStatusParam !== null) {
       form.setFieldsValue({ readStatus: parseInt(readStatusParam) });
-    } else {
-      // 如果URL中没有readStatus参数，默认设置为未读(0)
-      form.setFieldsValue({ readStatus: 0 });
     }
-    
+
     fetchMessages();
   }, [pagination.current, pagination.pageSize, readStatusParam]);
 
@@ -77,7 +79,7 @@ export default function MsgManager() {
         senderId: values.senderId || '',
         type: values.type || '',
         title: values.title || '',
-        readStatus: values.readStatus !== undefined ? values.readStatus : 0, // 默认为未读状态
+        readStatus: values.readStatus,
         priority: values.priority !== undefined ? values.priority : null,
         page: pagination.current,
         pageSize: pagination.pageSize,
@@ -143,11 +145,9 @@ export default function MsgManager() {
   // 重置表单
   const handleReset = () => {
     form.resetFields();
-    // 重置后设置默认显示未读消息
-    form.setFieldsValue({ readStatus: 0 });
     setPagination({
       current: 1,
-      pageSize: 10,
+      pageSize: 5,
     });
     fetchMessages();
   };
@@ -176,7 +176,7 @@ export default function MsgManager() {
         } finally {
           setLoading(false);
         }
-      }
+      },
     });
   };
 
@@ -302,17 +302,17 @@ export default function MsgManager() {
       render: (text: string, record: Msg) => (
         <Space size='middle'>
           {record.readStatus === 0 ? (
-            <Button 
-              type="link" 
-              size="small" 
+            <Button
+              type='link'
+              size='small'
               onClick={() => handleReadMsg(record.id)}
             >
               标记已读
             </Button>
           ) : (
-            <Button 
-              type="link" 
-              size="small" 
+            <Button
+              type='link'
+              size='small'
               disabled
               style={{ color: '#d9d9d9', cursor: 'not-allowed' }}
             >
