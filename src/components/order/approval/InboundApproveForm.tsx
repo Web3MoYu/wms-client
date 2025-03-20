@@ -47,6 +47,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
   const [storages, setStorages] = useState<{ [shelfId: string]: any[] }>({});
   const [orderDetails, setOrderDetails] = useState<OrderInItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [availableShelves, setAvailableShelves] = useState<{ [areaId: string]: Set<string> }>({});
 
   // 组件加载时获取订单详情和区域列表
   useEffect(() => {
@@ -115,13 +116,57 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     try {
       const res = await getShelfListByAreaId(areaId);
       if (res.code === 200) {
+        // 更新货架列表
         setShelves((prev) => ({
           ...prev,
           [areaId]: res.data,
         }));
+        
+        // 初始化该区域的可用货架集合
+        setAvailableShelves((prev) => ({
+          ...prev,
+          [areaId]: new Set<string>(),
+        }));
+
+        // 对每个货架检查是否有可用库位
+        for (const shelf of res.data) {
+          checkShelfAvailability(areaId, shelf.id);
+        }
       }
     } catch (error) {
       console.error('获取货架列表失败:', error);
+    }
+  };
+
+  // 检查货架是否有可用库位
+  const checkShelfAvailability = async (areaId: string, shelfId: string) => {
+    try {
+      // 加载库位列表
+      const res = await getStoragesByShelfId(shelfId);
+      if (res.code === 200) {
+        // 更新库位列表
+        setStorages((prev) => ({
+          ...prev,
+          [shelfId]: res.data,
+        }));
+
+        // 检查是否有状态为1的可用库位
+        const hasAvailableStorage = res.data.some(storage => storage.status === 1);
+        
+        // 如果有可用库位，将此货架ID添加到可用货架集合中
+        if (hasAvailableStorage) {
+          setAvailableShelves((prev) => {
+            const updatedSet = new Set(prev[areaId] || []);
+            updatedSet.add(shelfId);
+            return {
+              ...prev,
+              [areaId]: updatedSet,
+            };
+          });
+        }
+      }
+    } catch (error) {
+      console.error('检查货架可用性失败:', error);
     }
   };
 
@@ -415,14 +460,20 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                         style={{ width: '100%' }}
                                       >
                                         {(shelves[areaId] || []).map(
-                                          (shelf) => (
-                                            <Option
-                                              key={shelf.id}
-                                              value={shelf.id}
-                                            >
-                                              {shelf.shelfName}
-                                            </Option>
-                                          )
+                                          (shelf) => {
+                                            // 只显示有可用库位的货架
+                                            if (availableShelves[areaId]?.has(shelf.id)) {
+                                              return (
+                                                <Option
+                                                  key={shelf.id}
+                                                  value={shelf.id}
+                                                >
+                                                  {shelf.shelfName}
+                                                </Option>
+                                              );
+                                            }
+                                            return null;
+                                          }
                                         )}
                                       </Select>
                                     </Form.Item>
