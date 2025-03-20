@@ -93,7 +93,7 @@ export default function OrderDetailDrawer({
   };
 
   // 质检状态渲染
-  const renderQualityStatus = (status: number) => {
+  const renderQualityStatus = (status: number, isOrderLevel: boolean = true) => {
     switch (status) {
       case 0:
         return <Tag color='default'>未质检</Tag>;
@@ -101,6 +101,8 @@ export default function OrderDetailDrawer({
         return <Tag color='green'>质检通过</Tag>;
       case 2:
         return <Tag color='red'>质检不通过</Tag>;
+      case 3:
+        return <Tag color='orange'>{isOrderLevel ? '部分异常' : '异常'}</Tag>;
       default:
         return <Tag color='default'>未知状态</Tag>;
     }
@@ -151,7 +153,7 @@ export default function OrderDetailDrawer({
             {renderOrderStatus(order?.status)}
           </Descriptions.Item>
           <Descriptions.Item label='质检状态' span={1}>
-            {renderQualityStatus(order?.qualityStatus)}
+            {renderQualityStatus(order?.qualityStatus, true)}
           </Descriptions.Item>
           <Descriptions.Item label='总金额' span={1}>
             ¥{order?.totalAmount?.toFixed(2) || '0.00'}
@@ -253,6 +255,12 @@ export default function OrderDetailDrawer({
                   </Descriptions.Item>
                   <Descriptions.Item label='生产日期' span={2}>
                     {detail.orderItems.productionDate ? moment(detail.orderItems.productionDate).format('YYYY-MM-DD') : '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='质检状态' span={2}>
+                    {renderQualityStatus(detail.orderItems.qualityStatus, false)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label='备注' span={2}>
+                    {detail.orderItems.remark || '-'}
                   </Descriptions.Item>
                 </Descriptions>
               </Card>

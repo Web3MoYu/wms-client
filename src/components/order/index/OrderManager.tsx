@@ -357,6 +357,8 @@ export default function OrderManager() {
         return <Tag color='green'>质检通过</Tag>;
       case 2:
         return <Tag color='red'>质检不通过</Tag>;
+      case 3:
+        return <Tag color='orange'>部分异常</Tag>;
       default:
         return <Tag color='default'>未知状态</Tag>;
     }
@@ -488,6 +490,7 @@ export default function OrderManager() {
                   <Option value={0}>未质检</Option>
                   <Option value={1}>质检通过</Option>
                   <Option value={2}>质检不通过</Option>
+                  <Option value={3}>部分异常</Option>
                 </Select>
               </Form.Item>
             </Col>

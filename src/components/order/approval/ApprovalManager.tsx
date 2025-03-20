@@ -371,6 +371,8 @@ export default function ApprovalManager() {
         return <Tag color='green'>质检通过</Tag>;
       case 2:
         return <Tag color='red'>质检不通过</Tag>;
+      case 3:
+        return <Tag color='orange'>部分异常</Tag>;
       default:
         return <Tag color='default'>未知状态</Tag>;
     }
