@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Card,
   Table,
@@ -11,15 +11,10 @@ import {
   DatePicker,
   Row,
   Col,
-  Tag,
 } from 'antd';
-import {
-  SearchOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
-// 导入中文语言包
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import { OrderVo } from '../../../api/order-service/OrderController';
 import { pageOrder } from '../../../api/order-service/ApprovalController';
@@ -28,6 +23,13 @@ import OrderDetailDrawer from '../index/OrderDetailDrawer';
 import OrderApprovalDrawer from './OrderApprovalDrawer';
 import userStore from '../../../store/userStore';
 import { useLocation } from 'react-router-dom';
+import {
+  renderOrderStatus,
+  renderQualityStatus,
+  renderOrderType,
+  OrderStatusSelect,
+  OrderTypeSelect,
+} from '../components/StatusComponents';
 
 // 创建store实例
 const userStoreInstance = new userStore();
@@ -67,14 +69,19 @@ export default function ApprovalManager() {
   // 用户搜索相关状态
   const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
   const [approverOptions, setApproverOptions] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<{ userId: string, realName: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    userId: string;
+    realName: string;
+  } | null>(null);
 
   // 订单详情抽屉状态
-  const [detailDrawerVisible, setDetailDrawerVisible] = useState<boolean>(false);
+  const [detailDrawerVisible, setDetailDrawerVisible] =
+    useState<boolean>(false);
   const [currentOrder, setCurrentOrder] = useState<OrderVo | null>(null);
-  
+
   // 订单审批抽屉状态
-  const [approvalDrawerVisible, setApprovalDrawerVisible] = useState<boolean>(false);
+  const [approvalDrawerVisible, setApprovalDrawerVisible] =
+    useState<boolean>(false);
 
   // 分页配置
   const [pagination, setPagination] = useState({
@@ -88,40 +95,41 @@ export default function ApprovalManager() {
     const storeUser = userStoreInstance.user;
     const currentUserInfo = {
       userId: storeUser.userId,
-      realName: storeUser.realName || userStoreInstance.username
+      realName: storeUser.realName || userStoreInstance.username,
     };
-    
+
     setCurrentUser(currentUserInfo);
-    
+
     // 设置当前用户为可选项
     setApproverOptions([currentUserInfo as unknown as User]);
-    
+
     // 设置默认值：审批人为当前用户，状态为待审核(0)
-    const initialValues: any = { 
+    const initialValues: any = {
       approverId: currentUserInfo.userId,
       createTimeAsc: false,
     };
-    
+
     // 如果URL中有orderNo参数，则设置订单编号
     if (orderNoFromQuery) {
       initialValues.orderNo = orderNoFromQuery;
     }
-    
+
     // 如果URL中有status参数，则设置订单状态
     if (statusFromQuery) {
       // 如果状态为null字符串，则设置为undefined，表示不筛选状态
-      initialValues.status = statusFromQuery === 'null' ? undefined : Number(statusFromQuery);
+      initialValues.status =
+        statusFromQuery === 'null' ? undefined : Number(statusFromQuery);
     } else {
       // 默认设置为待审核(0)
       initialValues.status = 0;
     }
-    
+
     // 设置表单初始值
     form.setFieldsValue(initialValues);
-    
+
     // 执行第一次查询
     fetchOrders();
-    
+
     // 如果是从消息点击进来的（有orderNo参数），则修改URL但不触发导航
     if (orderNoFromQuery || statusFromQuery) {
       const newUrl = window.location.pathname;
@@ -130,8 +138,7 @@ export default function ApprovalManager() {
   }, [form]);
 
   // 监听orders状态变化，确保UI更新
-  useEffect(() => {
-  }, [orders]);
+  useEffect(() => {}, [orders]);
 
   // 监听分页变化
   useEffect(() => {
@@ -169,7 +176,8 @@ export default function ApprovalManager() {
         inspectorId: values.inspectorId || '',
         startTime: startTime,
         endTime: endTime,
-        createTimeAsc: values.createTimeAsc !== undefined ? values.createTimeAsc : false,
+        createTimeAsc:
+          values.createTimeAsc !== undefined ? values.createTimeAsc : false,
         status: values.status !== undefined ? values.status : null,
       };
 
@@ -198,12 +206,12 @@ export default function ApprovalManager() {
         createTimeAsc: sorter.order === 'ascend',
       });
     }
-    
+
     setPagination({
       current: pagination.current,
       pageSize: pagination.pageSize,
     });
-    
+
     // 只有切换分页时才会自动触发fetchOrders，排序时需要手动触发
     if (sorter && sorter.field === 'createTime') {
       fetchOrders();
@@ -258,26 +266,26 @@ export default function ApprovalManager() {
   const handleReset = () => {
     // 先重置表单（清空所有表单值）
     form.resetFields();
-    
+
     // 设置默认值
-    form.setFieldsValue({ 
+    form.setFieldsValue({
       createTimeAsc: false,
-      status: 0 // 重置后将订单状态设置为待审核(0)
+      status: 0, // 重置后将订单状态设置为待审核(0)
     });
-    
+
     // 如果当前用户存在，设置为默认审批人
     if (currentUser) {
       form.setFieldsValue({
-        approverId: currentUser.userId
+        approverId: currentUser.userId,
       });
     }
-    
+
     // 重置分页
     setPagination({
       current: 1,
       pageSize: 10,
     });
-    
+
     // 最后获取数据
     fetchOrders();
   };
@@ -298,12 +306,12 @@ export default function ApprovalManager() {
   const handleCloseApproval = () => {
     setApprovalDrawerVisible(false);
   };
-  
+
   // 处理订单拒绝
   const handleApprovalReject = () => {
     // 先关闭审批抽屉
     setApprovalDrawerVisible(false);
-    
+
     // 使用setTimeout确保状态更新先后顺序正确
     setTimeout(() => {
       // 关闭详情抽屉
@@ -314,7 +322,7 @@ export default function ApprovalManager() {
       fetchOrders();
     }, 100);
   };
-  
+
   // 审批成功回调
   const handleApprovalSuccess = (orderNo?: string) => {
     // 如果有订单编号传入，则更新查询条件
@@ -322,13 +330,13 @@ export default function ApprovalManager() {
       // 设置查询条件：状态为null（查询全部）、订单编号为当前订单编号
       form.setFieldsValue({
         status: null,
-        orderNo: orderNo
+        orderNo: orderNo,
       });
     }
-    
+
     // 刷新订单列表
     fetchOrders();
-    
+
     // 关闭所有抽屉
     setDetailDrawerVisible(false);
     setCurrentOrder(null);
@@ -340,51 +348,6 @@ export default function ApprovalManager() {
     setCurrentOrder(order);
     // 打开审批抽屉
     setApprovalDrawerVisible(true);
-  };
-
-  // 订单状态渲染
-  const renderOrderStatus = (status: number) => {
-    switch (status) {
-      case 0:
-        return <Tag color='blue'>待审核</Tag>;
-      case 1:
-        return <Tag color='green'>审批通过</Tag>;
-      case 2:
-        return <Tag color='orange'>入库中</Tag>;
-      case 3:
-        return <Tag color='green'>已完成</Tag>;
-      case -1:
-        return <Tag color='red'>已取消</Tag>;
-      case -2:
-        return <Tag color='red'>审批拒绝</Tag>;
-      default:
-        return <Tag color='default'>未知状态</Tag>;
-    }
-  };
-
-  // 质检状态渲染
-  const renderQualityStatus = (status: number) => {
-    switch (status) {
-      case 0:
-        return <Tag color='default'>未质检</Tag>;
-      case 1:
-        return <Tag color='green'>质检通过</Tag>;
-      case 2:
-        return <Tag color='red'>质检不通过</Tag>;
-      case 3:
-        return <Tag color='orange'>部分异常</Tag>;
-      default:
-        return <Tag color='default'>未知状态</Tag>;
-    }
-  };
-
-  // 订单类型渲染
-  const renderOrderType = (type: number) => {
-    return type === 1 ? (
-      <Tag color='blue'>入库订单</Tag>
-    ) : (
-      <Tag color='orange'>出库订单</Tag>
-    );
   };
 
   // 表格列定义
@@ -399,7 +362,7 @@ export default function ApprovalManager() {
       title: '订单类型',
       dataIndex: 'type',
       key: 'type',
-      render: renderOrderType,
+      render: (type: number) => renderOrderType(type),
     },
     {
       title: '创建人',
@@ -434,13 +397,13 @@ export default function ApprovalManager() {
       title: '订单状态',
       dataIndex: 'status',
       key: 'status',
-      render: renderOrderStatus,
+      render: (status: number) => renderOrderStatus(status),
     },
     {
       title: '质检状态',
       dataIndex: 'qualityStatus',
       key: 'qualityStatus',
-      render: renderQualityStatus,
+      render: (status: number) => renderQualityStatus(status, true),
     },
     {
       title: '创建时间',
@@ -477,22 +440,12 @@ export default function ApprovalManager() {
             </Col>
             <Col span={6}>
               <Form.Item name='orderType' label='订单类型'>
-                <Select placeholder='请选择订单类型' allowClear>
-                  <Option value={1}>入库订单</Option>
-                  <Option value={0}>出库订单</Option>
-                </Select>
+                <OrderTypeSelect />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name='status' label='订单状态'>
-                <Select placeholder='请选择订单状态' allowClear>
-                  <Option value={0}>待审核</Option>
-                  <Option value={1}>审批通过</Option>
-                  <Option value={2}>入库中</Option>
-                  <Option value={3}>已完成</Option>
-                  <Option value={-1}>已取消</Option>
-                  <Option value={-2}>审批拒绝</Option>
-                </Select>
+                <OrderStatusSelect />
               </Form.Item>
             </Col>
             <Col span={6}>
@@ -589,7 +542,7 @@ export default function ApprovalManager() {
           onApproval={handleOpenApprovalFromDetail}
         />
       )}
-      
+
       {/* 订单审批抽屉 */}
       {currentOrder && (
         <OrderApprovalDrawer

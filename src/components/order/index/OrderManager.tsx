@@ -11,9 +11,8 @@ import {
   DatePicker,
   Row,
   Col,
-  Tag,
   Modal,
-  Typography
+  Typography,
 } from 'antd';
 import {
   SearchOutlined,
@@ -25,10 +24,22 @@ import debounce from 'lodash/debounce';
 import moment from 'moment';
 // 导入中文语言包
 import locale from 'antd/es/date-picker/locale/zh_CN';
-import { queryOrders, OrderVo, cancel } from '../../../api/order-service/OrderController';
+import {
+  queryOrders,
+  OrderVo,
+  cancel,
+} from '../../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import OrderDrawer from './OrderDrawer';
 import OrderDetailDrawer from './OrderDetailDrawer';
+import {
+  renderOrderStatus,
+  renderQualityStatus,
+  renderOrderType,
+  OrderStatusSelect,
+  QualityStatusSelect,
+  OrderTypeSelect,
+} from '../components/StatusComponents';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -65,9 +76,10 @@ export default function OrderManager() {
 
   // 新增订单抽屉状态
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
-  
+
   // 订单详情抽屉状态
-  const [detailDrawerVisible, setDetailDrawerVisible] = useState<boolean>(false);
+  const [detailDrawerVisible, setDetailDrawerVisible] =
+    useState<boolean>(false);
   const [currentOrder, setCurrentOrder] = useState<OrderVo | null>(null);
 
   // 分页配置
@@ -79,16 +91,15 @@ export default function OrderManager() {
   // 初始化
   useEffect(() => {
     // 设置默认状态为待审核(0)
-    form.setFieldsValue({ 
+    form.setFieldsValue({
       status: 0,
-      createTimeAsc: false 
+      createTimeAsc: false,
     });
     fetchOrders();
   }, []);
 
   // 监听orders状态变化，确保UI更新
-  useEffect(() => {
-  }, [orders]);
+  useEffect(() => {}, [orders]);
 
   // 监听分页变化
   useEffect(() => {
@@ -126,7 +137,8 @@ export default function OrderManager() {
         inspectorId: values.inspectorId || '',
         startTime: startTime,
         endTime: endTime,
-        createTimeAsc: values.createTimeAsc !== undefined ? values.createTimeAsc : false,
+        createTimeAsc:
+          values.createTimeAsc !== undefined ? values.createTimeAsc : false,
         status: values.status !== undefined ? values.status : null, // 允许status为null
       };
 
@@ -155,12 +167,12 @@ export default function OrderManager() {
         createTimeAsc: sorter.order === 'ascend',
       });
     }
-    
+
     setPagination({
       current: pagination.current,
       pageSize: pagination.pageSize,
     });
-    
+
     // 只有切换分页时才会自动触发fetchOrders，排序时需要手动触发
     if (sorter && sorter.field === 'createTime') {
       fetchOrders();
@@ -232,9 +244,9 @@ export default function OrderManager() {
     // 先重置表单（清空所有表单值）
     form.resetFields();
     // 然后设置默认值
-    form.setFieldsValue({ 
+    form.setFieldsValue({
       status: 0,
-      createTimeAsc: false 
+      createTimeAsc: false,
     });
     // 重置分页
     setPagination({
@@ -289,12 +301,12 @@ export default function OrderManager() {
       icon: <ExclamationCircleOutlined />,
       content: (
         <div>
-          <Text type="warning">警告：订单取消后将无法恢复，请谨慎操作！</Text>
+          <Text type='warning'>警告：订单取消后将无法恢复，请谨慎操作！</Text>
           <div style={{ marginTop: 10 }}>
-            <TextArea 
-              rows={3} 
-              placeholder="请输入取消原因（必填）" 
-              onChange={(e) => remark = e.target.value}
+            <TextArea
+              rows={3}
+              placeholder='请输入取消原因（必填）'
+              onChange={(e) => (remark = e.target.value)}
             />
           </div>
         </div>
@@ -328,51 +340,6 @@ export default function OrderManager() {
     });
   };
 
-  // 订单状态渲染
-  const renderOrderStatus = (status: number) => {
-    switch (status) {
-      case 0:
-        return <Tag color='blue'>待审核</Tag>;
-      case 1:
-        return <Tag color='green'>审批通过</Tag>;
-      case 2:
-        return <Tag color='orange'>入库中</Tag>;
-      case 3:
-        return <Tag color='green'>已完成</Tag>;
-      case -1:
-        return <Tag color='red'>已取消</Tag>;
-      case -2:
-        return <Tag color='red'>审批拒绝</Tag>;
-      default:
-        return <Tag color='default'>未知状态</Tag>;
-    }
-  };
-
-  // 质检状态渲染
-  const renderQualityStatus = (status: number) => {
-    switch (status) {
-      case 0:
-        return <Tag color='default'>未质检</Tag>;
-      case 1:
-        return <Tag color='green'>质检通过</Tag>;
-      case 2:
-        return <Tag color='red'>质检不通过</Tag>;
-      case 3:
-        return <Tag color='orange'>部分异常</Tag>;
-      default:
-        return <Tag color='default'>未知状态</Tag>;
-    }
-  };
-
-  // 订单类型渲染
-  const renderOrderType = (type: number) => {
-    return type === 1 ? (
-      <Tag color='blue'>入库订单</Tag>
-    ) : (
-      <Tag color='orange'>出库订单</Tag>
-    );
-  };
-
   // 表格列定义
   const columns = [
     {
@@ -385,7 +352,7 @@ export default function OrderManager() {
       title: '订单类型',
       dataIndex: 'type',
       key: 'type',
-      render: renderOrderType,
+      render: (type: number) => renderOrderType(type),
     },
     {
       title: '创建人',
@@ -420,13 +387,13 @@ export default function OrderManager() {
       title: '订单状态',
       dataIndex: 'status',
       key: 'status',
-      render: renderOrderStatus,
+      render: (status: number) => renderOrderStatus(status),
     },
     {
       title: '质检状态',
       dataIndex: 'qualityStatus',
       key: 'qualityStatus',
-      render: renderQualityStatus,
+      render: (status: number) => renderQualityStatus(status, true),
     },
     {
       title: '创建时间',
@@ -442,7 +409,9 @@ export default function OrderManager() {
       render: (text: string, record: OrderVo) => (
         <Space size='middle'>
           <a onClick={() => handleViewDetail(record)}>查看详情</a>
-          {(record.status === 0 || record.status === 1 || record.status === 2) && (
+          {(record.status === 0 ||
+            record.status === 1 ||
+            record.status === 2) && (
             <a onClick={() => handleCancelOrder(record)}>取消订单</a>
           )}
         </Space>
@@ -466,32 +435,17 @@ export default function OrderManager() {
             </Col>
             <Col span={6}>
               <Form.Item name='orderType' label='订单类型'>
-                <Select placeholder='请选择订单类型' allowClear>
-                  <Option value={1}>入库订单</Option>
-                  <Option value={0}>出库订单</Option>
-                </Select>
+                <OrderTypeSelect />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name='status' label='订单状态'>
-                <Select placeholder='请选择订单状态' allowClear>
-                  <Option value={0}>待审核</Option>
-                  <Option value={1}>审批通过</Option>
-                  <Option value={2}>入库中</Option>
-                  <Option value={3}>已完成</Option>
-                  <Option value={-1}>已取消</Option>
-                  <Option value={-2}>审批拒绝</Option>
-                </Select>
+                <OrderStatusSelect />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name='inspectionStatus' label='质检状态'>
-                <Select placeholder='请选择质检状态' allowClear>
-                  <Option value={0}>未质检</Option>
-                  <Option value={1}>质检通过</Option>
-                  <Option value={2}>质检不通过</Option>
-                  <Option value={3}>部分异常</Option>
-                </Select>
+                <QualityStatusSelect />
               </Form.Item>
             </Col>
           </Row>

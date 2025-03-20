@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   Drawer,
   Descriptions,
-  Tag,
   Card,
   Divider,
   Spin,
@@ -11,9 +10,11 @@ import {
   Badge,
   Button,
   Space,
+  Tag,
 } from 'antd';
 import moment from 'moment';
 import { inDetail, outDetail, OrderVo, OrderInItem, OrderOutItem, OrderDetailVo } from '../../../api/order-service/OrderController';
+import { renderOrderStatus, renderQualityStatus, renderOrderType } from '../components/StatusComponents';
 
 interface OrderDetailDrawerProps {
   visible: boolean;
@@ -71,51 +72,6 @@ export default function OrderDetailDrawer({
       fetchOrderDetail();
     }
   }, [visible, order]);
-
-  // 订单状态渲染
-  const renderOrderStatus = (status: number) => {
-    switch (status) {
-      case 0:
-        return <Tag color='blue'>待审核</Tag>;
-      case 1:
-        return <Tag color='green'>审批通过</Tag>;
-      case 2:
-        return <Tag color='orange'>入库中</Tag>;
-      case 3:
-        return <Tag color='green'>已完成</Tag>;
-      case -1:
-        return <Tag color='red'>已取消</Tag>;
-      case -2:
-        return <Tag color='red'>审批拒绝</Tag>;
-      default:
-        return <Tag color='default'>未知状态</Tag>;
-    }
-  };
-
-  // 质检状态渲染
-  const renderQualityStatus = (status: number, isOrderLevel: boolean = true) => {
-    switch (status) {
-      case 0:
-        return <Tag color='default'>未质检</Tag>;
-      case 1:
-        return <Tag color='green'>质检通过</Tag>;
-      case 2:
-        return <Tag color='red'>质检不通过</Tag>;
-      case 3:
-        return <Tag color='orange'>{isOrderLevel ? '部分异常' : '异常'}</Tag>;
-      default:
-        return <Tag color='default'>未知状态</Tag>;
-    }
-  };
-
-  // 订单类型渲染
-  const renderOrderType = (type: number) => {
-    return type === 1 ? (
-      <Tag color='blue'>入库订单</Tag>
-    ) : (
-      <Tag color='orange'>出库订单</Tag>
-    );
-  };
 
   // 渲染基本信息选项卡内容
   const renderBasicInfo = () => {
@@ -189,7 +145,12 @@ export default function OrderDetailDrawer({
                 title={
                   <span>
                     {`商品 ${index + 1}: ${detail.product.productName} `}
-                    {renderOrderStatus(itemStatus)}
+                    <span style={{ marginLeft: 8 }}>
+                      {renderOrderStatus(itemStatus)}
+                    </span>
+                    <span style={{ marginLeft: 8 }}>
+                      {renderQualityStatus(detail.orderItems.qualityStatus, false)}
+                    </span>
                   </span>
                 }
                 size='small' 
