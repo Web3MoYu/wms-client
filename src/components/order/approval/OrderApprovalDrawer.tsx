@@ -11,7 +11,7 @@ import {
 } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { OrderVo } from '../../../api/order-service/OrderController';
-import { approve, reject, approveOrder } from '../../../api/order-service/ApprovalController';
+import { approve, reject, approveInbound } from '../../../api/order-service/ApprovalController';
 import OrderRejectForm from './OrderRejectForm';
 import InboundApproveForm from './InboundApproveForm';
 import OutboundApproveForm from './OutboundApproveForm';
@@ -50,7 +50,7 @@ export default function OrderApprovalDrawer({
           // 入库订单
           const approvalItems = values.approvalItems || [];
           // 调用入库订单批准API
-          result = await approveOrder(approvalItems, order.id, order.type);
+          result = await approveInbound(approvalItems, order.id);
         } else {
           // 出库订单
           // 暂时使用旧的approve接口

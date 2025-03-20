@@ -6,6 +6,7 @@ import { OrderQueryDto, OrderVo } from './OrderController';
 export interface ApprovalDto {
   id: string; // 详情id
   areaId: string; // 区域id
+  productId: string; // 产品id
   location: MyLocation[]; // 位置
 }
 
@@ -73,21 +74,19 @@ export function reject(
 }
 
 /**
- * 审批订单
+ * 审批入库订单
  *
  * @param dto 审批信息
- * @param id 订单ID
- * @param type 订单类型
+ * @param id  订单ID
  * @return 审批结果
  */
-export function approveOrder(
+export function approveInbound(
   dto: ApprovalDto[],
-  id: string,
-  type: number
+  id: string
 ): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
-      .post(`/order/approval/${type}/${id}`, dto)
+      .post(`/order/approval/${id}`, dto)
       .then((res) => {
         resolve(res.data);
       })

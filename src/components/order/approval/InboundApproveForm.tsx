@@ -84,6 +84,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     const approvalItems: ApprovalDto[] = details.map((item) => ({
       id: item.id,
       areaId: item.areaId || '',
+      productId: item.productId || '',
       location: [
         {
           shelfId: '',
