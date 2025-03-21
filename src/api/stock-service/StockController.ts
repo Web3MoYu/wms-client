@@ -39,9 +39,9 @@ export interface StockDto {
   areaId: string; // 区域ID
   status: number; // 状态
   batchNumber: string; // 批次号
-  ascSortByProdDate: boolean; // 是否按生产日期升序排序
-  ascSortByQuantity: boolean; // 是否按数量生序排序
-  ascSortByAvailableQuantity: boolean; // 是否按可用数量生序排序
+  ascSortByProdDate: boolean | null; // 是否按生产日期升序排序
+  ascSortByQuantity: boolean | null; // 是否按数量生序排序
+  ascSortByAvailableQuantity: boolean | null; // 是否按可用数量生序排序
 }
 /**
  * 获取库存列表

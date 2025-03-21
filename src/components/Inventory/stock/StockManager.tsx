@@ -107,12 +107,12 @@ export default function StockManager() {
         status: values.status === undefined ? null : values.status,
         batchNumber: values.batchNumber || '',
         ascSortByProdDate:
-          sortConfig.prodDate === undefined ? false : sortConfig.prodDate,
+          sortConfig.prodDate === undefined ? null : sortConfig.prodDate,
         ascSortByQuantity:
-          sortConfig.quantity === undefined ? false : sortConfig.quantity,
+          sortConfig.quantity === undefined ? null : sortConfig.quantity,
         ascSortByAvailableQuantity:
           sortConfig.availableQuantity === undefined
-            ? false
+            ? null
             : sortConfig.availableQuantity,
       };
 
