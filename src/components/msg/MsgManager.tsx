@@ -87,8 +87,8 @@ export default function MsgManager() {
 
       // 如果选择了日期范围，则添加到查询条件
       if (values.dateRange && values.dateRange.length === 2) {
-        dto.startTime = values.dateRange[0].toDate();
-        dto.endTime = values.dateRange[1].toDate();
+        dto.startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
+        dto.endTime = values.dateRange[1].format('YYYY-MM-DD HH:mm:ss');
       }
 
       // 调用接口进行查询
