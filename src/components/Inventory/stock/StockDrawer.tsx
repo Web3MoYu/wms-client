@@ -51,6 +51,7 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   const [originalStock, setOriginalStock] = useState<any>(null);
   const [additionalQuantity, setAdditionalQuantity] = useState<number>(0);
   const [hasSelectedProduct, setHasSelectedProduct] = useState<boolean>(false);
+  const [availableShelves, setAvailableShelves] = useState<Set<string>>(new Set());
 
   // 初始化表单
   useEffect(() => {
@@ -59,6 +60,7 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       setOriginalStock(null);
       setHasSelectedProduct(false);
       setBatchNumbers([]);
+      setAvailableShelves(new Set());
       fetchAreas();
     }
   }, [visible, form]);
@@ -90,12 +92,48 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       const res = await getShelfListByAreaId(areaId);
       if (res.code === 200) {
         setShelves(res.data);
+        
+        // 重置可用货架集合
+        setAvailableShelves(new Set());
+        
+        // 对每个货架检查是否有可用库位
+        for (const shelf of res.data) {
+          checkShelfAvailability(shelf.id);
+        }
       } else {
         setShelves([]);
       }
     } catch (error) {
       console.error('获取货架列表失败:', error);
       setShelves([]);
+    }
+  };
+
+  // 检查货架是否有可用库位
+  const checkShelfAvailability = async (shelfId: string) => {
+    try {
+      const res = await getStoragesByShelfId(shelfId);
+      if (res.code === 200) {
+        // 更新库位列表
+        setStoragesByShelf(prev => ({
+          ...prev,
+          [shelfId]: res.data
+        }));
+
+        // 检查是否有可用库位
+        const hasAvailableStorage = res.data.some(storage => storage.status === 1);
+        
+        // 如果有可用库位，将此货架ID添加到可用货架集合中
+        if (hasAvailableStorage) {
+          setAvailableShelves(prev => {
+            const newSet = new Set(prev);
+            newSet.add(shelfId);
+            return newSet;
+          });
+        }
+      }
+    } catch (error) {
+      console.error('检查货架可用性失败:', error);
     }
   };
 
@@ -389,6 +427,97 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
     }
   };
 
+  // 获取所有已选择的库位ID，用于在下拉框中禁用
+  const getAllSelectedStorageIds = (currentLocationIndex: number) => {
+    const location = form.getFieldValue('location');
+    if (!location) return new Set<string>();
+
+    const selectedIds = new Set<string>();
+
+    location.forEach((loc: any, locIndex: number) => {
+      // 跳过当前正在编辑的位置
+      if (locIndex === currentLocationIndex) return;
+
+      if (!loc || !loc.storageIds) return;
+
+      // 将该位置选择的所有库位ID添加到集合中
+      loc.storageIds.forEach((id: string) => selectedIds.add(id));
+    });
+
+    return selectedIds;
+  };
+
+  // 获取所有已选择的货架ID，用于在下拉框中禁用
+  const getAllSelectedShelfIds = (currentLocationIndex: number) => {
+    const location = form.getFieldValue('location');
+    if (!location) return new Set<string>();
+
+    const selectedIds = new Set<string>();
+
+    location.forEach((loc: any, locIndex: number) => {
+      // 跳过当前正在编辑的位置
+      if (locIndex === currentLocationIndex) return;
+
+      if (!loc || !loc.shelfId) return;
+
+      // 将该位置选择的货架ID添加到集合中
+      selectedIds.add(loc.shelfId);
+    });
+
+    return selectedIds;
+  };
+
+  // 检查库位是否已经被选择
+  const checkStorageUsed = (storageId: string, currentLocationIndex: number) => {
+    const location = form.getFieldValue('location');
+    if (!location) return false;
+
+    // 检查所有位置
+    for (let locIndex = 0; locIndex < location.length; locIndex++) {
+      // 跳过当前正在检查的位置
+      if (locIndex === currentLocationIndex) continue;
+
+      const loc = location[locIndex];
+      if (!loc || !loc.storageIds) continue;
+
+      // 检查是否包含要查找的库位ID
+      if (loc.storageIds.includes(storageId)) {
+        return true;
+      }
+    }
+
+    // 没有找到冲突
+    return false;
+  };
+
+  // 处理库位选择变化
+  const handleStorageChange = (selectedIds: string[], index: number) => {
+    // 获取当前位置之前的选择
+    const location = form.getFieldValue('location');
+    const previousSelectedIds = location[index]?.storageIds || [];
+
+    // 找出新添加的库位IDs
+    const newlyAdded = selectedIds.filter(
+      (id) => !previousSelectedIds.includes(id)
+    );
+
+    // 检查每个新添加的库位是否已被选择
+    const validSelections = [...previousSelectedIds];
+
+    for (const storageId of newlyAdded) {
+      const isUsed = checkStorageUsed(storageId, index);
+
+      if (!isUsed) {
+        // 没有冲突，添加到有效选择中
+        validSelections.push(storageId);
+      }
+    }
+
+    // 更新表单数据，只保留有效的选择
+    location[index].storageIds = validSelections;
+    form.setFieldsValue({ location });
+  };
+
   // 提交表单
   const handleSubmit = async () => {
     try {
@@ -678,11 +807,24 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                           onChange={(value) => handleShelfChange(value, index)}
                           disabled={!form.getFieldValue('areaId')}
                         >
-                          {shelves.map((shelf) => (
-                            <Option key={shelf.id} value={shelf.id}>
-                              {shelf.shelfName}
-                            </Option>
-                          ))}
+                          {shelves.map((shelf) => {
+                            // 检查是否为可用货架（有可用库位的货架）
+                            const isAvailable = availableShelves.has(shelf.id);
+                            
+                            // 检查是否被其他位置选择
+                            const selectedShelfIds = getAllSelectedShelfIds(index);
+                            const isUsed = selectedShelfIds.has(shelf.id);
+                            
+                            // 只显示有可用库位且未被选择的货架
+                            if (isAvailable && !isUsed) {
+                              return (
+                                <Option key={shelf.id} value={shelf.id}>
+                                  {shelf.shelfName}
+                                </Option>
+                              );
+                            }
+                            return null;
+                          })}
                         </Select>
                       </Form.Item>
                     </Col>
@@ -698,16 +840,13 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                           disabled={!form.getFieldValue(['location', index, 'shelfId'])}
                           style={{ width: '100%' }}
                           onChange={(value) => {
-                            const location = form.getFieldValue('location');
-                            location[index].storageIds = value;
-                            form.setFieldsValue({ location });
+                            handleStorageChange(value, index);
                           }}
                           tagRender={(props) => {
                             const shelfId = form.getFieldValue(['location', index, 'shelfId']);
                             // 从对应货架的库位中查找名称
                             const storage = storagesByShelf[shelfId]?.find(s => s.id === props.value);
                             const displayName = storage ? storage.locationName : props.value;
-                            
                             
                             return (
                               <Tag
@@ -725,13 +864,17 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                             storagesByShelf[form.getFieldValue(['location', index, 'shelfId'])].map((storage) => {
                               const shelfId = form.getFieldValue(['location', index, 'shelfId']);
                               // 检查是否为已占用库位
-                              const isOccupied = originalStock && 
+                              const isOccupiedByOriginal = originalStock && 
                                 originalStock.location && 
                                 originalStock.location.some((loc: any) => 
                                   loc.shelfId === shelfId && 
                                   loc.storageIds && 
                                   loc.storageIds.includes(storage.id)
                                 );
+                              
+                              // 检查是否被其他位置占用
+                              const selectedIds = getAllSelectedStorageIds(index);
+                              const isUsedByOthers = selectedIds.has(storage.id);
                               
                               // 确保选项显示的是库位名称
                               const displayName = storage.locationName || storage.id;
@@ -741,9 +884,11 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                                   key={storage.id}
                                   value={storage.id}
                                   label={displayName}
-                                  title={`ID: ${storage.id}, 名称: ${displayName}${isOccupied ? ' (已占用)' : ''}`}
+                                  title={`ID: ${storage.id}, 名称: ${displayName}${isOccupiedByOriginal ? ' (已占用)' : ''}${isUsedByOthers ? ' (已被其他位置选择)' : ''}`}
+                                  disabled={isUsedByOthers}
                                 >
-                                  {isOccupied ? `${displayName} (已占用)` : displayName}
+                                  {isOccupiedByOriginal ? `${displayName} (已占用)` : 
+                                   isUsedByOthers ? `${displayName} (已被其他位置选择)` : displayName}
                                 </Option>
                               );
                             }) : []
