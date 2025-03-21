@@ -73,7 +73,6 @@ const StockDetail: React.FC<StockDetailProps> = ({ visible, onClose, stock, onRe
           <Item label="生产日期">{stock.productionDate}</Item>
           <Item label="数量">{stock.quantity}</Item>
           <Item label="可用数量">{stock.availableQuantity}</Item>
-          <Item label="锁定数量">{stock.lockedQuantity}</Item>
           <Item label="预警状态">{renderAlertStatusTag(stock.alertStatus)}</Item>
           <Item label="区域">{stock.areaName}</Item>
           <Item label="创建时间">{stock.createTime}</Item>

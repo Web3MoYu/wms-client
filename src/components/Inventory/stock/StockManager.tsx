@@ -69,7 +69,6 @@ export default function StockManager() {
     prodDate?: boolean;
     quantity?: boolean;
     availableQuantity?: boolean;
-    lockedQuantity?: boolean;
   }>({});
 
   // 初始化加载
@@ -115,10 +114,6 @@ export default function StockManager() {
           sortConfig.availableQuantity === undefined
             ? false
             : sortConfig.availableQuantity,
-        ascSortByLockedQuantity:
-          sortConfig.lockedQuantity === undefined
-            ? false
-            : sortConfig.lockedQuantity,
       };
 
       const res = await getStockList(stockDto);
@@ -190,7 +185,6 @@ export default function StockManager() {
       prodDate?: boolean;
       quantity?: boolean;
       availableQuantity?: boolean;
-      lockedQuantity?: boolean;
     } = {};
 
     // 根据当前排序字段设置排序状态
@@ -204,9 +198,6 @@ export default function StockManager() {
           break;
         case 'availableQuantity':
           newSortConfig.availableQuantity = sorter.order === 'ascend';
-          break;
-        case 'lockedQuantity':
-          newSortConfig.lockedQuantity = sorter.order === 'ascend';
           break;
       }
     }
@@ -297,13 +288,6 @@ export default function StockManager() {
       title: '可用数量',
       dataIndex: 'availableQuantity',
       key: 'availableQuantity',
-      sorter: true,
-      sortDirections: ['ascend', 'descend'] as SortOrder[],
-    },
-    {
-      title: '锁定数量',
-      dataIndex: 'lockedQuantity',
-      key: 'lockedQuantity',
       sorter: true,
       sortDirections: ['ascend', 'descend'] as SortOrder[],
     },

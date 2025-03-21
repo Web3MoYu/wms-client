@@ -9,7 +9,6 @@ export interface Stock {
   location: MyLocation[]; // 具体位置，格式
   quantity: number; // 数量
   availableQuantity: number; // 可用数量
-  lockedQuantity: number; // 锁定数量
   alertStatus: number; // 预警状态：0-正常，1-低于最小库存，2-超过最大库存 null-显示所有
   batchNumber: string; // 批次号
   productionDate: string; // 生产日期
@@ -43,7 +42,6 @@ export interface StockDto {
   ascSortByProdDate: boolean; // 是否按生产日期升序排序
   ascSortByQuantity: boolean; // 是否按数量生序排序
   ascSortByAvailableQuantity: boolean; // 是否按可用数量生序排序
-  ascSortByLockedQuantity: boolean; // 是否按锁定数量生序排序
 }
 /**
  * 获取库存列表
