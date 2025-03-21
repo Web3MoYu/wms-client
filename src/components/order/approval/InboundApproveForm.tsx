@@ -303,7 +303,6 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     indexItem: number,
     indexLocation: number
   ) => {
-
     // 获取当前位置之前的选择
     const approvalItems = form.getFieldValue('approvalItems');
     const previousSelectedIds =
@@ -359,6 +358,40 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     return selectedIds;
   };
 
+  // 获取同一商品项内的所有已选择货架ID
+  const getAllSelectedShelfIdsForItem = (
+    itemIndex: number,
+    currentLocationIndex: number
+  ) => {
+    const approvalItems = form.getFieldValue('approvalItems');
+    if (
+      !approvalItems ||
+      !approvalItems[itemIndex] ||
+      !approvalItems[itemIndex].location
+    ) {
+      return new Set<string>();
+    }
+
+    const selectedIds = new Set<string>();
+
+    // 遍历同一商品项的所有位置
+    approvalItems[itemIndex].location.forEach((loc: any, locIndex: number) => {
+      // 跳过当前正在编辑的位置
+      if (locIndex === currentLocationIndex) {
+        return;
+      }
+
+      if (!loc || !loc.shelfId) {
+        return;
+      }
+
+      // 将该位置选择的货架ID添加到集合中
+      selectedIds.add(loc.shelfId);
+    });
+
+    return selectedIds;
+  };
+
   // 处理面板变化
   const handleCollapseChange = (key: string | string[]) => {
     setActiveKey(key);
@@ -373,9 +406,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
           <Text strong style={{ fontSize: 16 }}>
             {detail?.productName || '商品'}
           </Text>
-          <Text type='secondary'>
-            (ID: {detail?.productId || '-'})
-          </Text>
+          <Text type='secondary'>(ID: {detail?.productId || '-'})</Text>
         </Space>
       </Col>
       <Col>
@@ -438,9 +469,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                   activeKey={activeKey}
                   onChange={handleCollapseChange}
                   expandIcon={({ isActive }) => (
-                    <RightOutlined
-                      rotate={isActive ? 90 : 0}
-                    />
+                    <RightOutlined rotate={isActive ? 90 : 0} />
                   )}
                   className='product-items-collapse'
                 >
@@ -465,7 +494,9 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                               {...restField}
                               name={[name, 'areaId']}
                               label={<Text strong>选择区域</Text>}
-                              rules={[{ required: true, message: '请选择区域' }]}
+                              rules={[
+                                { required: true, message: '请选择区域' },
+                              ]}
                               style={{ marginBottom: 16 }}
                             >
                               <Select
@@ -546,7 +577,9 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                                     locationName,
                                                     'shelfId',
                                                   ]}
-                                                  label={<Text strong>货架</Text>}
+                                                  label={
+                                                    <Text strong>货架</Text>
+                                                  }
                                                   rules={[
                                                     {
                                                       required: true,
@@ -578,12 +611,26 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                                           areaId
                                                         ]?.has(shelf.id)
                                                       ) {
+                                                        // 检查是否已被同一商品的其他位置选择
+                                                        const selectedShelfIds =
+                                                          getAllSelectedShelfIdsForItem(
+                                                            index,
+                                                            locationIndex
+                                                          );
+                                                        const isUsed =
+                                                          selectedShelfIds.has(
+                                                            shelf.id
+                                                          );
+
                                                         return (
                                                           <Option
                                                             key={shelf.id}
                                                             value={shelf.id}
+                                                            disabled={isUsed}
                                                           >
-                                                            {shelf.shelfName}
+                                                            {isUsed
+                                                              ? `${shelf.shelfName} (已选择)`
+                                                              : shelf.shelfName}
                                                           </Option>
                                                         );
                                                       }
@@ -599,7 +646,9 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                                     locationName,
                                                     'storageIds',
                                                   ]}
-                                                  label={<Text strong>库位</Text>}
+                                                  label={
+                                                    <Text strong>库位</Text>
+                                                  }
                                                   rules={[
                                                     {
                                                       required: true,
@@ -624,14 +673,12 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                                       )
                                                     }
                                                     tagRender={(props) => {
-                                                      const storage =
-                                                        storages[
-                                                          shelfId
-                                                        ]?.find(
-                                                          (s) =>
-                                                            s.id ===
-                                                            props.value
-                                                        );
+                                                      const storage = storages[
+                                                        shelfId
+                                                      ]?.find(
+                                                        (s) =>
+                                                          s.id === props.value
+                                                      );
                                                       const displayName =
                                                         storage
                                                           ? storage.locationName
@@ -674,9 +721,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                                           <Option
                                                             key={storage.id}
                                                             value={storage.id}
-                                                            label={
-                                                              displayName
-                                                            }
+                                                            label={displayName}
                                                             disabled={isUsed}
                                                           >
                                                             {isUsed
@@ -696,8 +741,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                                   textAlign: 'center',
                                                 }}
                                               >
-                                                {locationFields.length >
-                                                  1 && (
+                                                {locationFields.length > 1 && (
                                                   <Tooltip title='删除此位置'>
                                                     <Button
                                                       type='link'
@@ -711,11 +755,9 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                                         setTimeout(() => {
                                                           const currentValues =
                                                             form.getFieldsValue();
-                                                          form.setFieldsValue(
-                                                            {
-                                                              ...currentValues,
-                                                            }
-                                                          );
+                                                          form.setFieldsValue({
+                                                            ...currentValues,
+                                                          });
                                                         }, 0);
                                                       }}
                                                     />
