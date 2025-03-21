@@ -136,7 +136,6 @@ export default function OrderDetailDrawer({
       <>
         {detailData.map((detail, index) => {
           // 检查状态值并确保是数字类型
-          console.log(`商品${index+1}状态:`, detail.orderItems.status, typeof detail.orderItems.status);
           const itemStatus = Number(detail.orderItems.status);
             
           return (

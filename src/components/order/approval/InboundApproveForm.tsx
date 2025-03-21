@@ -303,7 +303,6 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     indexItem: number,
     indexLocation: number
   ) => {
-    console.log('库位选择变化:', selectedIds, indexItem, indexLocation);
 
     // 获取当前位置之前的选择
     const approvalItems = form.getFieldValue('approvalItems');

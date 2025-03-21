@@ -50,7 +50,7 @@ export interface OrderIn {
   orderType: number; // 订单类型：1-采购入库，2-自动入库
   creator: string; // 创建人
   approver: string; // 审核人
-  inspector: string; // 质检员
+  inspector: string | null; // 质检员
   expectedTime: Date; // 预计到达时间
   actualTime: Date; // 实际到达时间
   totalAmount: number; // 总金额

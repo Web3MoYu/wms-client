@@ -76,7 +76,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
   // 用户搜索相关状态
   const [approverOptions, setApproverOptions] = useState<User[]>([]);
-  const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
 
   // 产品搜索相关状态
   const [productOptions, setProductOptions] = useState<Product[]>([]);
@@ -205,23 +204,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
       }
     } catch (error) {
       console.error('搜索审批人失败:', error);
-    }
-  }, 500);
-
-  // 防抖搜索质检员
-  const handleInspectorSearch = debounce(async (name: string) => {
-    if (!name || name.length < 1) {
-      setInspectorOptions([]);
-      return;
-    }
-
-    try {
-      const res = await getUsersByName(name);
-      if (res.code === 200) {
-        setInspectorOptions(res.data);
-      }
-    } catch (error) {
-      console.error('搜索质检员失败:', error);
     }
   }, 500);
 
@@ -604,7 +586,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
           orderType: values.orderType, // 订单类型：1-采购入库，2-自动入库
           creator: values.creatorId,
           approver: values.approverId || '',
-          inspector: values.inspectorId || '',
+          inspector: null,
           expectedTime: values.expectedTime
             ? values.expectedTime.format('YYYY-MM-DD HH:mm:ss')
             : (null as any),
@@ -818,7 +800,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
               <Input disabled />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={16}>
             <Form.Item
               name='approverId'
               label='审批人'
@@ -832,27 +814,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                 allowClear
               >
                 {approverOptions.map((user) => (
-                  <Option key={user.userId} value={user.userId}>
-                    {user.realName}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name='inspectorId'
-              label='质检员'
-              rules={[{ required: true, message: '请选择质检员' }]}
-            >
-              <Select
-                showSearch
-                placeholder='请输入质检员姓名'
-                filterOption={false}
-                onSearch={handleInspectorSearch}
-                allowClear
-              >
-                {inspectorOptions.map((user) => (
                   <Option key={user.userId} value={user.userId}>
                     {user.realName}
                   </Option>
