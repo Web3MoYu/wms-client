@@ -261,23 +261,21 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
   // 检查库位是否已经被选择
   const checkStorageUsed = (
     storageId: string,
-    currentItemIndex: number,
-    currentLocationIndex: number
+    currentItemIndex: number
   ) => {
     const approvalItems = form.getFieldValue('approvalItems');
     if (!approvalItems) return null;
 
     // 检查所有订单项
     for (let itemIndex = 0; itemIndex < approvalItems.length; itemIndex++) {
+      // 跳过当前商品，因为我们已经限制了同一商品不能选择相同货架，所以不需要检查同一商品内的库位冲突
+      if (itemIndex === currentItemIndex) continue;
+
       const item = approvalItems[itemIndex];
       if (!item || !item.location) continue;
 
       // 检查该订单项的所有位置
       for (let locIndex = 0; locIndex < item.location.length; locIndex++) {
-        // 跳过当前正在检查的位置
-        if (itemIndex === currentItemIndex && locIndex === currentLocationIndex)
-          continue;
-
         const loc = item.location[locIndex];
         if (!loc || !loc.storageIds) continue;
 
@@ -287,7 +285,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
           return {
             itemIndex,
             locationIndex: locIndex,
-            isSameItem: itemIndex === currentItemIndex,
+            isSameItem: false, // 现在只检查不同商品间的冲突
           };
         }
       }
@@ -313,15 +311,18 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
       (id) => !previousSelectedIds.includes(id)
     );
 
-    // 检查每个新添加的库位是否已被选择
+    // 检查每个新添加的库位是否已被其他商品选择
     const validSelections = [...previousSelectedIds];
 
     for (const storageId of newlyAdded) {
-      const conflict = checkStorageUsed(storageId, indexItem, indexLocation);
+      const conflict = checkStorageUsed(storageId, indexItem);
 
       if (!conflict) {
         // 没有冲突，添加到有效选择中
         validSelections.push(storageId);
+      } else {
+        // 有冲突，向用户显示警告消息
+        message.warning(`库位已被商品 #${conflict.itemIndex + 1} 占用，不能重复选择`);
       }
     }
 
@@ -333,8 +334,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
 
   // 获取所有已选择的库位ID，用于在下拉框中禁用
   const getAllSelectedStorageIds = (
-    currentItemIndex: number,
-    currentLocationIndex: number
+    currentItemIndex: number
   ) => {
     const approvalItems = form.getFieldValue('approvalItems');
     if (!approvalItems) return new Set<string>();
@@ -342,13 +342,12 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     const selectedIds = new Set<string>();
 
     approvalItems.forEach((item: any, itemIndex: number) => {
+      // 跳过当前商品项，因为我们已经限制了同一商品不能选择相同货架
+      if (itemIndex === currentItemIndex) return;
+
       if (!item || !item.location) return;
 
-      item.location.forEach((loc: any, locIndex: number) => {
-        // 跳过当前正在编辑的位置
-        if (itemIndex === currentItemIndex && locIndex === currentLocationIndex)
-          return;
-
+      item.location.forEach((loc: any) => {
         if (!loc || !loc.storageIds) return;
 
         loc.storageIds.forEach((id: string) => selectedIds.add(id));
@@ -553,8 +552,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                         // 获取当前查看的所有已选择的库位ID
                                         const selectedIds =
                                           getAllSelectedStorageIds(
-                                            index,
-                                            locationIndex
+                                            index
                                           );
 
                                         return (

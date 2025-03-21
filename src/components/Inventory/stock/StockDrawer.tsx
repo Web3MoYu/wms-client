@@ -19,11 +19,17 @@ import debounce from 'lodash/debounce';
 import moment from 'moment';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { addStock, getBatchNumberByCode } from '../../../api/stock-service/StockController';
+import {
+  addStock,
+  getBatchNumberByCode,
+} from '../../../api/stock-service/StockController';
 import { searchProducts } from '../../../api/product-service/ProductController';
 import { getAllAreas } from '../../../api/location-service/AreaController';
 import { getShelfListByAreaId } from '../../../api/location-service/ShelfController';
-import { getStoragesByShelfId, getStoragesByIds } from '../../../api/location-service/StorageController';
+import {
+  getStoragesByShelfId,
+  getStoragesByIds,
+} from '../../../api/location-service/StorageController';
 import { getStockByProductIdAndBatchNumber } from '../../../api/stock-service/StockController';
 
 const { Option } = Select;
@@ -47,11 +53,15 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   const [batchNumbers, setBatchNumbers] = useState<string[]>([]);
   const [areas, setAreas] = useState<any[]>([]);
   const [shelves, setShelves] = useState<any[]>([]);
-  const [storagesByShelf, setStoragesByShelf] = useState<{[shelfId: string]: any[]}>({});
+  const [storagesByShelf, setStoragesByShelf] = useState<{
+    [shelfId: string]: any[];
+  }>({});
   const [originalStock, setOriginalStock] = useState<any>(null);
   const [additionalQuantity, setAdditionalQuantity] = useState<number>(0);
   const [hasSelectedProduct, setHasSelectedProduct] = useState<boolean>(false);
-  const [availableShelves, setAvailableShelves] = useState<Set<string>>(new Set());
+  const [availableShelves, setAvailableShelves] = useState<Set<string>>(
+    new Set()
+  );
 
   // 初始化表单
   useEffect(() => {
@@ -92,10 +102,10 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       const res = await getShelfListByAreaId(areaId);
       if (res.code === 200) {
         setShelves(res.data);
-        
+
         // 重置可用货架集合
         setAvailableShelves(new Set());
-        
+
         // 对每个货架检查是否有可用库位
         for (const shelf of res.data) {
           checkShelfAvailability(shelf.id);
@@ -115,17 +125,19 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       const res = await getStoragesByShelfId(shelfId);
       if (res.code === 200) {
         // 更新库位列表
-        setStoragesByShelf(prev => ({
+        setStoragesByShelf((prev) => ({
           ...prev,
-          [shelfId]: res.data
+          [shelfId]: res.data,
         }));
 
         // 检查是否有可用库位
-        const hasAvailableStorage = res.data.some(storage => storage.status === 1);
-        
+        const hasAvailableStorage = res.data.some(
+          (storage) => storage.status === 1
+        );
+
         // 如果有可用库位，将此货架ID添加到可用货架集合中
         if (hasAvailableStorage) {
-          setAvailableShelves(prev => {
+          setAvailableShelves((prev) => {
             const newSet = new Set(prev);
             newSet.add(shelfId);
             return newSet;
@@ -143,14 +155,20 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
     const location = form.getFieldValue('location');
     location[index].storageIds = [];
     form.setFieldsValue({ location });
-    
+
     // 加载该货架下的库位
     loadStoragesByShelfId(shelfId);
 
     // 如果存在原始库存的货架数据，尝试加载对应的库位
     if (originalStock && originalStock.location) {
-      const matchingLocation = originalStock.location.find((loc: any) => loc.shelfId === shelfId);
-      if (matchingLocation && matchingLocation.storageIds && matchingLocation.storageIds.length > 0) {
+      const matchingLocation = originalStock.location.find(
+        (loc: any) => loc.shelfId === shelfId
+      );
+      if (
+        matchingLocation &&
+        matchingLocation.storageIds &&
+        matchingLocation.storageIds.length > 0
+      ) {
         // 使用loadStoragesByIds加载库位信息
         loadStoragesByIds(shelfId, matchingLocation.storageIds);
       }
@@ -163,9 +181,9 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       const res = await getStoragesByShelfId(shelfId);
       if (res.code === 200) {
         // 更新Map中对应货架的库位信息
-        setStoragesByShelf(prev => ({
+        setStoragesByShelf((prev) => ({
           ...prev,
-          [shelfId]: res.data
+          [shelfId]: res.data,
         }));
       }
     } catch (error) {
@@ -180,34 +198,75 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       const occupiedStoragesRes = await getStoragesByIds(storageIds);
       // 获取该货架下的所有库位
       const allShelfStoragesRes = await getStoragesByShelfId(shelfId);
-      
-      if (occupiedStoragesRes.code === 200 && allShelfStoragesRes.code === 200) {
+
+      if (
+        occupiedStoragesRes.code === 200 &&
+        allShelfStoragesRes.code === 200
+      ) {
         // 获取已占用库位和该货架下的所有库位
         const occupiedStorages = occupiedStoragesRes.data || [];
         const allShelfStorages = allShelfStoragesRes.data || [];
-        
+
         // 创建一个Map来存储所有库位信息，确保ID到名称的映射是正确的
         const storageMap = new Map();
-        
+
         // 先添加所有货架下的库位
-        allShelfStorages.forEach(storage => {
+        allShelfStorages.forEach((storage) => {
           storageMap.set(storage.id, storage);
         });
-        
+
         // 然后添加或更新已占用的库位信息（以确保已占用库位的信息是最新的）
-        occupiedStorages.forEach(storage => {
+        occupiedStorages.forEach((storage) => {
           storageMap.set(storage.id, storage);
         });
-        
+
+        // 如果有原始库存和位置显示信息，将名称信息添加到库位中
+        if (originalStock && originalStock.locationVo) {
+          // 创建库位ID到名称的映射
+          const storageIdToNameMap = new Map<string, string>();
+          
+          // 遍历所有位置信息，创建ID到名称的映射
+          originalStock.location.forEach((location: any, locIndex: number) => {
+            // 确保该位置有对应的显示信息
+            if (
+              originalStock.locationVo[locIndex] && 
+              location.shelfId === shelfId &&
+              location.storageIds && 
+              originalStock.locationVo[locIndex].storageNames
+            ) {
+              const locationVoItem = originalStock.locationVo[locIndex];
+              
+              // 将每个库位ID与其对应的名称关联
+              location.storageIds.forEach((storageId: string, idx: number) => {
+                if (locationVoItem.storageNames[idx]) {
+                  storageIdToNameMap.set(storageId, locationVoItem.storageNames[idx]);
+                }
+              });
+            }
+          });
+          
+          // 使用映射表更新库位信息
+          storageIdToNameMap.forEach((name, id) => {
+            const storage = storageMap.get(id);
+            if (storage) {
+              storageMap.set(id, {
+                ...storage,
+                locationName: name
+              });
+            }
+          });
+        }
+
         // 将Map转换回数组
         const mergedStorages = Array.from(storageMap.values());
-        
+
         // 记录库位信息
-        
+        console.log('加载货架库位完成:', shelfId, mergedStorages);
+
         // 将库位数据设置到表单中，更新Map中对应货架的库位信息
-        setStoragesByShelf(prev => ({
+        setStoragesByShelf((prev) => ({
           ...prev,
-          [shelfId]: mergedStorages
+          [shelfId]: mergedStorages,
         }));
       }
     } catch (error) {
@@ -247,7 +306,7 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
     }
 
     const productCode = form.getFieldValue('productCode');
-    
+
     if (!productCode) {
       message.warning('产品编码获取失败，请重新选择产品');
       setBatchNumbers([batchNumber]);
@@ -285,8 +344,30 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   // 商品选择变更
   const handleProductChange = (productId: string) => {
     // 清空批次号
-    form.setFieldsValue({ batchNumber: undefined });
+    form.setFieldsValue({ 
+      batchNumber: undefined,
+      // 清空位置信息相关数据
+      areaId: undefined,
+      location: [{ shelfId: undefined, storageIds: [] }],
+      // 清空数量信息
+      quantity: 0,
+      availableQuantity: 0,
+      alertStatus: 0,
+    });
+    
+    // 重置批次号列表
     setBatchNumbers([]);
+    
+    // 重置原始库存数据
+    setOriginalStock(null);
+    
+    // 重置新增数量
+    setAdditionalQuantity(0);
+    
+    // 清空货架和库位数据
+    setShelves([]);
+    setStoragesByShelf({});
+    setAvailableShelves(new Set());
 
     // 获取选中的产品信息
     const product = products.find((p) => p.id === productId);
@@ -312,7 +393,7 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
     }
 
     const productId = form.getFieldValue('productId');
-    
+
     if (!productId) {
       message.warning('产品ID获取失败，请重新选择产品');
       return;
@@ -324,11 +405,38 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       batchNumber
     );
 
+    // 存储原始库存信息，包含locationVo
     setOriginalStock(existingStock);
 
     if (existingStock) {
       // 提示用户已存在该库存
       message.info(`已存在该商品的批次库存，将在原有基础上增加库存`);
+
+      console.log('已加载库存数据:', existingStock);
+      console.log('位置信息:', existingStock.location);
+      console.log('位置显示信息:', existingStock.locationVo);
+
+      // 创建一个新的位置数组，包含显示名称信息
+      const enhancedLocation = existingStock.location.map((loc, index) => {
+        // 添加显示名称，用于下拉框显示
+        if (existingStock.locationVo && existingStock.locationVo[index]) {
+          return {
+            ...loc,
+            // 添加架位显示名称
+            shelfDisplayName: existingStock.locationVo[index].shelfName,
+            // 添加库位ID到显示名称的映射
+            storageDisplayNames: loc.storageIds.reduce<Record<string, string>>((acc, id, idx) => {
+              if (existingStock.locationVo[index].storageNames[idx]) {
+                acc[id] = existingStock.locationVo[index].storageNames[idx];
+              }
+              return acc;
+            }, {})
+          };
+        }
+        return loc;
+      });
+
+      console.log('增强后的位置信息:', enhancedLocation);
 
       // 自动填充数量信息和位置信息
       form.setFieldsValue({
@@ -340,43 +448,41 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
         productionDate: existingStock.productionDate
           ? moment(existingStock.productionDate)
           : null,
-        // 保留原有位置信息，允许用户修改
+        // 保留原有位置信息，允许用户修改，使用增强版的位置信息
         areaId: existingStock.areaId,
-        location: existingStock.location,
+        location: enhancedLocation,
       });
-      
+
       // 重置新增数量
       setAdditionalQuantity(0);
 
       // 如果位置信息有区域，加载对应的货架
       if (existingStock.areaId) {
         await loadShelvesByAreaId(existingStock.areaId);
-        
+
         // 清空货架库位映射，准备重新加载
         setStoragesByShelf({});
-        
+
         // 加载原有的位置信息
         if (existingStock.location && existingStock.location.length > 0) {
-          // 收集所有已占用的库位ID
-          const allOccupiedStorageIds: string[] = [];
-          
           // 为每个位置加载对应的库位
-          const loadPromises = existingStock.location.map(async (location: any) => {
-            if (location.shelfId && location.storageIds && location.storageIds.length > 0) {
-              // 收集该位置的库位ID
-              allOccupiedStorageIds.push(...location.storageIds);
-              
-              // 加载货架对应的库位（包括已占用库位和可用库位）
-              await loadStoragesByIds(location.shelfId, location.storageIds);
+          const loadPromises = existingStock.location.map(
+            async (location: any) => {
+              if (
+                location.shelfId &&
+                location.storageIds &&
+                location.storageIds.length > 0
+              ) {
+                // 加载货架对应的库位
+                await loadStoragesByIds(location.shelfId, location.storageIds);
+              }
             }
-          });
-          
+          );
+
           // 等待所有加载完成
           await Promise.all(loadPromises);
-          
         }
       }
-
     } else {
       // 清除原始库存，表示这是一个新的批次号
       setOriginalStock(null);
@@ -387,22 +493,25 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   };
 
   // 为批次号onChange添加防抖处理
-  const debouncedHandleBatchNumberChange = debounce(handleBatchNumberChange, 500);
+  const debouncedHandleBatchNumberChange = debounce(
+    handleBatchNumberChange,
+    500
+  );
 
   // 处理新增数量变更
   const handleAdditionalQuantityChange = (value: number | null) => {
     if (value === null) return;
     setAdditionalQuantity(value);
-    
+
     // 如果存在原始库存，需要计算并更新数量和可用数量
     if (originalStock) {
       const originalQuantity = originalStock.quantity;
       const originalAvailable = originalStock.availableQuantity;
-      
+
       // 更新表单中的数量和可用数量
-      form.setFieldsValue({ 
+      form.setFieldsValue({
         quantity: originalQuantity + value,
-        availableQuantity: originalAvailable + value
+        availableQuantity: originalAvailable + value,
       });
     }
   };
@@ -410,19 +519,21 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   // 数量变化
   const handleQuantityChange = (value: number | null) => {
     if (value === null) return;
-    
+
     // 设置可用数量跟随总数量变化
     form.setFieldsValue({ availableQuantity: value });
-    
+
     // 如果存在原始库存，需要计算与原数量的差值
     if (originalStock) {
       const originalQuantity = originalStock.quantity;
       const originalAvailable = originalStock.availableQuantity;
-      
+
       const quantityDiff = value - originalQuantity;
-      
+
       if (quantityDiff >= 0) {
-        form.setFieldsValue({ availableQuantity: originalAvailable + quantityDiff });
+        form.setFieldsValue({
+          availableQuantity: originalAvailable + quantityDiff,
+        });
       }
     }
   };
@@ -468,7 +579,10 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   };
 
   // 检查库位是否已经被选择
-  const checkStorageUsed = (storageId: string, currentLocationIndex: number) => {
+  const checkStorageUsed = (
+    storageId: string,
+    currentLocationIndex: number
+  ) => {
     const location = form.getFieldValue('location');
     if (!location) return false;
 
@@ -522,7 +636,7 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       // 验证是否选择了批次号
       if (!values.batchNumber) {
         message.error('请选择或输入批次号');
@@ -530,7 +644,10 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       }
 
       // 如果存在原有库存，验证新增数量
-      if (originalStock && (additionalQuantity === 0 || additionalQuantity === null)) {
+      if (
+        originalStock &&
+        (additionalQuantity === 0 || additionalQuantity === null)
+      ) {
         message.error('请输入新增数量');
         return;
       }
@@ -543,13 +660,14 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
       // 根据是否存在原有库存，计算总数量和可用数量
       if (originalStock) {
         values.quantity = originalStock.quantity + additionalQuantity;
-        values.availableQuantity = originalStock.availableQuantity + additionalQuantity;
+        values.availableQuantity =
+          originalStock.availableQuantity + additionalQuantity;
       }
 
       // 提交表单
       const result = await addStock({
         ...values,
-        productId: values.productId
+        productId: values.productId,
       });
 
       if (result.code === 200) {
@@ -683,8 +801,8 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              name="quantity"
-              label="总数量"
+              name='quantity'
+              label='总数量'
               rules={[{ required: true, message: '请输入数量' }]}
             >
               <InputNumber
@@ -696,15 +814,8 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              name="availableQuantity"
-              label="可用数量"
-            >
-              <InputNumber
-                min={0}
-                style={{ width: '100%' }}
-                disabled
-              />
+            <Form.Item name='availableQuantity' label='可用数量'>
+              <InputNumber min={0} style={{ width: '100%' }} disabled />
             </Form.Item>
           </Col>
         </Row>
@@ -714,8 +825,8 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="additionalQuantity"
-                label="新增数量"
+                name='additionalQuantity'
+                label='新增数量'
                 rules={[{ required: true, message: '请输入新增数量' }]}
               >
                 <InputNumber
@@ -732,12 +843,12 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              name="areaId"
-              label="区域"
+              name='areaId'
+              label='区域'
               rules={[{ required: true, message: '请选择区域' }]}
             >
               <Select
-                placeholder="请选择区域"
+                placeholder='请选择区域'
                 onChange={handleAreaChange}
                 disabled={!!originalStock}
               >
@@ -750,10 +861,7 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              name="alertStatus"
-              label="预警状态"
-            >
+            <Form.Item name='alertStatus' label='预警状态'>
               <Select disabled={!!originalStock}>
                 <Option value={0}>正常</Option>
                 <Option value={1}>低于最小库存</Option>
@@ -810,16 +918,28 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                           {shelves.map((shelf) => {
                             // 检查是否为可用货架（有可用库位的货架）
                             const isAvailable = availableShelves.has(shelf.id);
-                            
+
                             // 检查是否被其他位置选择
-                            const selectedShelfIds = getAllSelectedShelfIds(index);
+                            const selectedShelfIds =
+                              getAllSelectedShelfIds(index);
                             const isUsed = selectedShelfIds.has(shelf.id);
-                            
+
                             // 只显示有可用库位且未被选择的货架
                             if (isAvailable && !isUsed) {
+                              // 查找原始库存中是否有该货架的显示名称
+                              let displayName = shelf.shelfName;
+                              if (originalStock && originalStock.locationVo) {
+                                const matchingLocation = originalStock.location?.find(
+                                  (loc: any) => loc.shelfId === shelf.id
+                                );
+                                if (matchingLocation && matchingLocation.shelfDisplayName) {
+                                  displayName = matchingLocation.shelfDisplayName;
+                                }
+                              }
+                              
                               return (
                                 <Option key={shelf.id} value={shelf.id}>
-                                  {shelf.shelfName}
+                                  {displayName}
                                 </Option>
                               );
                             }
@@ -833,21 +953,53 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                         {...restField}
                         name={[name, 'storageIds']}
                         label='库位'
-                        rules={[{ required: true, message: '请选择至少一个库位' }]}
+                        rules={[
+                          { required: true, message: '请选择至少一个库位' },
+                        ]}
                       >
                         <Select
-                          mode="multiple"
-                          disabled={!form.getFieldValue(['location', index, 'shelfId'])}
+                          mode='multiple'
+                          disabled={
+                            !form.getFieldValue(['location', index, 'shelfId'])
+                          }
                           style={{ width: '100%' }}
                           onChange={(value) => {
                             handleStorageChange(value, index);
                           }}
                           tagRender={(props) => {
-                            const shelfId = form.getFieldValue(['location', index, 'shelfId']);
-                            // 从对应货架的库位中查找名称
-                            const storage = storagesByShelf[shelfId]?.find(s => s.id === props.value);
-                            const displayName = storage ? storage.locationName : props.value;
+                            const shelfId = form.getFieldValue([
+                              'location',
+                              index,
+                              'shelfId',
+                            ]);
+                            // 获取当前位置信息，可能包含storageDisplayNames
+                            const locationItem = form.getFieldValue([
+                              'location',
+                              index,
+                            ]);
                             
+                            // 首先检查增强的位置信息中是否有显示名称
+                            if (locationItem && locationItem.storageDisplayNames && 
+                                locationItem.storageDisplayNames[props.value]) {
+                              return (
+                                <Tag
+                                  closable={props.closable}
+                                  onClose={props.onClose}
+                                  style={{ marginRight: 3 }}
+                                >
+                                  {locationItem.storageDisplayNames[props.value]}
+                                </Tag>
+                              );
+                            }
+                            
+                            // 其次从storagesByShelf中查找
+                            const storage = storagesByShelf[shelfId]?.find(
+                              (s) => s.id === props.value
+                            );
+                            const displayName = storage
+                              ? storage.locationName
+                              : props.value;
+
                             return (
                               <Tag
                                 closable={props.closable}
@@ -859,40 +1011,69 @@ const StockDrawer: React.FC<StockDrawerProps> = ({
                             );
                           }}
                         >
-                          {(form.getFieldValue(['location', index, 'shelfId']) && 
-                            storagesByShelf[form.getFieldValue(['location', index, 'shelfId'])]) ? 
-                            storagesByShelf[form.getFieldValue(['location', index, 'shelfId'])].map((storage) => {
-                              const shelfId = form.getFieldValue(['location', index, 'shelfId']);
-                              // 检查是否为已占用库位
-                              const isOccupiedByOriginal = originalStock && 
-                                originalStock.location && 
-                                originalStock.location.some((loc: any) => 
-                                  loc.shelfId === shelfId && 
-                                  loc.storageIds && 
-                                  loc.storageIds.includes(storage.id)
+                          {form.getFieldValue(['location', index, 'shelfId']) &&
+                          storagesByShelf[
+                            form.getFieldValue(['location', index, 'shelfId'])
+                          ]
+                            ? storagesByShelf[
+                                form.getFieldValue([
+                                  'location',
+                                  index,
+                                  'shelfId',
+                                ])
+                              ].map((storage) => {
+                                const shelfId = form.getFieldValue([
+                                  'location',
+                                  index,
+                                  'shelfId',
+                                ]);
+                                // 检查是否为已占用库位
+                                const isOccupiedByOriginal =
+                                  originalStock &&
+                                  originalStock.location &&
+                                  originalStock.location.some(
+                                    (loc: any) =>
+                                      loc.shelfId === shelfId &&
+                                      loc.storageIds &&
+                                      loc.storageIds.includes(storage.id)
+                                  );
+
+                                // 检查是否被其他位置占用
+                                const selectedIds =
+                                  getAllSelectedStorageIds(index);
+                                const isUsedByOthers = selectedIds.has(
+                                  storage.id
                                 );
-                              
-                              // 检查是否被其他位置占用
-                              const selectedIds = getAllSelectedStorageIds(index);
-                              const isUsedByOthers = selectedIds.has(storage.id);
-                              
-                              // 确保选项显示的是库位名称
-                              const displayName = storage.locationName || storage.id;
-                              
-                              return (
-                                <Option
-                                  key={storage.id}
-                                  value={storage.id}
-                                  label={displayName}
-                                  title={`ID: ${storage.id}, 名称: ${displayName}${isOccupiedByOriginal ? ' (已占用)' : ''}${isUsedByOthers ? ' (已被其他位置选择)' : ''}`}
-                                  disabled={isUsedByOthers}
-                                >
-                                  {isOccupiedByOriginal ? `${displayName} (已占用)` : 
-                                   isUsedByOthers ? `${displayName} (已被其他位置选择)` : displayName}
-                                </Option>
-                              );
-                            }) : []
-                          }
+
+                                // 确保选项显示的是库位名称
+                                const displayName =
+                                  storage.locationName || storage.id;
+
+                                return (
+                                  <Option
+                                    key={storage.id}
+                                    value={storage.id}
+                                    label={displayName}
+                                    title={`ID: ${
+                                      storage.id
+                                    }, 名称: ${displayName}${
+                                      isOccupiedByOriginal ? ' (已占用)' : ''
+                                    }${
+                                      isUsedByOthers
+                                        ? ' (已被其他位置选择)'
+                                        : ''
+                                    }`}
+                                    disabled={isUsedByOthers}
+                                  >
+                                    {isOccupiedByOriginal
+                                      ? `${displayName}`
+                                      : isUsedByOthers
+                                      ? `${displayName}`
+                                      : displayName}
+                                  </Option>
+                                );
+                              })
+                            : []}
                         </Select>
                       </Form.Item>
                     </Col>
