@@ -92,7 +92,7 @@ export default function OrderManager() {
   useEffect(() => {
     // 设置默认状态为待审核(0)
     form.setFieldsValue({
-      status: 0,
+      status: null,
       createTimeAsc: false,
     });
     fetchOrders();
@@ -245,7 +245,7 @@ export default function OrderManager() {
     form.resetFields();
     // 然后设置默认值
     form.setFieldsValue({
-      status: 0,
+      status: null,
       createTimeAsc: false,
     });
     // 重置分页
