@@ -409,9 +409,7 @@ export default function OrderManager() {
       render: (_text: string, record: OrderVo) => (
         <Space size='middle'>
           <a onClick={() => handleViewDetail(record)}>查看详情</a>
-          {(record.status === 0 ||
-            record.status === 1 ||
-            record.status === 2) && (
+          {record.status === 0 && (
             <a onClick={() => handleCancelOrder(record)}>取消订单</a>
           )}
         </Space>
