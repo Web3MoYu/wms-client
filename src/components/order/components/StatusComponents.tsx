@@ -92,3 +92,16 @@ export const OrderTypeSelect: React.FC<Omit<SelectProps, 'options'>> = (
     </Select>
   );
 };
+
+// 质检类型选择器组件
+export const InspectionTypeSelect: React.FC<Omit<SelectProps, 'options'>> = (
+  props
+) => {
+  return (
+    <Select {...props} placeholder='请选择质检类型' allowClear>
+      <Option value={1}>入库质检</Option>
+      <Option value={2}>出库质检</Option>
+      <Option value={3}>库存质检</Option>
+    </Select>
+  );
+};

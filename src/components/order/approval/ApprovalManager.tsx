@@ -356,7 +356,7 @@ export default function ApprovalManager() {
       title: '订单编号',
       dataIndex: 'orderNo',
       key: 'orderNo',
-      render: (text: string) => <a>{text}</a>,
+      render: (text: string) => <span>{text}</span>,
     },
     {
       title: '订单类型',

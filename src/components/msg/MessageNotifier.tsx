@@ -241,7 +241,8 @@ const MessageNotifier: React.FC = () => {
         // 目前暂不处理，可以后续添加
         break;
       case 3: // 质检单
-        // 目前暂不处理，可以后续添加
+        // 跳转到质检页面，设置质检编号为业务ID
+        navigate(`/order/inspect?inspectionNo=${msg.relatedBizId}`);
         break;
       case 4: // 异常标记
         // 目前暂不处理，可以后续添加

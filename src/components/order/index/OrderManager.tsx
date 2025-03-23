@@ -40,6 +40,7 @@ import {
   QualityStatusSelect,
   OrderTypeSelect,
 } from '../components/StatusComponents';
+import { useLocation } from 'react-router-dom';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -68,6 +69,7 @@ export default function OrderManager() {
   const [orders, setOrders] = useState<OrderVo[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [form] = Form.useForm();
+  const location = useLocation();
 
   // 用户搜索相关状态
   const [creatorOptions, setCreatorOptions] = useState<User[]>([]);
@@ -95,8 +97,26 @@ export default function OrderManager() {
       status: null,
       createTimeAsc: false,
     });
+
+    // 从URL中获取查询参数
+    const query = new URLSearchParams(location.search);
+    const orderNoFromQuery = query.get('orderNo');
+
+    // 如果URL中有orderNo参数，则填入表单并执行搜索
+    if (orderNoFromQuery) {
+      form.setFieldsValue({
+        orderNo: orderNoFromQuery,
+      });
+    }
+
     fetchOrders();
-  }, []);
+
+    // 如果是从其他页面点击进来的（有参数），则修改URL但不触发导航
+    if (orderNoFromQuery) {
+      const newUrl = window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [location]);
 
   // 监听orders状态变化，确保UI更新
   useEffect(() => {}, [orders]);
@@ -346,7 +366,7 @@ export default function OrderManager() {
       title: '订单编号',
       dataIndex: 'orderNo',
       key: 'orderNo',
-      render: (text: string) => <a>{text}</a>,
+      render: (text: string) => <span>{text}</span>,
     },
     {
       title: '订单类型',
