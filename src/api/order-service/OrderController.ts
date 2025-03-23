@@ -13,7 +13,7 @@ export interface OrderVo {
   inspector: User; // 质检员
   totalAmount: number; // 总金额
   totalQuantity: number; // 总数量
-  status: number; // 状态：0-待审核，1-审批通过，2-入库中，3-已完成，-1-已取消，-2-审批拒绝
+  status: number; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
   qualityStatus: number; // 质检状态：质检状态：0-未质检，1-质检通过，2-质检不通过，3-部分异常
   remark: string; // 备注
   createTime: string; // 创建时间
@@ -33,7 +33,7 @@ export interface OrderQueryDto {
   creatorId: string; // 创建人ID
   approverId: string; // 审核人id
   inspectorId: string; // 质检人员ID
-  status: number; // 状态：0-待审核，1-审批通过，2-入库中，3-已完成，-1-已取消，-2-审批拒绝
+  status: number; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
 
   // 时间范围
   startTime: Date; // 开始时间
@@ -55,7 +55,7 @@ export interface OrderIn {
   actualTime: Date; // 实际到达时间
   totalAmount: number; // 总金额
   totalQuantity: number; // 总数量
-  status: number; // 状态：0-待审核，1-审批通过，2-入库中，3-已完成，-1-已取消，-2-审批拒绝
+  status: number; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
   qualityStatus: number; // 质检状态：质检状态：0-未质检，1-质检通过，2-质检不通过，3-部分异常
   remark: string; // 备注
   createTime: string; // 创建时间
@@ -77,7 +77,7 @@ export interface OrderInItem {
   batchNumber: string; // 批次号
   productionDate: Date; // 生产日期
   expiryDate: Date; // 过期日期
-  status: number; // 状态：0-待审核，1-审批通过，2-入库中，3-已完成，-1-已取消，-2-审批拒绝
+  status: number; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
   qualityStatus: number; // 质检状态：0-未质检，1-质检通过，2-质检不通过，3-部分异常
   remark: string; // 备注
   createTime: string; // 创建时间
@@ -96,7 +96,7 @@ export interface OrderOut {
   actualTime: Date; // 实际到达时间
   totalAmount: number; // 总金额
   totalQuantity: number; // 总数量
-  status: number; // 状态：0-待审核，1-审批通过，2-入库中，3-已完成，-1-已取消，-2-审批拒绝
+  status: number; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
   qualityStatus: number; // 质检状态：质检状态：0-未质检，1-质检通过，2-质检不通过，3-部分异常
   deliveryAddress: string; // 配送地址
   contactName: string; // 联系人
@@ -121,7 +121,7 @@ export interface OrderOutItem {
   batchNumber: string; // 批次号
   productionDate: Date; // 生产日期
   expiryDate: Date; // 过期日期
-  status: number; // 状态：0-待审核，1-审批通过，2-入库中，3-已完成，-1-已取消，-2-审批拒绝
+  status: number; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
   qualityStatus: number; // 质检状态：0-未质检，1-质检通过，2-质检不通过，3-部分异常
   remark: string; // 备注
   createTime: string; // 创建时间
