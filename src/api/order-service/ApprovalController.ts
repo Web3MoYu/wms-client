@@ -32,24 +32,6 @@ export function pageOrder(
 }
 
 /**
- * 审批通过
- * @param id 订单id
- * @returns 审批结果
- */
-export function approve(id: string): Promise<Result<string>> {
-  return new Promise((resolve, reject) => {
-    axios
-      .put(`/order/approval/approve/${id}`)
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
-}
-
-/**
  * 拒绝审批
  * @param id 订单id
  * @param type 订单类型
@@ -82,11 +64,12 @@ export function reject(
  */
 export function approveInbound(
   dto: ApprovalDto[],
-  id: string
+  id: string,
+  inspector: string
 ): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
-      .post(`/order/approval/${id}`, dto)
+      .post(`/order/approval/${id}/${inspector}`, dto)
       .then((res) => {
         resolve(res.data);
       })

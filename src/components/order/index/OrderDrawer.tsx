@@ -504,11 +504,27 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
           {
             name: ['orderItems', index, 'batchNumber'],
             value: newBatchNumber,
+            // 确保验证状态更新
+            touched: true,
+            validating: false,
+            errors: [],
           },
         ]);
 
+        // 更新整个orderItems，确保表单知道值已更改
+        const orderItems = form.getFieldValue('orderItems');
+        if (orderItems && orderItems[index]) {
+          orderItems[index].batchNumber = newBatchNumber;
+          form.setFieldsValue({ orderItems });
+        }
+
         // 将生成的批次号添加到选项中
         setBatchNumberOptions([newBatchNumber]);
+
+        // 手动验证当前字段，确保表单状态更新
+        form.validateFields([['orderItems', index, 'batchNumber']]).catch(() => {
+          // 忽略验证错误，因为我们知道值已设置
+        });
 
         message.success('批次号生成成功');
       } else {
@@ -535,6 +551,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   const handleSubmit = async (formName: string) => {
     try {
       const form = formName === 'inbound' ? orderInForm : orderOutForm;
+      // 首先执行表单验证，这会触发所有必填字段的验证，包括批次号
       const values = await form.validateFields();
 
       // 检查所有自定义产品的编码是否有效
@@ -562,9 +579,9 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         return;
       }
 
-      // 检查所有商品是否有批次号
+      // 再次检查所有商品是否有批次号（双重保险）
       const hasMissingBatchNumber = values.orderItems.some((item: any) => {
-        return !item.batchNumber;
+        return !item.batchNumber || item.batchNumber.trim() === '';
       });
 
       if (hasMissingBatchNumber) {
@@ -1144,12 +1161,15 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                             handleBatchNumberSearch(value, index, 'inbound')
                           }
                           onChange={(value) => {
-                            if (value) {
-                              // 设置批次号的值到表单中
-                              const orderItems =
-                                orderInForm.getFieldValue('orderItems');
-                              orderItems[index].batchNumber = value;
-                              orderInForm.setFieldsValue({ orderItems });
+                            // 设置批次号的值到表单中，包括空值
+                            const orderItems =
+                              orderInForm.getFieldValue('orderItems');
+                            orderItems[index].batchNumber = value || '';
+                            orderInForm.setFieldsValue({ orderItems });
+                            
+                            // 如果清空了输入，也要清空选项
+                            if (!value) {
+                              setBatchNumberOptions([]);
                             }
                           }}
                           disabled={

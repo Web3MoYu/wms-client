@@ -8,17 +8,21 @@ import {
   Radio,
   Card,
   Descriptions,
+  Select,
 } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { OrderVo } from '../../../api/order-service/OrderController';
 import {
-  approve,
   reject,
   approveInbound,
 } from '../../../api/order-service/ApprovalController';
 import OrderRejectForm from './OrderRejectForm';
 import InboundApproveForm from './InboundApproveForm';
 import OutboundApproveForm from './OutboundApproveForm';
+import debounce from 'lodash/debounce';
+import { getUsersByName, User } from '../../../api/sys-service/UserController';
+
+const { Option } = Select;
 
 interface OrderApprovalDrawerProps {
   visible: boolean;
@@ -40,6 +44,25 @@ export default function OrderApprovalDrawer({
   const [approvalType, setApprovalType] = useState<'approve' | 'reject'>(
     'approve'
   );
+  // 添加质检员选项状态
+  const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
+
+  // 防抖搜索质检员
+  const handleInspectorSearch = debounce(async (name: string) => {
+    if (!name || name.length < 1) {
+      setInspectorOptions([]);
+      return;
+    }
+
+    try {
+      const res = await getUsersByName(name);
+      if (res.code === 200) {
+        setInspectorOptions(res.data);
+      }
+    } catch (error) {
+      console.error('搜索质检员失败:', error);
+    }
+  }, 500);
 
   // 处理审批结果
   const handleApproval = async () => {
@@ -53,12 +76,36 @@ export default function OrderApprovalDrawer({
         if (order?.type === 1) {
           // 入库订单
           const approvalItems = values.approvalItems || [];
-          // 调用入库订单批准API
-          result = await approveInbound(approvalItems, order.id);
+          // 确保质检员ID存在
+          if (!values.inspectorId) {
+            message.error('请选择质检员');
+            setLoading(false);
+            return;
+          }
+          // 确保order不为null
+          if (!order) {
+            message.error('订单数据不存在');
+            setLoading(false);
+            return;
+          }
+          // 调用入库订单批准API，添加质检员ID参数
+          result = await approveInbound(approvalItems, order.id, values.inspectorId);
         } else {
           // 出库订单
-          // 暂时使用旧的approve接口
-          result = await approve(order?.id as string);
+          // 确保质检员ID存在
+          if (!values.inspectorId) {
+            message.error('请选择质检员');
+            setLoading(false);
+            return;
+          }
+          // 确保order不为null
+          if (!order) {
+            message.error('订单数据不存在');
+            setLoading(false);
+            return;
+          }
+          // 调用入库订单批准API，添加质检员ID参数
+          result = await approveInbound([], order.id, values.inspectorId);
         }
 
         if (result.code === 200) {
@@ -200,6 +247,28 @@ export default function OrderApprovalDrawer({
                   </Radio>
                 </Radio.Group>
               </Form.Item>
+
+              {approvalType === 'approve' && (
+                <Form.Item
+                  name='inspectorId'
+                  label='质检员'
+                  rules={[{ required: true, message: '请选择质检员' }]}
+                >
+                  <Select
+                    showSearch
+                    placeholder='请输入质检员姓名'
+                    filterOption={false}
+                    onSearch={handleInspectorSearch}
+                    style={{ width: '100%' }}
+                  >
+                    {inspectorOptions.map((user) => (
+                      <Option key={user.userId} value={user.userId}>
+                        {user.realName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              )}
 
               {renderForm()}
             </Form>
