@@ -13,8 +13,19 @@ import {
   Tag,
 } from 'antd';
 import moment from 'moment';
-import { inDetail, outDetail, OrderVo, OrderInItem, OrderOutItem, OrderDetailVo } from '../../../api/order-service/OrderController';
-import { renderOrderStatus, renderQualityStatus, renderOrderType } from '../components/StatusComponents';
+import {
+  inDetail,
+  outDetail,
+  OrderVo,
+  OrderInItem,
+  OrderOutItem,
+  OrderDetailVo,
+} from '../../../api/order-service/OrderController';
+import {
+  renderOrderStatus,
+  renderQualityStatus,
+  renderOrderType,
+} from '../components/StatusComponents';
 
 interface OrderDetailDrawerProps {
   visible: boolean;
@@ -32,7 +43,9 @@ export default function OrderDetailDrawer({
   onApproval,
 }: OrderDetailDrawerProps) {
   const [loading, setLoading] = useState(false);
-  const [detailData, setDetailData] = useState<OrderDetailVo<OrderInItem | OrderOutItem>[]>([]);
+  const [detailData, setDetailData] = useState<
+    OrderDetailVo<OrderInItem | OrderOutItem>[]
+  >([]);
 
   // 获取订单详情
   const fetchOrderDetail = async () => {
@@ -78,7 +91,9 @@ export default function OrderDetailDrawer({
     return (
       <Card title='基本信息' size='small'>
         <Descriptions column={3} bordered>
-          <Descriptions.Item label='订单编号' span={1}>{order?.orderNo}</Descriptions.Item>
+          <Descriptions.Item label='订单编号' span={1}>
+            {order?.orderNo}
+          </Descriptions.Item>
           <Descriptions.Item label='订单类型' span={1}>
             {renderOrderType(order?.type)}
           </Descriptions.Item>
@@ -118,10 +133,14 @@ export default function OrderDetailDrawer({
             {order?.remark || '-'}
           </Descriptions.Item>
         </Descriptions>
-        
+
         {showApprovalButton && order?.status === 0 && (
           <div style={{ textAlign: 'center', marginTop: 20 }}>
-            <Button type="primary" onClick={() => onApproval && onApproval(order)} size="large">
+            <Button
+              type='primary'
+              onClick={() => onApproval && onApproval(order)}
+              size='large'
+            >
               审批
             </Button>
           </div>
@@ -137,10 +156,10 @@ export default function OrderDetailDrawer({
         {detailData.map((detail, index) => {
           // 检查状态值并确保是数字类型
           const itemStatus = Number(detail.orderItems.status);
-            
+
           return (
             <div key={index} style={{ marginBottom: 16 }}>
-              <Card 
+              <Card
                 title={
                   <span>
                     {`商品 ${index + 1}: ${detail.product.productName} `}
@@ -148,16 +167,19 @@ export default function OrderDetailDrawer({
                       {renderOrderStatus(itemStatus)}
                     </span>
                     <span style={{ marginLeft: 8 }}>
-                      {renderQualityStatus(detail.orderItems.qualityStatus, false)}
+                      {renderQualityStatus(
+                        detail.orderItems.qualityStatus,
+                        false
+                      )}
                     </span>
                   </span>
                 }
-                size='small' 
+                size='small'
                 bordered
                 style={{ marginBottom: 8 }}
-                type="inner"
+                type='inner'
               >
-                <Descriptions column={4} bordered size="small">
+                <Descriptions column={4} bordered size='small'>
                   <Descriptions.Item label='商品名称' span={2}>
                     {detail.product.productName}
                   </Descriptions.Item>
@@ -180,12 +202,14 @@ export default function OrderDetailDrawer({
 
                 <Divider style={{ margin: '12px 0' }} />
 
-                <Descriptions column={4} bordered size="small">
+                <Descriptions column={4} bordered size='small'>
                   <Descriptions.Item label='预期数量' span={1}>
                     {detail.orderItems.expectedQuantity}
                   </Descriptions.Item>
                   <Descriptions.Item label='实际数量' span={1}>
-                    {detail.orderItems.actualQuantity}
+                    {detail.orderItems.qualityStatus === 0
+                      ? detail.orderItems.actualQuantity
+                      : '-'}
                   </Descriptions.Item>
                   <Descriptions.Item label='单价' span={1}>
                     ¥{detail.orderItems.price?.toFixed(2) || '0.00'}
@@ -194,30 +218,35 @@ export default function OrderDetailDrawer({
                     ¥{detail.orderItems.amount?.toFixed(2) || '0.00'}
                   </Descriptions.Item>
                   <Descriptions.Item label='库区' span={2}>
-                    <Tag color="blue">{detail.areaName || '-'}</Tag>
+                    <Tag color='blue'>{detail.areaName || '-'}</Tag>
                   </Descriptions.Item>
                   <Descriptions.Item label='货位' span={2}>
                     <Space size={[0, 4]} wrap>
                       {detail.locationName?.map((loc, idx) => (
-                        <Tag 
-                          key={idx} 
-                          color="cyan"
-                          style={{ marginBottom: 4 }}
-                        >
+                        <Tag key={idx} color='cyan' style={{ marginBottom: 4 }}>
                           {`${loc.shelfName}: ${loc.storageNames.join(', ')}`}
                         </Tag>
                       ))}
-                      {(!detail.locationName || detail.locationName.length === 0) && '-'}
+                      {(!detail.locationName ||
+                        detail.locationName.length === 0) &&
+                        '-'}
                     </Space>
                   </Descriptions.Item>
                   <Descriptions.Item label='批次号' span={2}>
                     {detail.orderItems.batchNumber || '-'}
                   </Descriptions.Item>
                   <Descriptions.Item label='生产日期' span={2}>
-                    {detail.orderItems.productionDate ? moment(detail.orderItems.productionDate).format('YYYY-MM-DD') : '-'}
+                    {detail.orderItems.productionDate
+                      ? moment(detail.orderItems.productionDate).format(
+                          'YYYY-MM-DD'
+                        )
+                      : '-'}
                   </Descriptions.Item>
                   <Descriptions.Item label='质检状态' span={2}>
-                    {renderQualityStatus(detail.orderItems.qualityStatus, false)}
+                    {renderQualityStatus(
+                      detail.orderItems.qualityStatus,
+                      false
+                    )}
                   </Descriptions.Item>
                   <Descriptions.Item label='备注' span={2}>
                     {detail.orderItems.remark || '-'}
@@ -259,8 +288,8 @@ export default function OrderDetailDrawer({
       destroyOnClose
       extra={
         showApprovalButton && order?.status === 0 ? (
-          <Button 
-            type="primary" 
+          <Button
+            type='primary'
             onClick={() => onApproval && onApproval(order)}
           >
             审批
@@ -269,14 +298,14 @@ export default function OrderDetailDrawer({
       }
     >
       <Spin spinning={loading}>
-        <Tabs 
-          defaultActiveKey="basic" 
+        <Tabs
+          defaultActiveKey='basic'
           items={tabItems}
           style={{ marginBottom: 32 }}
-          size="large"
-          type="card"
+          size='large'
+          type='card'
         />
       </Spin>
     </Drawer>
   );
-} 
+}
