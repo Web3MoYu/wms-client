@@ -129,7 +129,7 @@ export default function InspectDetailDrawer({
       }
     };
 
-    // 如果selectedProduct存在但可能不完整，则获取详细信息
+    // 只有当商品没有完整信息时才获取详情
     if (selectedProduct?.id && !selectedProduct.categoryName) {
       fetchProductDetail();
     }
@@ -174,10 +174,10 @@ export default function InspectDetailDrawer({
           <Descriptions.Item label='质检员'>
             {inspection.inspectorInfo?.realName || inspection.inspector || '-'}
           </Descriptions.Item>
-          <Descriptions.Item label='区域' span={orderDetail ? 1 : 2}>
+          <Descriptions.Item label='区域'>
             {selectedAreaName || '-'}
           </Descriptions.Item>
-          <Descriptions.Item label='货位' span={1}>
+          <Descriptions.Item label='货位' span={2}>
             {formatLocations()}
           </Descriptions.Item>
         </Descriptions>
@@ -204,7 +204,7 @@ export default function InspectDetailDrawer({
         className='product-info-card'
       >
         <Descriptions column={2} bordered size='small'>
-          <Descriptions.Item label='商品名称' span={2}>
+          <Descriptions.Item label='商品名称'>
             {selectedProduct?.productName || '-'}
           </Descriptions.Item>
           <Descriptions.Item label='商品编码'>
@@ -228,9 +228,6 @@ export default function InspectDetailDrawer({
           <Descriptions.Item label='批次号'>
             {orderItem?.batchNumber || '-'}
           </Descriptions.Item>
-          <Descriptions.Item label='预期数量'>
-            {orderItem?.expectedQuantity || '-'}
-          </Descriptions.Item>
         </Descriptions>
       </Card>
     );
@@ -253,7 +250,7 @@ export default function InspectDetailDrawer({
   return (
     <Drawer
       title={
-        <Title level={4}>
+        <Title level={4} style={{ margin: 0, lineHeight: '32px' }}>
           质检单详情
           <Tag color='blue' style={{ marginLeft: 8 }}>
             {getInspectionTypeText(inspection.inspectionType)}
@@ -278,7 +275,9 @@ export default function InspectDetailDrawer({
             </Col>
             <Col span={16}>
               {/* 右侧 - 商品详情 */}
-              {renderProductDetails()}
+              <div style={{ height: 'auto', overflow: 'visible' }}>
+                {renderProductDetails()}
+              </div>
             </Col>
           </Row>
 
