@@ -1,0 +1,83 @@
+.inspect-detail-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 150px);
+}
+
+.inspect-detail-top {
+  margin-bottom: 16px;
+}
+
+.inspect-detail-bottom {
+  flex: 1;
+  overflow: hidden;
+}
+
+.product-info-card,
+.location-info-card {
+  height: 100%;
+}
+
+.product-info-card .ant-card-body,
+.location-info-card .ant-card-body {
+  height: calc(100% - 57px);
+  overflow: auto;
+}
+
+.no-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  color: #999;
+}
+
+.no-content .anticon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.inspect-detail-drawer-title {
+  margin-bottom: 16px;
+}
+
+.inspect-detail-splitter {
+  height: calc(100vh - 200px);
+}
+
+.area-location-panel,
+.product-info-panel {
+  padding: 12px;
+  height: 100%;
+}
+
+.order-detail-panel {
+  padding: 12px;
+  height: 100%;
+  overflow: auto;
+}
+
+/* 位置信息区域样式 */
+.location-info-section {
+  margin-top: 16px;
+}
+
+.location-info-section h3 {
+  margin-bottom: 16px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .inspect-detail-drawer .ant-drawer-content-wrapper {
+    width: calc(100vw - 200px) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .inspect-detail-drawer .ant-drawer-content-wrapper {
+    width: calc(100vw - 80px) !important;
+  }
+} 

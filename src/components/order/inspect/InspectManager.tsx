@@ -16,15 +16,19 @@ import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
 import locale from 'antd/es/date-picker/locale/zh_CN';
-import { pageList, InspectionVo } from '../../../api/order-service/InspectController';
+import {
+  pageList,
+  InspectionVo,
+} from '../../../api/order-service/InspectController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
-import { 
-  renderQualityStatus, 
-  QualityStatusSelect, 
-  InspectionTypeSelect 
+import {
+  renderQualityStatus,
+  QualityStatusSelect,
+  InspectionTypeSelect,
 } from '../components/StatusComponents';
 import userStore from '../../../store/userStore';
 import { useNavigate, useLocation } from 'react-router-dom';
+import InspectDetailDrawer from './components/InspectDetailDrawer';
 
 // 创建store实例
 const userStoreInstance = new userStore();
@@ -51,7 +55,7 @@ export default function InspectManager() {
   const navigate = useNavigate();
   // 获取location对象用于处理URL参数
   const location = useLocation();
-  
+
   // 状态定义
   const [loading, setLoading] = useState<boolean>(false);
   const [inspections, setInspections] = useState<InspectionVo[]>([]);
@@ -70,6 +74,11 @@ export default function InspectManager() {
     current: 1,
     pageSize: 10,
   });
+
+  // 抽屉相关状态
+  const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
+  const [currentInspection, setCurrentInspection] =
+    useState<InspectionVo | null>(null);
 
   // 初始化 - 获取当前登录用户信息
   useEffect(() => {
@@ -142,12 +151,14 @@ export default function InspectManager() {
         page: pagination.current,
         pageSize: pagination.pageSize,
         inspectionNo: values.inspectionNo || '',
-        inspectionType: values.inspectionType !== undefined ? values.inspectionType : null,
+        inspectionType:
+          values.inspectionType !== undefined ? values.inspectionType : null,
         relatedOrderNo: values.relatedOrderNo || '',
         inspector: values.inspector || '',
         startTime: startTime,
         endTime: endTime,
-        createTimeAsc: values.createTimeAsc !== undefined ? values.createTimeAsc : false,
+        createTimeAsc:
+          values.createTimeAsc !== undefined ? values.createTimeAsc : false,
         status: values.status !== undefined ? values.status : null,
       };
 
@@ -247,6 +258,18 @@ export default function InspectManager() {
     fetchInspections();
   };
 
+  // 打开详情抽屉
+  const handleOpenDetail = (record: InspectionVo) => {
+    setCurrentInspection(record);
+    setDrawerVisible(true);
+  };
+
+  // 关闭详情抽屉
+  const handleCloseDrawer = () => {
+    setDrawerVisible(false);
+    setCurrentInspection(null);
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -310,9 +333,9 @@ export default function InspectManager() {
     {
       title: '操作',
       key: 'action',
-      render: () => (
+      render: (_: any, record: InspectionVo) => (
         <Space size='middle'>
-          <a>查看详情</a>
+          <a onClick={() => handleOpenDetail(record)}>查看详情</a>
         </Space>
       ),
     },
@@ -413,6 +436,15 @@ export default function InspectManager() {
           onChange={handleTableChange}
         />
       </Card>
+
+      {/* 详情抽屉 */}
+      {currentInspection && (
+        <InspectDetailDrawer
+          visible={drawerVisible}
+          onClose={handleCloseDrawer}
+          inspection={currentInspection}
+        />
+      )}
     </div>
   );
 }

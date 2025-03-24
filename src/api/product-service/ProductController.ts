@@ -169,3 +169,21 @@ export function generateBatchNumber(): Promise<Result<string>> {
       });
   });
 }
+
+/**
+ * 根据id获取商品详情
+ * @param id 商品id
+ * @returns 商品详情
+ */
+export function getProductById(id: string): Promise<Result<ProductVo>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/product/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
