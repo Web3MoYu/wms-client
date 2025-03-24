@@ -208,8 +208,8 @@ export default function OrderDetailDrawer({
                   </Descriptions.Item>
                   <Descriptions.Item label='实际数量' span={1}>
                     {detail.orderItems.qualityStatus === 0
-                      ? detail.orderItems.actualQuantity
-                      : '-'}
+                      ? '-'
+                      : detail.orderItems.actualQuantity}
                   </Descriptions.Item>
                   <Descriptions.Item label='单价' span={1}>
                     ¥{detail.orderItems.price?.toFixed(2) || '0.00'}
