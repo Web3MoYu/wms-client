@@ -6,11 +6,13 @@
 
 .inspect-detail-top {
   margin-bottom: 16px;
+  max-height: 350px;
+  overflow: hidden;
 }
 
 .inspect-detail-bottom {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .product-info-card,
@@ -18,7 +20,12 @@
   height: 100%;
 }
 
-.product-info-card .ant-card-body,
+.product-info-card .ant-card-body {
+  height: calc(100% - 57px);
+  overflow: auto;
+  max-height: 290px;
+}
+
 .location-info-card .ant-card-body {
   height: calc(100% - 57px);
   overflow: auto;
@@ -67,6 +74,18 @@
   margin-bottom: 16px;
   font-size: 15px;
   font-weight: 500;
+}
+
+/* 抽屉宽度动态计算 */
+.inspect-detail-drawer .ant-drawer-content-wrapper {
+  width: calc(100vw - 256px) !important;
+}
+
+/* 确保抽屉内容可滚动 */
+.inspect-detail-drawer .ant-drawer-body {
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
 }
 
 /* 响应式调整 */

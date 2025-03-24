@@ -10,12 +10,8 @@ import {
   Row,
   Col,
   Divider,
-  Empty,
 } from 'antd';
-import {
-  SyncOutlined,
-  TagsOutlined,
-} from '@ant-design/icons';
+import { SyncOutlined, TagsOutlined } from '@ant-design/icons';
 import { InspectionVo } from '../../../../api/order-service/InspectController';
 import { LocationVo } from '../../../../api/stock-service/StockController';
 import {
@@ -25,7 +21,10 @@ import {
   inDetail,
   outDetail,
 } from '../../../../api/order-service/OrderController';
-import { ProductVo, getProductById } from '../../../../api/product-service/ProductController';
+import {
+  ProductVo,
+  getProductById,
+} from '../../../../api/product-service/ProductController';
 import OrderDetailItems from './OrderDetailItems';
 import './css/InspectDetailDrawer.css';
 
@@ -36,7 +35,6 @@ interface InspectDetailDrawerProps {
   onClose: () => void;
   inspection: InspectionVo | null;
 }
-
 
 export default function InspectDetailDrawer({
   visible,
@@ -179,11 +177,9 @@ export default function InspectDetailDrawer({
           <Descriptions.Item label='区域' span={orderDetail ? 1 : 2}>
             {selectedAreaName || '-'}
           </Descriptions.Item>
-          {orderDetail && (
-            <Descriptions.Item label='货位' span={1}>
-              {formatLocations()}
-            </Descriptions.Item>
-          )}
+          <Descriptions.Item label='货位' span={1}>
+            {formatLocations()}
+          </Descriptions.Item>
         </Descriptions>
       </Card>
     );
@@ -207,42 +203,35 @@ export default function InspectDetailDrawer({
         size='small'
         className='product-info-card'
       >
-        {selectedProduct ? (
-          <Descriptions column={2} bordered size='small'>
-            <Descriptions.Item label='商品名称' span={2}>
-              {selectedProduct.productName}
-            </Descriptions.Item>
-            <Descriptions.Item label='商品编码'>
-              {selectedProduct.productCode}
-            </Descriptions.Item>
-            <Descriptions.Item label='规格型号'>
-              {selectedProduct.spec || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='类别'>
-              {selectedProduct.categoryName || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='品牌'>
-              {selectedProduct.brand || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='单价'>
-              {selectedProduct.price ? `¥${selectedProduct.price}` : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='型号'>
-              {selectedProduct.model || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='批次号'>
-              {orderItem?.batchNumber || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label='预期数量'>
-              {orderItem?.expectedQuantity || '-'}
-            </Descriptions.Item>
-          </Descriptions>
-        ) : (
-          <Empty
-            description='请在下方选择商品查看详情'
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
-        )}
+        <Descriptions column={2} bordered size='small'>
+          <Descriptions.Item label='商品名称' span={2}>
+            {selectedProduct?.productName || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='商品编码'>
+            {selectedProduct?.productCode || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='规格型号'>
+            {selectedProduct?.spec || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='类别'>
+            {selectedProduct?.categoryName || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='品牌'>
+            {selectedProduct?.brand || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='单价'>
+            {selectedProduct?.price ? `¥${selectedProduct.price}` : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='型号'>
+            {selectedProduct?.model || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='批次号'>
+            {orderItem?.batchNumber || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='预期数量'>
+            {orderItem?.expectedQuantity || '-'}
+          </Descriptions.Item>
+        </Descriptions>
       </Card>
     );
   };
