@@ -102,6 +102,26 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     Record<number, boolean>
   >({});
 
+  // 处理关闭抽屉的函数，清除表单数据后再关闭
+  const handleClose = () => {
+    // 重置所有表单数据
+    orderInForm.resetFields();
+    orderOutForm.resetFields();
+    
+    // 重置其他状态
+    setProductOptions([]);
+    setBatchNumberOptions([]);
+    setProductCodeValidating({});
+    setProductCodeValid({});
+    setProductCodeError({});
+    setSelectedProducts({});
+    setApproverOptions([]);
+    setActiveTab('inbound'); // 重置回入库订单标签
+    
+    // 调用父组件传入的关闭函数
+    onClose();
+  };
+
   // 清空表单
   useEffect(() => {
     if (visible) {
@@ -753,7 +773,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
           message.success('入库订单创建成功');
           // 先调用onSuccess刷新表格数据，再关闭抽屉
           onSuccess();
-          onClose();
+          handleClose(); // 使用handleClose关闭抽屉并清除数据
         } else {
           message.error(result.msg || '入库订单创建失败');
         }
@@ -1023,6 +1043,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                             handleQuantityOrPriceChange(index, 'inbound')
                           }
                           disabled={
+                            // 只有系统商品（非自定义商品且有选择产品）时才禁用单价编辑
                             !orderInForm.getFieldValue([
                               'orderItems',
                               index,
@@ -1265,13 +1286,13 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     <Drawer
       title='新增订单'
       width={720}
-      onClose={onClose}
+      onClose={handleClose}
       visible={visible}
       bodyStyle={{ paddingBottom: 80 }}
       footer={
         <div style={{ textAlign: 'right' }}>
           <Space>
-            <Button onClick={onClose}>取消</Button>
+            <Button onClick={handleClose}>取消</Button>
             <Button
               type='primary'
               onClick={() => handleSubmit(activeTab)}
