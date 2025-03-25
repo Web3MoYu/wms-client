@@ -48,6 +48,7 @@ interface InspectionDtoWithStringDates {
   endTime: string;
   status: number;
   createTimeAsc: boolean;
+  _t: number;
 }
 
 export default function InspectManager() {
@@ -160,6 +161,7 @@ export default function InspectManager() {
         createTimeAsc:
           values.createTimeAsc !== undefined ? values.createTimeAsc : false,
         status: values.status !== undefined ? values.status : null,
+        _t: new Date().getTime()
       };
 
       const result = await pageList(queryDto as any); // 类型断言为任意类型，以兼容原接口
@@ -268,6 +270,16 @@ export default function InspectManager() {
   const handleCloseDrawer = () => {
     setDrawerVisible(false);
     setCurrentInspection(null);
+  };
+
+  // 延迟获取质检列表，添加一定延迟以确保服务器数据已更新
+  const delayedFetchInspections = () => {
+    // 先显示loading状态
+    setLoading(true);
+    // 延迟500ms再获取数据，给服务器处理时间
+    setTimeout(() => {
+      fetchInspections();
+    }, 500);
   };
 
   // 表格列定义
@@ -443,6 +455,7 @@ export default function InspectManager() {
           visible={drawerVisible}
           onClose={handleCloseDrawer}
           inspection={currentInspection}
+          onSuccess={() => delayedFetchInspections()}
         />
       )}
     </div>

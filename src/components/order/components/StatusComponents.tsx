@@ -44,13 +44,15 @@ export const renderQualityStatus = (
 
 // 渲染商品质检状态（基于审核结果）
 export const renderItemInspectionResult = (status: number) => {
-  return status === 1 ? (
-    <Tag color='green'>通过</Tag>
-  ) : (
-    <Tag color='red'>不通过</Tag>
-  );
+  switch (status) {
+    case 0:
+      return <Tag color='default'>-</Tag>;
+    case 1:
+      return <Tag color='green'>通过</Tag>;
+    case 2:
+      return <Tag color='red'>不通过</Tag>;
+  }
 };
-
 // 订单类型渲染
 export const renderOrderType = (type: number) => {
   return type === 1 ? (

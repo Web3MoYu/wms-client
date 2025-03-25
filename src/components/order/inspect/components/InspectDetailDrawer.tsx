@@ -60,12 +60,14 @@ interface InspectDetailDrawerProps {
   visible: boolean;
   onClose: () => void;
   inspection: InspectionVo | null;
+  onSuccess?: () => void;
 }
 
 export default function InspectDetailDrawer({
   visible,
   onClose,
   inspection,
+  onSuccess,
 }: InspectDetailDrawerProps) {
   const [selectedLocations, setSelectedLocations] = useState<LocationVo[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<ProductVo | null>(
@@ -272,32 +274,10 @@ export default function InspectDetailDrawer({
     const isInspected =
       orderDetail && inspectedItems.has(orderDetail.orderItems.id);
 
-    // 获取当前商品的质检结果（如果已质检）
-    const getQualifiedStatus = inspectionItems.find(
+    // 获取当前商品的质检详情信息
+    const getInspectionItem = inspectionItems.find(
       (item) => item.productId === selectedProduct?.id
     );
-
-    // 获取当前商品的不合格数量（从API返回的inspectionItems中获取）
-    const getUnqualifiedQuantity = () => {
-      if (!selectedProduct) return 0;
-
-      const inspectionItem = inspectionItems.find(
-        (item) => item.productId === selectedProduct.id
-      );
-
-      return inspectionItem?.unqualifiedQuantity || 0;
-    };
-
-    // 获取当前商品的合格数量（从API返回的inspectionItems中获取）
-    const getQualifiedQuantity = () => {
-      if (!selectedProduct) return 0;
-
-      const inspectionItem = inspectionItems.find(
-        (item) => item.productId === selectedProduct.id
-      );
-
-      return inspectionItem?.qualifiedQuantity || 0;
-    };
 
     // 处理提交当前商品质检结果
     const handleSubmitItem = async () => {
@@ -389,12 +369,12 @@ export default function InspectDetailDrawer({
             }}
           >
             <span>
-              质检基本信息
-              {inspection.status === 0
-                ? renderQualityStatus(inspection.status)
-                : renderItemInspectionResult(
-                    getQualifiedStatus?.qualityStatus || 0
-                  )}
+              质检基本信息: {renderQualityStatus(inspection.status)},详情信息:
+              {inspection.status !== 0
+                ? renderItemInspectionResult(
+                    getInspectionItem?.qualityStatus || 0
+                  )
+                : '-'}
             </span>
             <Space>
               {detailData.length > 1 && (
@@ -448,13 +428,17 @@ export default function InspectDetailDrawer({
                 '-'}
             </Descriptions.Item>
             <Descriptions.Item label='合格数量'>
-              {inspection.status !== 0 ? getQualifiedQuantity() : '-'}
+              {inspection.status !== 0
+                ? getInspectionItem?.qualifiedQuantity
+                : '-'}
             </Descriptions.Item>
             <Descriptions.Item label='不合格数量'>
-              {inspection.status !== 0 ? getUnqualifiedQuantity() : '-'}
+              {inspection.status !== 0
+                ? getInspectionItem?.unqualifiedQuantity
+                : '-'}
             </Descriptions.Item>
             <Descriptions.Item label='备注'>
-              {inspection.remark || '-'}
+              {getInspectionItem?.remark || '-'}
             </Descriptions.Item>
           </Descriptions>
 
@@ -595,7 +579,17 @@ export default function InspectDetailDrawer({
       if (result.code === 200) {
         message.success('质检提交成功');
         setSubmitModalVisible(false);
-        onClose(); // 关闭抽屉
+        
+        // 延迟执行回调和关闭操作，给服务器足够的时间处理数据
+        setTimeout(() => {
+          if (onSuccess) {
+            onSuccess();
+          }
+          // 等待一段时间后再关闭抽屉，确保数据加载完成
+          setTimeout(() => {
+            onClose(); // 关闭抽屉
+          }, 300);
+        }, 300);
       } else {
         message.error(result.msg || '质检提交失败');
       }
