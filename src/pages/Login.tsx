@@ -41,7 +41,7 @@ const Login: React.FC = observer(() => {
     setLoading(true);
     try {
       const data: any = await user.login(values);
-      
+
       if (data.code === 200) {
         if (user.menu.length === 0) {
           message.warning('当前用户没有权限，请联系管理员');
@@ -64,7 +64,7 @@ const Login: React.FC = observer(() => {
     setLoading(true);
     try {
       const res: any = await user.bindWechat(values, wxid);
-      
+
       if (res.code === 200) {
         message.success(res.msg);
         navigate('/index');
@@ -94,7 +94,13 @@ const Login: React.FC = observer(() => {
               message.warning('当前用户没有权限，请联系管理员');
             } else {
               message.success(response.msg);
-              navigate(user.menu[0].children[0].menu.menuUrl);
+              if (user.menu[0] && user.menu[0].children) {
+                navigate(user.menu[0].children[0].menu.menuUrl);
+              } else if (user.menu[0] && user.menu[0].menu) {
+                navigate(user.menu[0].menu.menuUrl);
+              } else {
+                navigate('/index');
+              }
               return; // 提前返回，避免执行后续逻辑
             }
           }
@@ -133,7 +139,7 @@ const Login: React.FC = observer(() => {
         message.success('微信登录成功');
         navigate('/index');
       }
-      
+
       setInitializing(false);
     };
 
@@ -153,7 +159,7 @@ const Login: React.FC = observer(() => {
       <Layout className={styles.loginLayout}>
         {initializing ? (
           <div className={styles.loadingContainer}>
-            <Spin size="large" tip="初始化中..." />
+            <Spin size='large' tip='初始化中...' />
           </div>
         ) : (
           <>
@@ -173,7 +179,7 @@ const Login: React.FC = observer(() => {
                   <Title level={2} className={styles.loginTitle}>
                     系统登录
                   </Title>
-                  <Paragraph type="secondary" className={styles.loginSubtitle}>
+                  <Paragraph type='secondary' className={styles.loginSubtitle}>
                     欢迎使用WMS管理系统，请登录您的账户
                   </Paragraph>
 
@@ -184,7 +190,7 @@ const Login: React.FC = observer(() => {
                     extraFields={
                       <>
                         <Divider plain>
-                          <Text type="secondary">其他登录方式</Text>
+                          <Text type='secondary'>其他登录方式</Text>
                         </Divider>
                         <WechatLoginButton loading={loading} />
                       </>
@@ -199,9 +205,11 @@ const Login: React.FC = observer(() => {
               <div className={styles.footerContent}>
                 <GithubOutlined
                   className={styles.footerIcon}
-                  onClick={() => window.open('https://github.com/Web3MoYu/wms-client')}
+                  onClick={() =>
+                    window.open('https://github.com/Web3MoYu/wms-client')
+                  }
                 />
-                <Text type="secondary" style={{ fontSize: 14 }}>
+                <Text type='secondary' style={{ fontSize: 14 }}>
                   Copyright ©{new Date().getFullYear()} Produced by lsh
                 </Text>
               </div>
@@ -209,7 +217,7 @@ const Login: React.FC = observer(() => {
 
             {/* 微信绑定弹窗 */}
             <Modal
-              title="绑定账户"
+              title='绑定账户'
               open={bindVisible}
               onCancel={() => setBindVisible(false)}
               footer={null}
@@ -223,11 +231,11 @@ const Login: React.FC = observer(() => {
               </Paragraph>
               <UserLoginForm
                 onFinish={handleBindSubmit}
-                submitText="绑定并登录"
+                submitText='绑定并登录'
                 loading={loading}
                 extraFields={
-                  <Form.Item name="wxid" hidden initialValue={wxid}>
-                    <Input type="hidden" />
+                  <Form.Item name='wxid' hidden initialValue={wxid}>
+                    <Input type='hidden' />
                   </Form.Item>
                 }
               />
