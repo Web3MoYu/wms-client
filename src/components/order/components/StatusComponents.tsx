@@ -32,14 +32,23 @@ export const renderQualityStatus = (
     case 0:
       return <Tag color='default'>未质检</Tag>;
     case 1:
-      return <Tag color='green'>质检通过</Tag>;
+      return <Tag color='green'>通过</Tag>;
     case 2:
-      return <Tag color='red'>质检不通过</Tag>;
+      return <Tag color='red'>不通过</Tag>;
     case 3:
       return <Tag color='orange'>{isOrderLevel ? '部分异常' : '质检异常'}</Tag>;
     default:
       return <Tag color='default'>未知状态</Tag>;
   }
+};
+
+// 渲染商品质检状态（基于审核结果）
+export const renderItemInspectionResult = (status: number) => {
+  return status === 1 ? (
+    <Tag color='green'>通过</Tag>
+  ) : (
+    <Tag color='red'>不通过</Tag>
+  );
 };
 
 // 订单类型渲染
@@ -74,8 +83,8 @@ export const QualityStatusSelect: React.FC<Omit<SelectProps, 'options'>> = (
   return (
     <Select {...props} placeholder='请选择质检状态' allowClear>
       <Option value={0}>未质检</Option>
-      <Option value={1}>质检通过</Option>
-      <Option value={2}>质检不通过</Option>
+      <Option value={1}>通过</Option>
+      <Option value={2}>不通过</Option>
       <Option value={3}>部分异常</Option>
     </Select>
   );

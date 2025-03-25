@@ -1,6 +1,8 @@
 import axios from '../../utils/mxAxios';
 import { User } from '../sys-service/UserController';
 import { Page, Result } from '../Model';
+import { MyLocation } from '../stock-service/StockController';
+import { OrderDetailVo, OrderInItem } from './OrderController';
 
 export interface InspectionDto {
   // 基本分页参数
@@ -33,10 +35,45 @@ export interface Inspection {
   updateTime: string; // 更新时间
 }
 
+export interface InspectionItem {
+  id: string; // 明细ID
+  inspectionId: string; // 质检记录ID
+  productId: string; // 产品ID
+  batchNumber: string; // 批次号
+  areaId: string; // 区域id
+  location: MyLocation[]; // 具体位置
+  inspectionQuantity: number; // 质检数量
+  qualifiedQuantity: number; // 合格数量
+  unqualifiedQuantity: number; // 不合格数量
+  qualityStatus: number; // 质检结果：1-合格，2-不合格
+  reason: string; // 异常原因
+  remark: string; // 备注
+  createTime: string; // 创建时间
+  updateTime: string; // 更新时间
+}
+
 export interface InspectionVo extends Inspection {
   inspectorInfo: User; // 质检员信息
 }
 
+export interface ItemInspect {
+  itemId: string; // 质检详情id
+  productId: string; // 产品id
+  count: number; // 合格数量
+  remark: string; // 质检详情备注
+  approval: boolean; // 通过
+}
+
+export interface InBoundInspectDto {
+  itemInspects: ItemInspect[];
+  remark: string; // 订单备注
+  inspectionNo: string; // 质检编号
+}
+
+export interface InspectionDetailVo<T> {
+  orderDetail: OrderDetailVo<T>[];
+  inspectionItems: InspectionItem[];
+}
 /**
  * 查询入库订单列表
  *
@@ -49,6 +86,46 @@ export function pageList(
   return new Promise((resolve, reject) => {
     axios
       .post('/order/inspect/page', dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 入库质检
+ *
+ * @param dto 质检信息
+ * @return 结果
+ */
+export function inBoundCheck(dto: InBoundInspectDto): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/order/inspect/inBoundCheck', dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 入库质检详情
+ *
+ * @param id 质检ID
+ * @return 结果
+ */
+export function inInspectDetail(
+  id: string
+): Promise<Result<InspectionDetailVo<OrderInItem>>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/order/inspect/inDetail', { params: { id } })
       .then((res) => {
         resolve(res.data);
       })

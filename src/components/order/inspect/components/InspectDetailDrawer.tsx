@@ -10,16 +10,36 @@ import {
   Row,
   Col,
   Divider,
+  Input,
+  Button,
+  Select,
+  Form,
+  InputNumber,
+  Modal,
+  Space,
 } from 'antd';
-import { SyncOutlined, TagsOutlined } from '@ant-design/icons';
-import { InspectionVo } from '../../../../api/order-service/InspectController';
+import {
+  SyncOutlined,
+  TagsOutlined,
+  CheckCircleOutlined,
+  LeftOutlined,
+  RightOutlined,
+  CheckOutlined,
+  EditOutlined,
+} from '@ant-design/icons';
+import {
+  InspectionVo,
+  inBoundCheck,
+  ItemInspect,
+  InBoundInspectDto,
+  inInspectDetail,
+  InspectionItem,
+} from '../../../../api/order-service/InspectController';
 import { LocationVo } from '../../../../api/stock-service/StockController';
 import {
   OrderDetailVo,
   OrderInItem,
   OrderOutItem,
-  inDetail,
-  outDetail,
 } from '../../../../api/order-service/OrderController';
 import {
   ProductVo,
@@ -27,8 +47,14 @@ import {
 } from '../../../../api/product-service/ProductController';
 import OrderDetailItems from './OrderDetailItems';
 import './css/InspectDetailDrawer.css';
+import {
+  renderQualityStatus,
+  renderItemInspectionResult,
+} from '../../components/StatusComponents';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+const { Option } = Select;
 
 interface InspectDetailDrawerProps {
   visible: boolean;
@@ -50,11 +76,20 @@ export default function InspectDetailDrawer({
   >([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedAreaName, setSelectedAreaName] = useState<string | null>(null);
+  const [form] = Form.useForm();
+  const [inspectedItems, setInspectedItems] = useState<
+    Map<string, ItemInspect>
+  >(new Map());
+  const [inspectionItems, setInspectionItems] = useState<InspectionItem[]>([]);
+  const [submitModalVisible, setSubmitModalVisible] = useState<boolean>(false);
+  const [finalRemark, setFinalRemark] = useState<string>('');
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   // 获取订单详情数据
   useEffect(() => {
     const fetchDetailData = async () => {
-      if (!visible || !inspection || !inspection.relatedOrderId) {
+      if (!visible || !inspection) {
         return;
       }
 
@@ -62,32 +97,34 @@ export default function InspectDetailDrawer({
       try {
         // 质检类型：1-入库质检，2-出库质检，3-库存质检
         if (inspection.inspectionType === 1) {
-          // 入库质检使用inDetail
-          const result = await inDetail(inspection.relatedOrderId);
+          // 使用新的入库质检详情接口
+          const result = await inInspectDetail(inspection.id);
           if (result.code === 200) {
-            setDetailData(result.data);
+            // 直接使用返回的orderDetail数据，因为它已经是OrderDetailVo<OrderInItem>[]类型
+            setDetailData(result.data.orderDetail);
+            // 存储inspectionItems数据
+            setInspectionItems(result.data.inspectionItems || []);
           } else {
-            message.error(result.msg || '获取入库订单详情失败');
+            message.error(result.msg || '获取质检详情失败');
             setDetailData([]);
+            setInspectionItems([]);
           }
         } else if (inspection.inspectionType === 2) {
-          // 出库质检使用outDetail
-          const result = await outDetail(inspection.relatedOrderId);
-          if (result.code === 200) {
-            setDetailData(result.data);
-          } else {
-            message.error(result.msg || '获取出库订单详情失败');
-            setDetailData([]);
-          }
+          // 暂时保留，后续需换成出库质检专用接口
+          message.info('出库质检详情功能暂未实现');
+          setDetailData([]);
+          setInspectionItems([]);
         } else {
           // 库存质检暂不实现
           message.info('库存质检详情功能暂未实现');
           setDetailData([]);
+          setInspectionItems([]);
         }
       } catch (error) {
         console.error('获取订单详情失败:', error);
         message.error('获取订单详情失败，请稍后重试');
         setDetailData([]);
+        setInspectionItems([]);
       } finally {
         setLoading(false);
       }
@@ -101,6 +138,7 @@ export default function InspectDetailDrawer({
       setSelectedProduct(null);
       setSelectedAreaName(null);
       setDetailData([]);
+      setInspectionItems([]);
     }
   }, [visible, inspection]);
 
@@ -135,6 +173,83 @@ export default function InspectDetailDrawer({
     }
   }, [selectedProduct?.id]);
 
+  // 当选择产品时，自动加载已存在的质检数据
+  useEffect(() => {
+    if (!selectedProduct) return;
+
+    // 查找当前选中的商品详情
+    const orderDetail = detailData.find(
+      (item) => item.product?.id === selectedProduct.id
+    );
+
+    if (!orderDetail) return;
+
+    // 查找商品在列表中的索引
+    const index = detailData.findIndex(
+      (item) => item.product?.id === selectedProduct.id
+    );
+    if (index !== -1) {
+      setCurrentIndex(index);
+    }
+
+    // 查看是否有已存在的质检数据
+    const existingInspect = inspectedItems.get(orderDetail.orderItems.id);
+
+    if (existingInspect) {
+      // 自动加载已存在的质检数据到表单
+      form.setFieldsValue({
+        actualQuantity: existingInspect.count,
+        approval: existingInspect.approval ? 'true' : 'false',
+        itemRemark: existingInspect.remark,
+      });
+    } else {
+      // 否则加载默认值
+      form.setFieldsValue({
+        actualQuantity: orderDetail.orderItems.expectedQuantity || 0,
+        approval: 'true',
+        itemRemark: '',
+      });
+    }
+  }, [selectedProduct, detailData, inspectedItems, form]);
+
+  // 导航到下一个或上一个商品
+  const navigateToProduct = (direction: 'prev' | 'next') => {
+    if (detailData.length === 0) return;
+
+    let newIndex = currentIndex;
+
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % detailData.length;
+    } else {
+      newIndex = (currentIndex - 1 + detailData.length) % detailData.length;
+    }
+
+    // 获取目标商品
+    const targetProduct = detailData[newIndex].product as ProductVo;
+    const targetLocations = detailData[newIndex].locationName || [];
+    const targetAreaName = detailData[newIndex].areaName;
+
+    if (targetProduct) {
+      setSelectedProduct(targetProduct);
+      setSelectedLocations(targetLocations);
+      setSelectedAreaName(targetAreaName || null);
+      setCurrentIndex(newIndex);
+    }
+  };
+
+  // 格式化位置信息
+  const formatLocations = () => {
+    if (!selectedLocations || selectedLocations.length === 0) {
+      return '请在下方选择商品查看位置信息';
+    }
+
+    return selectedLocations.map((loc, index) => (
+      <div key={index} style={{ marginBottom: '4px' }}>
+        {loc.shelfName}: {loc.storageNames.join(', ')}
+      </div>
+    ));
+  };
+
   if (!inspection) {
     return null;
   }
@@ -149,38 +264,246 @@ export default function InspectDetailDrawer({
     // 获取订单项
     const orderItem = orderDetail?.orderItems;
 
-    // 格式化位置信息
-    const formatLocations = () => {
-      if (!selectedLocations || selectedLocations.length === 0) {
-        return '请在下方选择商品查看位置信息';
-      }
+    // 判断是否可以操作（未质检状态）
+    const canOperate =
+      inspection?.status === 0 && selectedProduct && orderDetail;
 
-      return selectedLocations.map((loc, index) => (
-        <div key={index} style={{ marginBottom: '4px' }}>
-          {loc.shelfName}: {loc.storageNames.join(', ')}
-        </div>
-      ));
+    // 检查当前商品是否已质检
+    const isInspected =
+      orderDetail && inspectedItems.has(orderDetail.orderItems.id);
+
+    // 获取当前商品的质检结果（如果已质检）
+    const getQualifiedStatus = inspectionItems.find(
+      (item) => item.productId === selectedProduct?.id
+    );
+
+    // 获取当前商品的不合格数量（从API返回的inspectionItems中获取）
+    const getUnqualifiedQuantity = () => {
+      if (!selectedProduct) return 0;
+
+      const inspectionItem = inspectionItems.find(
+        (item) => item.productId === selectedProduct.id
+      );
+
+      return inspectionItem?.unqualifiedQuantity || 0;
+    };
+
+    // 获取当前商品的合格数量（从API返回的inspectionItems中获取）
+    const getQualifiedQuantity = () => {
+      if (!selectedProduct) return 0;
+
+      const inspectionItem = inspectionItems.find(
+        (item) => item.productId === selectedProduct.id
+      );
+
+      return inspectionItem?.qualifiedQuantity || 0;
+    };
+
+    // 处理提交当前商品质检结果
+    const handleSubmitItem = async () => {
+      if (!selectedProduct || !orderDetail) return;
+
+      try {
+        const values = await form.validateFields();
+
+        // 查找对应的质检详情项
+        const inspectionItem = inspectionItems.find(
+          (item) => item.productId === selectedProduct.id
+        );
+
+        if (!inspectionItem && inspection.status !== 0) {
+          message.error('未找到对应的质检详情，无法提交');
+          return;
+        }
+
+        // 创建质检项
+        const itemInspect: ItemInspect = {
+          itemId: inspectionItem?.id || '',
+          productId: selectedProduct.id,
+          count: values.actualQuantity,
+          approval: values.approval === 'true',
+          remark: values.itemRemark || '',
+        };
+
+        // 更新已质检项目集合
+        const newInspectedItems = new Map(inspectedItems);
+        newInspectedItems.set(orderDetail.orderItems.id, itemInspect);
+        setInspectedItems(newInspectedItems);
+
+        message.success(`${isInspected ? '更新' : '提交'}成功`);
+
+        // 检查是否所有商品都已质检
+        if (newInspectedItems.size === detailData.length) {
+          setSubmitModalVisible(true);
+        } else if (!isInspected) {
+          // 如果是新完成的质检项且还有未质检商品，自动跳转到下一个未质检商品
+          const nextUnInspectedIndex = findNextUnInspectedIndex();
+          if (nextUnInspectedIndex !== -1) {
+            const nextProduct = detailData[nextUnInspectedIndex]
+              .product as ProductVo;
+            const nextLocations =
+              detailData[nextUnInspectedIndex].locationName || [];
+            const nextAreaName = detailData[nextUnInspectedIndex].areaName;
+
+            setSelectedProduct(nextProduct);
+            setSelectedLocations(nextLocations);
+            setSelectedAreaName(nextAreaName || null);
+            setCurrentIndex(nextUnInspectedIndex);
+          }
+        }
+      } catch (error) {
+        console.error('表单验证失败:', error);
+      }
+    };
+
+    // 查找下一个未质检的商品索引
+    const findNextUnInspectedIndex = () => {
+      for (let i = 0; i < detailData.length; i++) {
+        const nextIndex = (currentIndex + i + 1) % detailData.length;
+        const detail = detailData[nextIndex];
+        if (
+          detail &&
+          detail.orderItems &&
+          !inspectedItems.has(detail.orderItems.id)
+        ) {
+          return nextIndex;
+        }
+      }
+      return -1; // 没有找到未质检的商品
+    };
+
+    // 获取当前商品序号和总数
+    const getProductNavText = () => {
+      if (!selectedProduct || detailData.length === 0) return '';
+      return `${currentIndex + 1} / ${detailData.length}`;
     };
 
     return (
-      <Card title='质检基本信息' size='small'>
-        <Descriptions column={2} bordered size='small'>
-          <Descriptions.Item label='质检编号'>
-            {inspection.inspectionNo}
-          </Descriptions.Item>
-          <Descriptions.Item label='预期数量'>
-            {orderItem?.expectedQuantity || '请选择商品'}
-          </Descriptions.Item>
-          <Descriptions.Item label='质检员'>
-            {inspection.inspectorInfo?.realName || inspection.inspector || '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label='区域'>
-            {selectedAreaName || '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label='货位' span={2}>
-            {formatLocations()}
-          </Descriptions.Item>
-        </Descriptions>
+      <Card
+        title={
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <span>
+              质检基本信息
+              {inspection.status === 0
+                ? renderQualityStatus(inspection.status)
+                : renderItemInspectionResult(
+                    getQualifiedStatus?.qualityStatus || 0
+                  )}
+            </span>
+            <Space>
+              {detailData.length > 1 && (
+                <>
+                  <Text type='secondary'>{getProductNavText()}</Text>
+                  <Button
+                    icon={<LeftOutlined />}
+                    onClick={() => navigateToProduct('prev')}
+                    size='small'
+                  />
+                  <Button
+                    icon={<RightOutlined />}
+                    onClick={() => navigateToProduct('next')}
+                    size='small'
+                  />
+                </>
+              )}
+              {canOperate && (
+                <Button
+                  type='primary'
+                  onClick={handleSubmitItem}
+                  icon={isInspected ? <EditOutlined /> : <CheckOutlined />}
+                  size='small'
+                >
+                  {isInspected ? '更新' : '提交'}
+                </Button>
+              )}
+            </Space>
+          </div>
+        }
+        size='small'
+        style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+        bodyStyle={{
+          flex: 1,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
+          <Descriptions column={2} bordered size='small'>
+            <Descriptions.Item label='质检编号'>
+              {inspection.inspectionNo}
+            </Descriptions.Item>
+            <Descriptions.Item label='预期数量'>
+              {orderItem?.expectedQuantity || '请选择商品'}
+            </Descriptions.Item>
+            <Descriptions.Item label='质检员'>
+              {inspection.inspectorInfo?.realName ||
+                inspection.inspector ||
+                '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label='合格数量'>
+              {inspection.status !== 0 ? getQualifiedQuantity() : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label='不合格数量'>
+              {inspection.status !== 0 ? getUnqualifiedQuantity() : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label='备注'>
+              {inspection.remark || '-'}
+            </Descriptions.Item>
+          </Descriptions>
+
+          {canOperate && (
+            <div style={{ marginTop: 16 }}>
+              <Form
+                form={form}
+                layout='vertical'
+                initialValues={{
+                  actualQuantity: orderItem?.expectedQuantity || 0,
+                  approval: 'true',
+                  itemRemark: '',
+                }}
+              >
+                <Row gutter={16}>
+                  <Col span={8}>
+                    <Form.Item
+                      name='actualQuantity'
+                      label='合格数量'
+                      rules={[{ required: true, message: '请输入合格数量' }]}
+                    >
+                      <InputNumber min={0} style={{ width: '100%' }} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item
+                      name='approval'
+                      label='是否通过'
+                      rules={[{ required: true, message: '请选择是否通过' }]}
+                    >
+                      <Select>
+                        <Option value='true'>通过</Option>
+                        <Option value='false'>不通过</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item name='itemRemark' label='质检备注'>
+                      <Input
+                        placeholder='请输入商品质检备注'
+                        onPressEnter={handleSubmitItem}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Form>
+            </div>
+          )}
+        </div>
       </Card>
     );
   };
@@ -228,6 +551,12 @@ export default function InspectDetailDrawer({
           <Descriptions.Item label='批次号'>
             {orderItem?.batchNumber || '-'}
           </Descriptions.Item>
+          <Descriptions.Item label='区域'>
+            {selectedAreaName || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='货位' span={2}>
+            {formatLocations()}
+          </Descriptions.Item>
         </Descriptions>
       </Card>
     );
@@ -247,82 +576,184 @@ export default function InspectDetailDrawer({
     }
   };
 
-  return (
-    <Drawer
-      title={
-        <Title level={4} style={{ margin: 0, lineHeight: '32px' }}>
-          质检单详情
-          <Tag color='blue' style={{ marginLeft: 8 }}>
-            {getInspectionTypeText(inspection.inspectionType)}
-          </Tag>
-        </Title>
+  // 提交最终质检结果
+  const handleSubmitInspection = async () => {
+    if (inspectedItems.size !== detailData.length) {
+      message.warning('请完成所有商品的质检');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const dto: InBoundInspectDto = {
+        itemInspects: Array.from(inspectedItems.values()),
+        remark: finalRemark,
+        inspectionNo: inspection?.inspectionNo || '',
+      };
+
+      const result = await inBoundCheck(dto);
+      if (result.code === 200) {
+        message.success('质检提交成功');
+        setSubmitModalVisible(false);
+        onClose(); // 关闭抽屉
+      } else {
+        message.error(result.msg || '质检提交失败');
       }
-      placement='right'
-      width='calc(100vw - 256px)'
-      onClose={onClose}
-      open={visible}
-      closable={true}
-      destroyOnClose={true}
-      className='inspect-detail-drawer'
-    >
-      <Spin spinning={loading} tip='加载中...'>
-        <div className='inspect-detail-container'>
-          {/* 上半部分 - 左右布局 */}
-          <Row gutter={16} className='inspect-detail-top'>
-            <Col span={8}>
-              {/* 左侧 - 质检基本信息和区域信息 */}
-              {renderInspectionInfo()}
-            </Col>
-            <Col span={16}>
-              {/* 右侧 - 商品详情 */}
-              <div style={{ height: 'auto', overflow: 'visible' }}>
-                {renderProductDetails()}
-              </div>
-            </Col>
-          </Row>
+    } catch (error) {
+      console.error('质检提交失败:', error);
+      message.error('质检提交失败，请稍后重试');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-          <Divider />
-
-          {/* 下半部分 - 商品列表 */}
-          <div className='inspect-detail-bottom'>
-            <Row>
-              <Col span={24}>
-                {/* 商品明细表格 */}
-                {detailData.length > 0 ? (
-                  <OrderDetailItems
-                    data={detailData}
-                    inspectionType={inspection.inspectionType}
-                    onSelectProduct={(productId, _areaId, locations) => {
-                      const product = detailData.find(
-                        (item) => item.product?.id === productId
-                      )?.product as ProductVo;
-                      const areaName = detailData.find(
-                        (item) => item.product?.id === productId
-                      )?.areaName;
-
-                      if (product) {
-                        setSelectedProduct(product);
-                        setSelectedLocations(locations);
-                        setSelectedAreaName(areaName || null);
-                      }
-                    }}
-                  />
-                ) : (
-                  <Card>
-                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                      <SyncOutlined
-                        spin
-                        style={{ fontSize: 24, marginBottom: 16 }}
-                      />
-                      <p>暂无商品详情数据</p>
-                    </div>
-                  </Card>
-                )}
+  return (
+    <>
+      <Drawer
+        title={
+          <Title level={4} style={{ margin: 0, lineHeight: '32px' }}>
+            质检单详情
+            <Tag color='blue' style={{ marginLeft: 8 }}>
+              {getInspectionTypeText(inspection.inspectionType)}
+            </Tag>
+          </Title>
+        }
+        placement='right'
+        width='calc(100vw - 256px)'
+        onClose={onClose}
+        open={visible}
+        closable={true}
+        destroyOnClose={true}
+        className='inspect-detail-drawer'
+        bodyStyle={{ overflowY: 'auto', height: 'calc(100% - 55px)' }}
+      >
+        <Spin spinning={loading} tip='加载中...'>
+          <div className='inspect-detail-container'>
+            {/* 上半部分 - 左右布局 */}
+            <Row gutter={16} className='inspect-detail-top'>
+              <Col span={8}>
+                {/* 左侧 - 质检基本信息和区域信息 */}
+                {renderInspectionInfo()}
+              </Col>
+              <Col span={16}>
+                {/* 右侧 - 商品详情 */}
+                <div style={{ height: 'auto', overflow: 'visible' }}>
+                  {renderProductDetails()}
+                </div>
               </Col>
             </Row>
+
+            <Divider />
+
+            {/* 下半部分 - 商品列表 */}
+            <div className='inspect-detail-bottom'>
+              <Row>
+                <Col span={24}>
+                  {/* 商品明细表格 */}
+                  {detailData.length > 0 ? (
+                    <div>
+                      <OrderDetailItems
+                        data={detailData}
+                        inspectionType={inspection.inspectionType}
+                        onSelectProduct={(productId, _areaId, locations) => {
+                          const product = detailData.find(
+                            (item) => item.product?.id === productId
+                          )?.product as ProductVo;
+                          const areaName = detailData.find(
+                            (item) => item.product?.id === productId
+                          )?.areaName;
+
+                          if (product) {
+                            setSelectedProduct(product);
+                            setSelectedLocations(locations);
+                            setSelectedAreaName(areaName || null);
+
+                            // 找到选中商品的索引
+                            const index = detailData.findIndex(
+                              (item) => item.product?.id === productId
+                            );
+                            if (index !== -1) {
+                              setCurrentIndex(index);
+                            }
+                          }
+                        }}
+                      />
+
+                      {inspection?.status === 0 &&
+                        inspectedItems.size > 0 &&
+                        inspectedItems.size < detailData.length && (
+                          <div style={{ marginTop: 16, textAlign: 'right' }}>
+                            <Text type='warning'>
+                              已完成 {inspectedItems.size}/{detailData.length}{' '}
+                              件商品的质检
+                            </Text>
+                          </div>
+                        )}
+
+                      {inspection?.status === 0 &&
+                        inspectedItems.size === detailData.length && (
+                          <div style={{ marginTop: 16, textAlign: 'right' }}>
+                            <Button
+                              type='primary'
+                              icon={<CheckCircleOutlined />}
+                              onClick={() => setSubmitModalVisible(true)}
+                            >
+                              提交质检结果
+                            </Button>
+                          </div>
+                        )}
+                    </div>
+                  ) : (
+                    <Card>
+                      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                        <SyncOutlined
+                          spin
+                          style={{ fontSize: 24, marginBottom: 16 }}
+                        />
+                        <p>暂无商品详情数据</p>
+                      </div>
+                    </Card>
+                  )}
+                </Col>
+              </Row>
+            </div>
           </div>
-        </div>
-      </Spin>
-    </Drawer>
+        </Spin>
+      </Drawer>
+
+      {/* 最终提交确认对话框 */}
+      <Modal
+        title='提交质检结果'
+        open={submitModalVisible}
+        onOk={handleSubmitInspection}
+        onCancel={() => setSubmitModalVisible(false)}
+        confirmLoading={submitting}
+        footer={null}
+      >
+        <p>所有商品已完成质检，确定提交质检结果？</p>
+        <Form layout='vertical'>
+          <Form.Item label='质检备注'>
+            <TextArea
+              rows={4}
+              placeholder='请输入质检备注（可选）'
+              value={finalRemark}
+              onChange={(e) => setFinalRemark(e.target.value)}
+            />
+          </Form.Item>
+          <div style={{ textAlign: 'right', marginTop: 16 }}>
+            <Space>
+              <Button onClick={() => setSubmitModalVisible(false)}>取消</Button>
+              <Button
+                type='primary'
+                onClick={handleSubmitInspection}
+                loading={submitting}
+              >
+                提交质检
+              </Button>
+            </Space>
+          </div>
+        </Form>
+      </Modal>
+    </>
   );
 }
