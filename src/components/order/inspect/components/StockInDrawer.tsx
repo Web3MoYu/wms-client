@@ -451,6 +451,32 @@ export default function StockInDrawer({
               {inspectionItem?.unqualifiedQuantity || '-'}
             </Descriptions.Item>
           </Descriptions>
+          
+          {selectedProduct && (
+            <Form
+              form={form}
+              layout='vertical'
+              initialValues={{
+                stockInQuantity: inspectionItem?.qualifiedQuantity || 0,
+                locations: [{ shelfId: undefined, storageIds: [] }],
+              }}
+            >
+              <Form.Item
+                name='stockInQuantity'
+                label='上架数量'
+                tooltip='默认为质检合格数量，可调整'
+                rules={[
+                  {
+                    required: true,
+                    message: '请输入上架数量',
+                  },
+                ]}
+                style={{ marginTop: 16 }}
+              >
+                <Input disabled />
+              </Form.Item>
+            </Form>
+          )}
         </div>
       </Card>
     );
@@ -602,28 +628,9 @@ export default function StockInDrawer({
                           form={form}
                           layout='vertical'
                           initialValues={{
-                            stockInQuantity: 0,
                             locations: [{ shelfId: undefined, storageIds: [] }],
                           }}
                         >
-                          <Row gutter={16}>
-                            <Col span={24}>
-                              <Form.Item
-                                name='stockInQuantity'
-                                label='上架数量'
-                                tooltip='默认为质检合格数量，可调整'
-                                rules={[
-                                  {
-                                    required: true,
-                                    message: '请输入上架数量',
-                                  },
-                                ]}
-                              >
-                                <Input disabled />
-                              </Form.Item>
-                            </Col>
-                          </Row>
-
                           <Form.List name='locations'>
                             {(fields, { add, remove }) => (
                               <>
