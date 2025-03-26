@@ -123,13 +123,29 @@ export default function OrderDetailDrawer({
           <Descriptions.Item label='订单状态' span={1}>
             {renderOrderStatus(order?.status)}
           </Descriptions.Item>
-          <Descriptions.Item label='质检状态' span={1}>
+          <Descriptions.Item label='质检状态' span={2}>
             {renderQualityStatus(order?.qualityStatus, true)}
           </Descriptions.Item>
           <Descriptions.Item label='总金额' span={1}>
             ¥{order?.totalAmount?.toFixed(2) || '0.00'}
           </Descriptions.Item>
-          <Descriptions.Item label='备注' span={3}>
+          <Descriptions.Item
+            label={order?.type === 1 ? '预计到达时间' : '预计出库时间'}
+            span={1}
+          >
+            {order?.expectedTime
+              ? moment(order.expectedTime).format('YYYY-MM-DD HH:mm:ss')
+              : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item
+            label={order?.type === 1 ? '实际到达时间' : '实际出库时间'}
+            span={1}
+          >
+            {order?.actualTime
+              ? moment(order.actualTime).format('YYYY-MM-DD HH:mm:ss')
+              : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='备注' span={2}>
             {order?.remark || '-'}
           </Descriptions.Item>
         </Descriptions>

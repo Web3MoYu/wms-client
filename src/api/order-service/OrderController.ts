@@ -17,6 +17,8 @@ export interface OrderVo {
   qualityStatus: number; // 质检状态：质检状态：0-未质检，1-质检通过，2-质检不通过，3-部分异常
   remark: string; // 备注
   createTime: string; // 创建时间
+  expectedTime: string; // 预计到达时间
+  actualTime: string; // 实际到达时间
 }
 
 export interface OrderQueryDto {
