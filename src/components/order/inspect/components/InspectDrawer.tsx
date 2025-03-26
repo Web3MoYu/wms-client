@@ -9,7 +9,6 @@ import {
   Card,
   Row,
   Col,
-  Divider,
   Input,
   Button,
   Select,
@@ -17,6 +16,7 @@ import {
   InputNumber,
   Modal,
   Space,
+  Splitter,
 } from 'antd';
 import {
   SyncOutlined,
@@ -46,7 +46,6 @@ import {
   getProductById,
 } from '../../../../api/product-service/ProductController';
 import OrderDetailItems from './OrderDetailItems';
-import './css/InspectDetailDrawer.css';
 import {
   renderQualityStatus,
   renderItemInspectionResult,
@@ -579,7 +578,7 @@ export default function InspectDetailDrawer({
       if (result.code === 200) {
         message.success('质检提交成功');
         setSubmitModalVisible(false);
-        
+
         // 延迟执行回调和关闭操作，给服务器足够的时间处理数据
         setTimeout(() => {
           if (onSuccess) {
@@ -618,99 +617,90 @@ export default function InspectDetailDrawer({
         open={visible}
         closable={true}
         destroyOnClose={true}
-        className='inspect-detail-drawer'
-        bodyStyle={{ overflowY: 'auto', height: 'calc(100% - 55px)' }}
       >
         <Spin spinning={loading} tip='加载中...'>
           <div className='inspect-detail-container'>
-            {/* 上半部分 - 左右布局 */}
-            <Row gutter={16} className='inspect-detail-top'>
-              <Col span={8}>
-                {/* 左侧 - 质检基本信息和区域信息 */}
-                {renderInspectionInfo()}
-              </Col>
-              <Col span={16}>
-                {/* 右侧 - 商品详情 */}
-                <div style={{ height: 'auto', overflow: 'visible' }}>
-                  {renderProductDetails()}
-                </div>
-              </Col>
-            </Row>
+            <Splitter layout='vertical' style={{ height: '100%' }}>
+              <Splitter.Panel defaultSize='40%'>
+                <Splitter style={{ height: '100%' }}>
+                  {/* 上半部分 - 左右布局 */}
+                  <Splitter.Panel defaultSize='45%'>
+                    {/* 左侧 - 质检基本信息和区域信息 */}
+                    {renderInspectionInfo()}
+                  </Splitter.Panel>
+                  <Splitter.Panel>
+                    {/* 右侧 - 商品详情 */}
+                    {renderProductDetails()}
+                  </Splitter.Panel>
+                </Splitter>
+              </Splitter.Panel>
+              <Splitter.Panel>
+                {/* 下半部分 - 商品列表 */}
+                {/* 商品明细表格 */}
+                {detailData.length > 0 ? (
+                  <div>
+                    <OrderDetailItems
+                      data={detailData}
+                      inspectionType={inspection.inspectionType}
+                      onSelectProduct={(productId, _areaId, locations) => {
+                        const product = detailData.find(
+                          (item) => item.product?.id === productId
+                        )?.product as ProductVo;
+                        const areaName = detailData.find(
+                          (item) => item.product?.id === productId
+                        )?.areaName;
 
-            <Divider />
+                        if (product) {
+                          setSelectedProduct(product);
+                          setSelectedLocations(locations);
+                          setSelectedAreaName(areaName || null);
 
-            {/* 下半部分 - 商品列表 */}
-            <div className='inspect-detail-bottom'>
-              <Row>
-                <Col span={24}>
-                  {/* 商品明细表格 */}
-                  {detailData.length > 0 ? (
-                    <div>
-                      <OrderDetailItems
-                        data={detailData}
-                        inspectionType={inspection.inspectionType}
-                        onSelectProduct={(productId, _areaId, locations) => {
-                          const product = detailData.find(
+                          // 找到选中商品的索引
+                          const index = detailData.findIndex(
                             (item) => item.product?.id === productId
-                          )?.product as ProductVo;
-                          const areaName = detailData.find(
-                            (item) => item.product?.id === productId
-                          )?.areaName;
-
-                          if (product) {
-                            setSelectedProduct(product);
-                            setSelectedLocations(locations);
-                            setSelectedAreaName(areaName || null);
-
-                            // 找到选中商品的索引
-                            const index = detailData.findIndex(
-                              (item) => item.product?.id === productId
-                            );
-                            if (index !== -1) {
-                              setCurrentIndex(index);
-                            }
+                          );
+                          if (index !== -1) {
+                            setCurrentIndex(index);
                           }
-                        }}
-                      />
+                        }
+                      }}
+                    />
 
-                      {inspection?.status === 0 &&
-                        inspectedItems.size > 0 &&
-                        inspectedItems.size < detailData.length && (
-                          <div style={{ marginTop: 16, textAlign: 'right' }}>
-                            <Text type='warning'>
-                              已完成 {inspectedItems.size}/{detailData.length}{' '}
-                              件商品的质检
-                            </Text>
-                          </div>
-                        )}
+                    {inspection?.status === 0 &&
+                      inspectedItems.size > 0 &&
+                      inspectedItems.size < detailData.length && (
+                        <div style={{ marginTop: 16, textAlign: 'right' }}>
+                          <Text type='warning'>
+                            已完成 {inspectedItems.size}/{detailData.length}{' '}
+                            件商品的质检
+                          </Text>
+                        </div>
+                      )}
 
-                      {inspection?.status === 0 &&
-                        inspectedItems.size === detailData.length && (
-                          <div style={{ marginTop: 16, textAlign: 'right' }}>
-                            <Button
-                              type='primary'
-                              icon={<CheckCircleOutlined />}
-                              onClick={() => setSubmitModalVisible(true)}
-                            >
-                              提交质检结果
-                            </Button>
-                          </div>
-                        )}
-                    </div>
-                  ) : (
-                    <Card>
-                      <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                        <SyncOutlined
-                          spin
-                          style={{ fontSize: 24, marginBottom: 16 }}
-                        />
-                        <p>暂无商品详情数据</p>
-                      </div>
-                    </Card>
-                  )}
-                </Col>
-              </Row>
-            </div>
+                    {inspection?.status === 0 &&
+                      inspectedItems.size === detailData.length && (
+                        <div style={{ marginTop: 16, textAlign: 'right' }}>
+                          <Button
+                            type='primary'
+                            icon={<CheckCircleOutlined />}
+                            onClick={() => setSubmitModalVisible(true)}
+                          >
+                            提交质检结果
+                          </Button>
+                        </div>
+                      )}
+                  </div>
+                ) : (
+                  <Card>
+                    <SyncOutlined
+                      spin
+                      style={{ fontSize: 24, marginBottom: 16 }}
+                    />
+                    <p>暂无商品详情数据</p>
+                  </Card>
+                )}
+              </Splitter.Panel>
+            </Splitter>
           </div>
         </Spin>
       </Drawer>

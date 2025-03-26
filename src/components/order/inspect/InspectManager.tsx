@@ -28,7 +28,8 @@ import {
 } from '../components/StatusComponents';
 import userStore from '../../../store/userStore';
 import { useNavigate, useLocation } from 'react-router-dom';
-import InspectDetailDrawer from './components/InspectDetailDrawer';
+import InspectDetailDrawer from './components/InspectDrawer';
+import StockInDrawer from './components/StockInDrawer';
 
 // 创建store实例
 const userStoreInstance = new userStore();
@@ -80,6 +81,9 @@ export default function InspectManager() {
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
   const [currentInspection, setCurrentInspection] =
     useState<InspectionVo | null>(null);
+  // 上架抽屉相关状态
+  const [stockInDrawerVisible, setStockInDrawerVisible] =
+    useState<boolean>(false);
 
   // 初始化 - 获取当前登录用户信息
   useEffect(() => {
@@ -161,7 +165,7 @@ export default function InspectManager() {
         createTimeAsc:
           values.createTimeAsc !== undefined ? values.createTimeAsc : false,
         status: values.status !== undefined ? values.status : null,
-        _t: new Date().getTime()
+        _t: new Date().getTime(),
       };
 
       const result = await pageList(queryDto as any); // 类型断言为任意类型，以兼容原接口
@@ -272,6 +276,18 @@ export default function InspectManager() {
     setCurrentInspection(null);
   };
 
+  // 打开上架抽屉
+  const handleOpenStockIn = (record: InspectionVo) => {
+    setCurrentInspection(record);
+    setStockInDrawerVisible(true);
+  };
+
+  // 关闭上架抽屉
+  const handleCloseStockInDrawer = () => {
+    setStockInDrawerVisible(false);
+    setCurrentInspection(null);
+  };
+
   // 延迟获取质检列表，添加一定延迟以确保服务器数据已更新
   const delayedFetchInspections = () => {
     // 先显示loading状态
@@ -348,6 +364,9 @@ export default function InspectManager() {
       render: (_: any, record: InspectionVo) => (
         <Space size='middle'>
           <a onClick={() => handleOpenDetail(record)}>查看详情</a>
+          {record.orderStatus === 2 && (
+            <a onClick={() => handleOpenStockIn(record)}>上架</a>
+          )}
         </Space>
       ),
     },
@@ -454,6 +473,16 @@ export default function InspectManager() {
         <InspectDetailDrawer
           visible={drawerVisible}
           onClose={handleCloseDrawer}
+          inspection={currentInspection}
+          onSuccess={() => delayedFetchInspections()}
+        />
+      )}
+
+      {/* 上架抽屉 */}
+      {currentInspection && (
+        <StockInDrawer
+          visible={stockInDrawerVisible}
+          onClose={handleCloseStockInDrawer}
           inspection={currentInspection}
           onSuccess={() => delayedFetchInspections()}
         />
