@@ -472,7 +472,6 @@ export default function StockInDrawer({
           </>
         }
         size='small'
-        className='product-info-card'
       >
         <Descriptions column={2} bordered size='small'>
           <Descriptions.Item label='商品名称'>

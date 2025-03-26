@@ -26,7 +26,7 @@ const OrderDetailItems: React.FC<OrderDetailItemsProps> = ({
 }) => {
   if (!data || data.length === 0) {
     return (
-      <div className='no-content'>
+      <div>
         <FileTextOutlined />
         <span>暂无订单详情数据</span>
       </div>
