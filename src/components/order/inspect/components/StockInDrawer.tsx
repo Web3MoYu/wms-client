@@ -45,11 +45,14 @@ import {
   getProductById,
 } from '../../../../api/product-service/ProductController';
 import { getShelfListByAreaId } from '../../../../api/location-service/ShelfController';
-import { getStoragesByShelfId } from '../../../../api/location-service/StorageController';
+import { getStorageByIdAndProductId } from '../../../../api/location-service/StorageController';
 import { Location } from '../../../../api/stock-service/StockController';
 import OrderDetailItems from './OrderDetailItems';
 import './css/InspectDetailDrawer.css';
-import { renderQualityStatus } from '../../components/StatusComponents';
+import {
+  renderItemInspectionResult,
+  renderQualityStatus,
+} from '../../components/StatusComponents';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -71,6 +74,9 @@ export default function StockInDrawer({
     null
   );
   const [detailData, setDetailData] = useState<
+    OrderDetailVo<OrderInItem | OrderOutItem>[]
+  >([]);
+  const [filteredDetailData, setFilteredDetailData] = useState<
     OrderDetailVo<OrderInItem | OrderOutItem>[]
   >([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -126,10 +132,44 @@ export default function StockInDrawer({
       setSelectedProduct(null);
       setSelectedAreaName(null);
       setDetailData([]);
+      setFilteredDetailData([]);
       setInspectionItems([]);
       setStockInItems(new Map());
     }
   }, [visible, inspection]);
+
+  // 过滤出合格的产品
+  useEffect(() => {
+    if (detailData.length > 0 && inspectionItems.length > 0) {
+      // 根据质检结果过滤出质检合格(qualityStatus为1)的商品
+      const qualifiedProducts = detailData.filter((item) => {
+        const inspectionItem = inspectionItems.find(
+          (inspItem) => inspItem.productId === item.product?.id
+        );
+        return inspectionItem && inspectionItem.qualityStatus === 1;
+      });
+
+      setFilteredDetailData(qualifiedProducts);
+
+      // 如果已选择的商品不在合格列表中，自动选择第一个合格商品
+      if (
+        selectedProduct &&
+        !qualifiedProducts.some(
+          (item) => item.product?.id === selectedProduct.id
+        ) &&
+        qualifiedProducts.length > 0
+      ) {
+        const firstQualifiedProduct = qualifiedProducts[0].product as ProductVo;
+        const areaName = qualifiedProducts[0].areaName;
+
+        setSelectedProduct(firstQualifiedProduct);
+        setSelectedAreaName(areaName || null);
+        setCurrentIndex(0);
+      }
+    } else {
+      setFilteredDetailData([]);
+    }
+  }, [detailData, inspectionItems, selectedProduct]);
 
   // 重置选中的商品
   useEffect(() => {
@@ -238,19 +278,21 @@ export default function StockInDrawer({
 
   // 导航到下一个或上一个商品
   const navigateToProduct = (direction: 'prev' | 'next') => {
-    if (detailData.length === 0) return;
+    if (filteredDetailData.length === 0) return;
 
     let newIndex = currentIndex;
 
     if (direction === 'next') {
-      newIndex = (currentIndex + 1) % detailData.length;
+      newIndex = (currentIndex + 1) % filteredDetailData.length;
     } else {
-      newIndex = (currentIndex - 1 + detailData.length) % detailData.length;
+      newIndex =
+        (currentIndex - 1 + filteredDetailData.length) %
+        filteredDetailData.length;
     }
 
     // 获取目标商品
-    const targetProduct = detailData[newIndex].product as ProductVo;
-    const targetAreaName = detailData[newIndex].areaName;
+    const targetProduct = filteredDetailData[newIndex].product as ProductVo;
+    const targetAreaName = filteredDetailData[newIndex].areaName;
 
     if (targetProduct) {
       setSelectedProduct(targetProduct);
@@ -275,7 +317,10 @@ export default function StockInDrawer({
 
   const loadStoragesByShelfId = async (shelfId: string) => {
     try {
-      const res = await getStoragesByShelfId(shelfId);
+      const res = await getStorageByIdAndProductId(
+        shelfId,
+        selectedProduct?.id || ''
+      );
       if (res.code === 200) {
         setStoragesByShelf((prev) => ({
           ...prev,
@@ -358,9 +403,9 @@ export default function StockInDrawer({
 
   // 查找下一个未处理的商品索引
   const findNextUnProcessedIndex = () => {
-    for (let i = 0; i < detailData.length; i++) {
-      const nextIndex = (currentIndex + i + 1) % detailData.length;
-      const detail = detailData[nextIndex];
+    for (let i = 0; i < filteredDetailData.length; i++) {
+      const nextIndex = (currentIndex + i + 1) % filteredDetailData.length;
+      const detail = filteredDetailData[nextIndex];
       if (
         detail &&
         detail.orderItems &&
@@ -385,9 +430,13 @@ export default function StockInDrawer({
 
     // 获取当前商品序号和总数
     const getProductNavText = () => {
-      if (!selectedProduct || detailData.length === 0) return '';
-      return `${currentIndex + 1} / ${detailData.length}`;
+      if (!selectedProduct || filteredDetailData.length === 0) return '';
+      return `${currentIndex + 1} / ${filteredDetailData.length}`;
     };
+    // 获取当前商品的质检详情信息
+    const getInspectionItem = inspectionItems.find(
+      (item) => item.productId === selectedProduct?.id
+    );
 
     return (
       <Card
@@ -399,9 +448,16 @@ export default function StockInDrawer({
               alignItems: 'center',
             }}
           >
-            <span>上架基本信息: {renderQualityStatus(inspection.status)}</span>
+            <span>
+              上架基本信息: {renderQualityStatus(inspection.status)},详情信息:
+              {inspection.status !== 0
+                ? renderItemInspectionResult(
+                    getInspectionItem?.qualityStatus || 0
+                  )
+                : '-'}
+            </span>
             <Space>
-              {detailData.length > 1 && (
+              {filteredDetailData.length > 1 && (
                 <>
                   <Text type='secondary'>{getProductNavText()}</Text>
                   <Button
@@ -451,7 +507,7 @@ export default function StockInDrawer({
               {inspectionItem?.unqualifiedQuantity || '-'}
             </Descriptions.Item>
           </Descriptions>
-          
+
           {selectedProduct && (
             <Form
               form={form}
@@ -464,7 +520,7 @@ export default function StockInDrawer({
               <Form.Item
                 name='stockInQuantity'
                 label='上架数量'
-                tooltip='默认为质检合格数量，可调整'
+                tooltip='默认为质检合格数量'
                 rules={[
                   {
                     required: true,
@@ -545,7 +601,7 @@ export default function StockInDrawer({
 
   // 提交最终上架结果
   const handleSubmitStockIn = async () => {
-    if (stockInItems.size !== detailData.length) {
+    if (stockInItems.size !== filteredDetailData.length) {
       message.warning('请完成所有商品的上架处理');
       return;
     }
@@ -801,16 +857,16 @@ export default function StockInDrawer({
                 <Row>
                   <Col span={24}>
                     {/* 商品明细表格 */}
-                    {detailData.length > 0 ? (
+                    {filteredDetailData.length > 0 ? (
                       <div>
                         <OrderDetailItems
-                          data={detailData}
+                          data={filteredDetailData}
                           inspectionType={inspection.inspectionType}
                           onSelectProduct={(productId) => {
-                            const product = detailData.find(
+                            const product = filteredDetailData.find(
                               (item) => item.product?.id === productId
                             )?.product as ProductVo;
-                            const areaName = detailData.find(
+                            const areaName = filteredDetailData.find(
                               (item) => item.product?.id === productId
                             )?.areaName;
 
@@ -819,7 +875,7 @@ export default function StockInDrawer({
                               setSelectedAreaName(areaName || null);
 
                               // 找到选中商品的索引
-                              const index = detailData.findIndex(
+                              const index = filteredDetailData.findIndex(
                                 (item) => item.product?.id === productId
                               );
                               if (index !== -1) {
@@ -831,17 +887,17 @@ export default function StockInDrawer({
 
                         {inspection?.orderStatus === 2 &&
                           stockInItems.size > 0 &&
-                          stockInItems.size < detailData.length && (
+                          stockInItems.size < filteredDetailData.length && (
                             <div style={{ marginTop: 16, textAlign: 'right' }}>
                               <Text type='warning'>
-                                已完成 {stockInItems.size}/{detailData.length}{' '}
-                                件商品的上架处理
+                                已完成 {stockInItems.size}/
+                                {filteredDetailData.length} 件商品的上架处理
                               </Text>
                             </div>
                           )}
 
                         {inspection?.orderStatus === 2 &&
-                          stockInItems.size === detailData.length && (
+                          stockInItems.size === filteredDetailData.length && (
                             <div style={{ marginTop: 16, textAlign: 'right' }}>
                               <Button
                                 type='primary'
@@ -860,7 +916,7 @@ export default function StockInDrawer({
                             spin
                             style={{ fontSize: 24, marginBottom: 16 }}
                           />
-                          <p>暂无商品详情数据</p>
+                          <p>没有合格的商品可以上架</p>
                         </div>
                       </Card>
                     )}

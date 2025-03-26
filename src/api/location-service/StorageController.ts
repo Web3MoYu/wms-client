@@ -182,7 +182,27 @@ export function getStoragesByShelfId(
       });
   });
 }
-
+/**
+ * 按照货架id和产品id查找库位信息
+ *
+ * @param id id
+ * @return 结果
+ */
+export function getStorageByIdAndProductId(
+  id: string,
+  productId: string
+): Promise<Result<Storage[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/location/storage/getStorageByIdAndProductId/${id}/${productId}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
 /**
  * 根据ids获取库位信息
  * @param ids 库位ids
@@ -193,10 +213,10 @@ export function getStoragesByIds(ids: string[]): Promise<Result<Storage[]>> {
     // 将数组转换为逗号分隔的字符串
     const idsString = ids.join(',');
     axios
-      .get('/location/storage/getStoragesByIds', { 
-        params: { 
-          ids: idsString // 后端Spring会自动将逗号分隔的字符串转换为List<String>
-        } 
+      .get('/location/storage/getStoragesByIds', {
+        params: {
+          ids: idsString, // 后端Spring会自动将逗号分隔的字符串转换为List<String>
+        },
       })
       .then((res) => {
         resolve(res.data);
