@@ -1,7 +1,7 @@
 import axios from '../../utils/mxAxios';
 import { User } from '../sys-service/UserController';
 import { Page, Result } from '../Model';
-import { MyLocation } from '../stock-service/StockController';
+import { Location } from '../stock-service/StockController';
 import { OrderDetailVo, OrderInItem } from './OrderController';
 
 export interface InspectionDto {
@@ -41,7 +41,7 @@ export interface InspectionItem {
   productId: string; // 产品ID
   batchNumber: string; // 批次号
   areaId: string; // 区域id
-  location: MyLocation[]; // 具体位置
+  location: Location[]; // 具体位置
   inspectionQuantity: number; // 质检数量
   qualifiedQuantity: number; // 合格数量
   unqualifiedQuantity: number; // 不合格数量
@@ -54,6 +54,7 @@ export interface InspectionItem {
 
 export interface InspectionVo extends Inspection {
   inspectorInfo: User; // 质检员信息
+  orderStatus: number; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
 }
 
 export interface ItemInspect {

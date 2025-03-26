@@ -6,7 +6,7 @@ export interface Stock {
   productId: string; // 产品ID
   productCode: string; // 产品编码
   areaId: string; // 区域ID
-  location: MyLocation[]; // 具体位置，格式
+  location: Location[]; // 具体位置，格式
   quantity: number; // 数量
   availableQuantity: number; // 可用数量
   alertStatus: number; // 预警状态：0-正常，1-低于最小库存，2-超过最大库存 null-显示所有
@@ -16,7 +16,7 @@ export interface Stock {
   updateTime: string; // 更新时间
 }
 
-export interface MyLocation {
+export interface Location {
   shelfId: string; // 货架ID
   storageIds: string[]; // 库位ID
 }

@@ -2,7 +2,7 @@ import axios from '../../utils/mxAxios';
 import { User } from '../sys-service/UserController';
 import { Page, Result } from '../Model';
 import { Product } from '../product-service/ProductController';
-import { LocationVo } from '../stock-service/StockController';
+import { LocationVo, Location } from '../stock-service/StockController';
 
 export interface OrderVo {
   id: string; // id
@@ -143,6 +143,13 @@ export interface OrderDetailVo<T> {
   locationName: LocationVo[];
 }
 
+export interface StockInDto {
+  itemId: string; // 订单详情id
+  productId: string; // 产品id
+  count: number; // 上架数量
+  locations: Location[]; // 位置信息
+}
+
 /**
  * 按照条件查询订单列表
  * @param queryDto 查询条件
@@ -258,6 +265,25 @@ export function receiveGoods(id: string): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .put(`/order/receive/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 上架
+ *
+ * @param dto 参数
+ * @return 上架结果
+ */
+export function stockIn(dto: StockInDto[]): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put('/order/stockIn', dto)
       .then((res) => {
         resolve(res.data);
       })
