@@ -48,9 +48,9 @@ export const renderItemInspectionResult = (status: number) => {
     case 0:
       return <Tag color='default'>-</Tag>;
     case 1:
-      return <Tag color='green'>通过</Tag>;
+      return <Tag color='green'>合格</Tag>;
     case 2:
-      return <Tag color='red'>不通过</Tag>;
+      return <Tag color='red'>不合格</Tag>;
   }
 };
 // 订单类型渲染

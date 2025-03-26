@@ -19,6 +19,7 @@ import {
   ReloadOutlined,
   PlusOutlined,
   ExclamationCircleOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
@@ -28,6 +29,7 @@ import {
   queryOrders,
   OrderVo,
   cancel,
+  receiveGoods,
 } from '../../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import OrderDrawer from './OrderDrawer';
@@ -360,6 +362,48 @@ export default function OrderManager() {
     });
   };
 
+  // 处理收货
+  const handleReceiveGoods = (record: OrderVo) => {
+    // 只有审批通过的订单才能收货
+    if (record.status !== 1) {
+      message.error('只有审批通过的订单才能收货');
+      return;
+    }
+
+    // 弹出确认收货对话框
+    Modal.confirm({
+      title: '确定要收货吗？',
+      icon: <InboxOutlined />,
+      content: (
+        <div>
+          <Text type='warning'>
+            警告：一旦提交不可修改，请确认货物已全部到达！
+          </Text>
+        </div>
+      ),
+      okText: '确认收货',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          const result = await receiveGoods(record.id);
+          if (result.code === 200) {
+            message.success('收货成功');
+            // 刷新订单列表
+            fetchOrders();
+          } else {
+            message.error(result.msg || '收货失败');
+          }
+        } catch (error) {
+          console.error('收货失败:', error);
+          message.error('收货失败，请稍后重试');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -431,6 +475,9 @@ export default function OrderManager() {
           <a onClick={() => handleViewDetail(record)}>查看详情</a>
           {record.status === 0 && (
             <a onClick={() => handleCancelOrder(record)}>取消订单</a>
+          )}
+          {record.status === 1 && record.actualTime === null && (
+            <a onClick={() => handleReceiveGoods(record)}>收货</a>
           )}
         </Space>
       ),

@@ -247,3 +247,22 @@ export function cancel(
       });
   });
 }
+
+/**
+ * 入库的收货
+ *
+ * @param id 订单id
+ * @return 收货结果
+ */
+export function receiveGoods(id: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/order/receive/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
