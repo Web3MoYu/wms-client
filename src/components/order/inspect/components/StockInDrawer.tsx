@@ -33,7 +33,10 @@ import {
   inInspectDetail,
   InspectionItem,
 } from '../../../../api/order-service/InspectController';
-import { stockIn } from '../../../../api/order-service/OrderController';
+import {
+  stockAll,
+  stockOne,
+} from '../../../../api/order-service/OrderController';
 import {
   OrderDetailVo,
   OrderInItem,
@@ -197,7 +200,11 @@ export default function StockInDrawer({
         const inspectionItem = inspectionItems.find(
           (inspItem) => inspItem.productId === item.product?.id
         );
-        return inspectionItem && inspectionItem.qualityStatus === 1;
+        return (
+          inspectionItem &&
+          inspectionItem.qualityStatus === 1 &&
+          inspectionItem.receiveStatus === 0
+        );
       });
 
       setFilteredDetailData(qualifiedProducts);
@@ -550,11 +557,23 @@ export default function StockInDrawer({
 
       // 创建上架项
       const stockInItem: StockInDto = {
-        itemId: orderDetail.orderItems.id,
+        itemId:
+          inspectionItems.find(
+            (item) =>
+              item.productId === selectedProduct.id &&
+              item.batchNumber === selectedProduct.batchNumber
+          )?.id || '',
         productId: selectedProduct.id,
         count: values.stockInQuantity || 0,
         locations: values.locations,
       };
+
+      // 调用单个商品上架接口
+      const result = await stockOne(stockInItem);
+      if (result.code !== 200) {
+        message.error(result.msg || '上架提交失败');
+        return;
+      }
 
       // 更新已处理项目集合
       const newStockInItems = new Map(stockInItems);
@@ -806,9 +825,13 @@ export default function StockInDrawer({
 
     setSubmitting(true);
     try {
-      const stockInItemsArray = Array.from(stockInItems.values());
+      if (!inspection || !inspection.inspectionNo) {
+        message.error('质检单号不存在，无法完成上架');
+        return;
+      }
 
-      const result = await stockIn(stockInItemsArray);
+      // 调用确认上架接口
+      const result = await stockAll(inspection.inspectionNo);
       if (result.code === 200) {
         message.success('上架提交成功');
         setSubmitModalVisible(false);

@@ -275,15 +275,34 @@ export function receiveGoods(id: string): Promise<Result<string>> {
 }
 
 /**
- * 上架
+ * 确认上架
  *
- * @param dto 参数
+ * @param inspectNo 质检编号
  * @return 上架结果
  */
-export function stockIn(dto: StockInDto[]): Promise<Result<string>> {
+export function stockAll(inspectNo: string): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
-      .put('/order/stockIn', dto)
+      .put(`/order/stockAll/${inspectNo}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 上架单个商品
+ *
+ * @param dto 商品信息
+ * @return 上架结果
+ */
+export function stockOne(dto: StockInDto): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put('/order/stockOne', dto)
       .then((res) => {
         resolve(res.data);
       })
