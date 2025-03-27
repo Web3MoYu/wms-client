@@ -22,8 +22,6 @@ import {
   SyncOutlined,
   TagsOutlined,
   CheckCircleOutlined,
-  LeftOutlined,
-  RightOutlined,
   CheckOutlined,
   EditOutlined,
 } from '@ant-design/icons';
@@ -62,6 +60,10 @@ interface InspectDetailDrawerProps {
   onSuccess?: () => void;
 }
 
+interface ProductDetail extends ProductVo {
+  batchNumber: string;
+}
+
 export default function InspectDetailDrawer({
   visible,
   onClose,
@@ -69,7 +71,7 @@ export default function InspectDetailDrawer({
   onSuccess,
 }: InspectDetailDrawerProps) {
   const [selectedLocations, setSelectedLocations] = useState<LocationVo[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<ProductVo | null>(
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(
     null
   );
   const [detailData, setDetailData] = useState<
@@ -85,8 +87,6 @@ export default function InspectDetailDrawer({
   const [submitModalVisible, setSubmitModalVisible] = useState<boolean>(false);
   const [finalRemark, setFinalRemark] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-
   // 获取订单详情数据
   useEffect(() => {
     const fetchDetailData = async () => {
@@ -153,12 +153,15 @@ export default function InspectDetailDrawer({
   // 当选择产品时，获取产品详情
   useEffect(() => {
     const fetchProductDetail = async () => {
-      if (!selectedProduct?.id) return;
+      if (!selectedProduct?.id || !selectedProduct.batchNumber) return;
 
       try {
         const result = await getProductById(selectedProduct.id);
         if (result.code === 200) {
-          setSelectedProduct(result.data);
+          setSelectedProduct({
+            ...result.data,
+            batchNumber: selectedProduct.batchNumber,
+          });
         } else {
           message.error('获取产品详情失败');
         }
@@ -172,7 +175,7 @@ export default function InspectDetailDrawer({
     if (selectedProduct?.id && !selectedProduct.categoryName) {
       fetchProductDetail();
     }
-  }, [selectedProduct?.id]);
+  }, [selectedProduct?.id, selectedProduct?.batchNumber]);
 
   // 当选择产品时，自动加载已存在的质检数据
   useEffect(() => {
@@ -180,21 +183,17 @@ export default function InspectDetailDrawer({
 
     // 查找当前选中的商品详情
     const orderDetail = detailData.find(
-      (item) => item.product?.id === selectedProduct.id
+      (item) =>
+        item.product?.id === selectedProduct.id &&
+        item.orderItems.batchNumber === selectedProduct.batchNumber
     );
 
     if (!orderDetail) return;
 
-    // 查找商品在列表中的索引
-    const index = detailData.findIndex(
-      (item) => item.product?.id === selectedProduct.id
-    );
-    if (index !== -1) {
-      setCurrentIndex(index);
-    }
-
     // 查看是否有已存在的质检数据
-    const existingInspect = inspectedItems.get(orderDetail.orderItems.id);
+    const existingInspect = inspectedItems.get(
+      selectedProduct.id + '_' + selectedProduct.batchNumber
+    );
 
     if (existingInspect) {
       // 自动加载已存在的质检数据到表单
@@ -212,31 +211,6 @@ export default function InspectDetailDrawer({
       });
     }
   }, [selectedProduct, detailData, inspectedItems, form]);
-
-  // 导航到下一个或上一个商品
-  const navigateToProduct = (direction: 'prev' | 'next') => {
-    if (detailData.length === 0) return;
-
-    let newIndex = currentIndex;
-
-    if (direction === 'next') {
-      newIndex = (currentIndex + 1) % detailData.length;
-    } else {
-      newIndex = (currentIndex - 1 + detailData.length) % detailData.length;
-    }
-
-    // 获取目标商品
-    const targetProduct = detailData[newIndex].product as ProductVo;
-    const targetLocations = detailData[newIndex].locationName || [];
-    const targetAreaName = detailData[newIndex].areaName;
-
-    if (targetProduct) {
-      setSelectedProduct(targetProduct);
-      setSelectedLocations(targetLocations);
-      setSelectedAreaName(targetAreaName || null);
-      setCurrentIndex(newIndex);
-    }
-  };
 
   // 格式化位置信息
   const formatLocations = () => {
@@ -271,7 +245,10 @@ export default function InspectDetailDrawer({
 
     // 检查当前商品是否已质检
     const isInspected =
-      orderDetail && inspectedItems.has(orderDetail.orderItems.id);
+      orderDetail &&
+      inspectedItems.has(
+        selectedProduct?.id + '_' + selectedProduct?.batchNumber
+      );
 
     // 获取当前商品的质检详情信息
     const getInspectionItem = inspectionItems.find(
@@ -306,7 +283,10 @@ export default function InspectDetailDrawer({
 
         // 更新已质检项目集合
         const newInspectedItems = new Map(inspectedItems);
-        newInspectedItems.set(orderDetail.orderItems.id, itemInspect);
+        newInspectedItems.set(
+          selectedProduct.id + '_' + selectedProduct.batchNumber,
+          itemInspect
+        );
         setInspectedItems(newInspectedItems);
 
         message.success(`${isInspected ? '更新' : '提交'}成功`);
@@ -314,47 +294,72 @@ export default function InspectDetailDrawer({
         // 检查是否所有商品都已质检
         if (newInspectedItems.size === detailData.length) {
           setSubmitModalVisible(true);
-        } else if (!isInspected) {
-          // 如果是新完成的质检项且还有未质检商品，自动跳转到下一个未质检商品
-          const nextUnInspectedIndex = findNextUnInspectedIndex();
-          if (nextUnInspectedIndex !== -1) {
-            const nextProduct = detailData[nextUnInspectedIndex]
-              .product as ProductVo;
-            const nextLocations =
-              detailData[nextUnInspectedIndex].locationName || [];
-            const nextAreaName = detailData[nextUnInspectedIndex].areaName;
-
-            setSelectedProduct(nextProduct);
-            setSelectedLocations(nextLocations);
-            setSelectedAreaName(nextAreaName || null);
-            setCurrentIndex(nextUnInspectedIndex);
-          }
+        } else {
+          // 寻找下一个未质检的商品
+          const findNextProduct = () => {
+            // 获取当前所有商品的ID和批次号组合列表
+            const allProductKeys = detailData.map(
+              (item) => item.product?.id + '_' + item.orderItems.batchNumber
+            );
+            
+            // 获取当前选中商品的索引
+            const currentIndex = allProductKeys.indexOf(
+              selectedProduct.id + '_' + selectedProduct.batchNumber
+            );
+            
+            // 从当前位置开始查找下一个未质检的商品
+            if (currentIndex !== -1) {
+              for (let i = 1; i < allProductKeys.length; i++) {
+                const nextIndex = (currentIndex + i) % allProductKeys.length;
+                const nextKey = allProductKeys[nextIndex];
+                
+                // 如果该商品未质检，则选择它
+                if (!newInspectedItems.has(nextKey)) {
+                  // 分割产品ID和批次号
+                  const nextProductId = nextKey.split('_')[0];
+                  const nextDetail = detailData[nextIndex];
+                  const nextBatchNumber = nextDetail.orderItems.batchNumber || '';
+                  const nextAreaName = nextDetail.areaName;
+                  
+                  // 清空原有位置信息，使用空数组
+                  const nextLocations: LocationVo[] = [];
+                  
+                  // 选择下一个商品
+                  if (nextDetail.product) {
+                    // 获取产品所有信息
+                    getProductById(nextProductId).then(result => {
+                      if (result.code === 200) {
+                        // 设置选中的产品
+                        setSelectedProduct({
+                          ...result.data,
+                          batchNumber: nextBatchNumber
+                        });
+                        
+                        // 更新位置和区域信息
+                        setSelectedLocations(nextLocations);
+                        setSelectedAreaName(nextAreaName || null);
+                        
+                        // 重置表单内容
+                        form.setFieldsValue({
+                          actualQuantity: nextDetail.orderItems.expectedQuantity || 0,
+                          approval: 'true',
+                          itemRemark: '',
+                        });
+                      }
+                    });
+                  }
+                  return;
+                }
+              }
+            }
+          };
+          
+          // 执行查找下一个商品的逻辑
+          findNextProduct();
         }
       } catch (error) {
         console.error('表单验证失败:', error);
       }
-    };
-
-    // 查找下一个未质检的商品索引
-    const findNextUnInspectedIndex = () => {
-      for (let i = 0; i < detailData.length; i++) {
-        const nextIndex = (currentIndex + i + 1) % detailData.length;
-        const detail = detailData[nextIndex];
-        if (
-          detail &&
-          detail.orderItems &&
-          !inspectedItems.has(detail.orderItems.id)
-        ) {
-          return nextIndex;
-        }
-      }
-      return -1; // 没有找到未质检的商品
-    };
-
-    // 获取当前商品序号和总数
-    const getProductNavText = () => {
-      if (!selectedProduct || detailData.length === 0) return '';
-      return `${currentIndex + 1} / ${detailData.length}`;
     };
 
     return (
@@ -376,21 +381,6 @@ export default function InspectDetailDrawer({
                 : '-'}
             </span>
             <Space>
-              {detailData.length > 1 && (
-                <>
-                  <Text type='secondary'>{getProductNavText()}</Text>
-                  <Button
-                    icon={<LeftOutlined />}
-                    onClick={() => navigateToProduct('prev')}
-                    size='small'
-                  />
-                  <Button
-                    icon={<RightOutlined />}
-                    onClick={() => navigateToProduct('next')}
-                    size='small'
-                  />
-                </>
-              )}
               {canOperate && (
                 <Button
                   type='primary'
@@ -493,12 +483,6 @@ export default function InspectDetailDrawer({
 
   // 渲染商品详情
   const renderProductDetails = () => {
-    // 查找已选择商品的订单项
-    const orderItem = selectedProduct
-      ? detailData.find((item) => item.product?.id === selectedProduct.id)
-          ?.orderItems
-      : null;
-
     return (
       <Card
         title={
@@ -531,7 +515,7 @@ export default function InspectDetailDrawer({
             {selectedProduct?.model || '-'}
           </Descriptions.Item>
           <Descriptions.Item label='批次号'>
-            {orderItem?.batchNumber || '-'}
+            {selectedProduct?.batchNumber || '-'}
           </Descriptions.Item>
           <Descriptions.Item label='区域'>
             {selectedAreaName || '-'}
@@ -641,26 +625,30 @@ export default function InspectDetailDrawer({
                     <OrderDetailItems
                       data={detailData}
                       inspectionType={inspection.inspectionType}
-                      onSelectProduct={(productId, _areaId, locations) => {
+                      onSelectProduct={(
+                        productId,
+                        _areaId,
+                        locations,
+                        batchNumber
+                      ) => {
                         const product = detailData.find(
-                          (item) => item.product?.id === productId
+                          (item) =>
+                            item.product?.id === productId &&
+                            item.orderItems.batchNumber === batchNumber
                         )?.product as ProductVo;
                         const areaName = detailData.find(
-                          (item) => item.product?.id === productId
+                          (item) =>
+                            item.product?.id === productId &&
+                            item.orderItems.batchNumber === batchNumber
                         )?.areaName;
 
                         if (product) {
-                          setSelectedProduct(product);
+                          setSelectedProduct({
+                            ...product,
+                            batchNumber: batchNumber || '',
+                          });
                           setSelectedLocations(locations);
                           setSelectedAreaName(areaName || null);
-
-                          // 找到选中商品的索引
-                          const index = detailData.findIndex(
-                            (item) => item.product?.id === productId
-                          );
-                          if (index !== -1) {
-                            setCurrentIndex(index);
-                          }
                         }
                       }}
                     />
