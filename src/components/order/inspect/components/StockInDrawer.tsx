@@ -64,13 +64,18 @@ interface StockInDrawerProps {
   onSuccess?: () => void;
 }
 
+// 添加ProductDetail接口定义
+interface ProductDetail extends ProductVo {
+  batchNumber: string;
+}
+
 export default function StockInDrawer({
   visible,
   onClose,
   inspection,
   onSuccess,
 }: StockInDrawerProps) {
-  const [selectedProduct, setSelectedProduct] = useState<ProductVo | null>(
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(
     null
   );
   const [detailData, setDetailData] = useState<
@@ -155,14 +160,20 @@ export default function StockInDrawer({
       if (
         selectedProduct &&
         !qualifiedProducts.some(
-          (item) => item.product?.id === selectedProduct.id
+          (item) =>
+            item.product?.id === selectedProduct.id &&
+            item.orderItems.batchNumber === selectedProduct.batchNumber
         ) &&
         qualifiedProducts.length > 0
       ) {
         const firstQualifiedProduct = qualifiedProducts[0].product as ProductVo;
         const areaName = qualifiedProducts[0].areaName;
+        const batchNumber = qualifiedProducts[0].orderItems.batchNumber || '';
 
-        setSelectedProduct(firstQualifiedProduct);
+        setSelectedProduct({
+          ...firstQualifiedProduct,
+          batchNumber,
+        });
         setSelectedAreaName(areaName || null);
         setCurrentIndex(0);
       }
@@ -185,7 +196,10 @@ export default function StockInDrawer({
       try {
         const result = await getProductById(selectedProduct.id);
         if (result.code === 200) {
-          setSelectedProduct(result.data);
+          setSelectedProduct({
+            ...result.data,
+            batchNumber: selectedProduct.batchNumber,
+          });
         } else {
           message.error('获取产品详情失败');
         }
@@ -199,7 +213,7 @@ export default function StockInDrawer({
     if (selectedProduct?.id && !selectedProduct.categoryName) {
       fetchProductDetail();
     }
-  }, [selectedProduct?.id]);
+  }, [selectedProduct?.id, selectedProduct?.batchNumber]);
 
   // 当选择产品时，自动加载已存在的上架数据和位置信息
   useEffect(() => {
@@ -207,14 +221,18 @@ export default function StockInDrawer({
 
     // 查找当前选中的商品详情
     const orderDetail = detailData.find(
-      (item) => item.product?.id === selectedProduct.id
+      (item) =>
+        item.product?.id === selectedProduct.id &&
+        item.orderItems.batchNumber === selectedProduct.batchNumber
     );
 
     if (!orderDetail) return;
 
     // 查找商品在列表中的索引
     const index = detailData.findIndex(
-      (item) => item.product?.id === selectedProduct.id
+      (item) =>
+        item.product?.id === selectedProduct.id &&
+        item.orderItems.batchNumber === selectedProduct.batchNumber
     );
     if (index !== -1) {
       setCurrentIndex(index);
@@ -225,7 +243,9 @@ export default function StockInDrawer({
 
     // 获取对应的质检结果项
     const inspectionItem = inspectionItems.find(
-      (item) => item.productId === selectedProduct.id
+      (item) =>
+        item.productId === selectedProduct.id &&
+        item.batchNumber === selectedProduct.batchNumber
     );
 
     if (existingStockIn) {
@@ -293,9 +313,14 @@ export default function StockInDrawer({
     // 获取目标商品
     const targetProduct = filteredDetailData[newIndex].product as ProductVo;
     const targetAreaName = filteredDetailData[newIndex].areaName;
+    const targetBatchNumber =
+      filteredDetailData[newIndex].orderItems.batchNumber || '';
 
     if (targetProduct) {
-      setSelectedProduct(targetProduct);
+      setSelectedProduct({
+        ...targetProduct,
+        batchNumber: targetBatchNumber,
+      });
       setSelectedAreaName(targetAreaName || null);
       setCurrentIndex(newIndex);
     }
@@ -390,8 +415,13 @@ export default function StockInDrawer({
           const nextProduct = detailData[nextUnProcessedIndex]
             .product as ProductVo;
           const nextAreaName = detailData[nextUnProcessedIndex].areaName;
+          const nextBatchNumber =
+            detailData[nextUnProcessedIndex].orderItems.batchNumber || '';
 
-          setSelectedProduct(nextProduct);
+          setSelectedProduct({
+            ...nextProduct,
+            batchNumber: nextBatchNumber,
+          });
           setSelectedAreaName(nextAreaName || null);
           setCurrentIndex(nextUnProcessedIndex);
         }
@@ -425,7 +455,9 @@ export default function StockInDrawer({
   const renderStockInInfo = () => {
     // 获取质检结果项
     const inspectionItem = inspectionItems.find(
-      (item) => item.productId === selectedProduct?.id
+      (item) =>
+        item.productId === selectedProduct?.id &&
+        item.batchNumber === selectedProduct?.batchNumber
     );
 
     // 获取当前商品序号和总数
@@ -435,9 +467,10 @@ export default function StockInDrawer({
     };
     // 获取当前商品的质检详情信息
     const getInspectionItem = inspectionItems.find(
-      (item) => item.productId === selectedProduct?.id
+      (item) =>
+        item.productId === selectedProduct?.id &&
+        item.batchNumber === selectedProduct?.batchNumber
     );
-
     return (
       <Card
         title={
@@ -504,7 +537,13 @@ export default function StockInDrawer({
               {selectedAreaName || '-'}
             </Descriptions.Item>
             <Descriptions.Item label='质检不合格数量'>
-              {inspectionItem?.unqualifiedQuantity || '-'}
+              {inspectionItem?.unqualifiedQuantity ||
+              inspectionItem?.unqualifiedQuantity === 0
+                ? '0'
+                : inspectionItem?.unqualifiedQuantity || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label='备注'>
+              {inspectionItem?.remark || '-'}
             </Descriptions.Item>
           </Descriptions>
 
@@ -540,12 +579,6 @@ export default function StockInDrawer({
 
   // 渲染商品详情
   const renderProductDetails = () => {
-    // 查找已选择商品的订单项
-    const orderItem = selectedProduct
-      ? detailData.find((item) => item.product?.id === selectedProduct.id)
-          ?.orderItems
-      : null;
-
     return (
       <Card
         title={
@@ -578,7 +611,7 @@ export default function StockInDrawer({
             {selectedProduct?.model || '-'}
           </Descriptions.Item>
           <Descriptions.Item label='批次号'>
-            {orderItem?.batchNumber || '-'}
+            {selectedProduct?.batchNumber || '-'}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -862,21 +895,35 @@ export default function StockInDrawer({
                         <OrderDetailItems
                           data={filteredDetailData}
                           inspectionType={inspection.inspectionType}
-                          onSelectProduct={(productId) => {
+                          onSelectProduct={(
+                            productId,
+                            _areaId,
+                            _locations,
+                            batchNumber
+                          ) => {
                             const product = filteredDetailData.find(
-                              (item) => item.product?.id === productId
+                              (item) =>
+                                item.product?.id === productId &&
+                                item.orderItems.batchNumber === batchNumber
                             )?.product as ProductVo;
                             const areaName = filteredDetailData.find(
-                              (item) => item.product?.id === productId
+                              (item) =>
+                                item.product?.id === productId &&
+                                item.orderItems.batchNumber === batchNumber
                             )?.areaName;
 
                             if (product) {
-                              setSelectedProduct(product);
+                              setSelectedProduct({
+                                ...product,
+                                batchNumber: batchNumber || '',
+                              });
                               setSelectedAreaName(areaName || null);
 
                               // 找到选中商品的索引
                               const index = filteredDetailData.findIndex(
-                                (item) => item.product?.id === productId
+                                (item) =>
+                                  item.product?.id === productId &&
+                                  item.orderItems.batchNumber === batchNumber
                               );
                               if (index !== -1) {
                                 setCurrentIndex(index);

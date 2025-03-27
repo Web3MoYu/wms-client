@@ -231,6 +231,7 @@ export default function InspectDetailDrawer({
 
   // 渲染质检基本信息卡片
   const renderInspectionInfo = () => {
+    console.log('inspection', inspection);
     // 获取对应选中商品的订单项
     const orderDetail = selectedProduct
       ? detailData.find((item) => item.product?.id === selectedProduct.id)
@@ -252,7 +253,9 @@ export default function InspectDetailDrawer({
 
     // 获取当前商品的质检详情信息
     const getInspectionItem = inspectionItems.find(
-      (item) => item.productId === selectedProduct?.id
+      (item) =>
+        item.productId === selectedProduct?.id &&
+        item.batchNumber === selectedProduct?.batchNumber
     );
 
     // 处理提交当前商品质检结果
@@ -264,7 +267,9 @@ export default function InspectDetailDrawer({
 
         // 查找对应的质检详情项
         const inspectionItem = inspectionItems.find(
-          (item) => item.productId === selectedProduct.id
+          (item) =>
+            item.productId === selectedProduct.id &&
+            item.batchNumber === selectedProduct.batchNumber
         );
 
         if (!inspectionItem && inspection.status !== 0) {
@@ -301,47 +306,49 @@ export default function InspectDetailDrawer({
             const allProductKeys = detailData.map(
               (item) => item.product?.id + '_' + item.orderItems.batchNumber
             );
-            
+
             // 获取当前选中商品的索引
             const currentIndex = allProductKeys.indexOf(
               selectedProduct.id + '_' + selectedProduct.batchNumber
             );
-            
+
             // 从当前位置开始查找下一个未质检的商品
             if (currentIndex !== -1) {
               for (let i = 1; i < allProductKeys.length; i++) {
                 const nextIndex = (currentIndex + i) % allProductKeys.length;
                 const nextKey = allProductKeys[nextIndex];
-                
+
                 // 如果该商品未质检，则选择它
                 if (!newInspectedItems.has(nextKey)) {
                   // 分割产品ID和批次号
                   const nextProductId = nextKey.split('_')[0];
                   const nextDetail = detailData[nextIndex];
-                  const nextBatchNumber = nextDetail.orderItems.batchNumber || '';
+                  const nextBatchNumber =
+                    nextDetail.orderItems.batchNumber || '';
                   const nextAreaName = nextDetail.areaName;
-                  
+
                   // 清空原有位置信息，使用空数组
                   const nextLocations: LocationVo[] = [];
-                  
+
                   // 选择下一个商品
                   if (nextDetail.product) {
                     // 获取产品所有信息
-                    getProductById(nextProductId).then(result => {
+                    getProductById(nextProductId).then((result) => {
                       if (result.code === 200) {
                         // 设置选中的产品
                         setSelectedProduct({
                           ...result.data,
-                          batchNumber: nextBatchNumber
+                          batchNumber: nextBatchNumber,
                         });
-                        
+
                         // 更新位置和区域信息
                         setSelectedLocations(nextLocations);
                         setSelectedAreaName(nextAreaName || null);
-                        
+
                         // 重置表单内容
                         form.setFieldsValue({
-                          actualQuantity: nextDetail.orderItems.expectedQuantity || 0,
+                          actualQuantity:
+                            nextDetail.orderItems.expectedQuantity || 0,
                           approval: 'true',
                           itemRemark: '',
                         });
@@ -353,7 +360,7 @@ export default function InspectDetailDrawer({
               }
             }
           };
-          
+
           // 执行查找下一个商品的逻辑
           findNextProduct();
         }
@@ -449,7 +456,11 @@ export default function InspectDetailDrawer({
                       label='合格数量'
                       rules={[{ required: true, message: '请输入合格数量' }]}
                     >
-                      <InputNumber min={0} style={{ width: '100%' }} />
+                      <InputNumber
+                        min={0}
+                        max={getInspectionItem?.inspectionQuantity || 0}
+                        style={{ width: '100%' }}
+                      />
                     </Form.Item>
                   </Col>
                   <Col span={8}>
