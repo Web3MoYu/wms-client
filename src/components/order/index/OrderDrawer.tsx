@@ -102,6 +102,11 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     Record<number, boolean>
   >({});
 
+  // 添加已存在批次号状态跟踪
+  const [existingBatchNumbers, setExistingBatchNumbers] = useState<
+    Record<number, boolean>
+  >({});
+
   // 处理关闭抽屉的函数，清除表单数据后再关闭
   const handleClose = () => {
     // 重置所有表单数据
@@ -115,6 +120,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     setProductCodeValid({});
     setProductCodeError({});
     setSelectedProducts({});
+    setExistingBatchNumbers({});
     setApproverOptions([]);
     setActiveTab('inbound'); // 重置回入库订单标签
     
@@ -355,13 +361,27 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     const form = formName === 'inbound' ? orderInForm : orderOutForm;
     const orderItems = form.getFieldValue('orderItems');
 
+    // 保留原始数量和金额值
+    const originalQuantity = orderItems[index].expectedQuantity || 1;
+
     if (isCustom) {
       // 切换为自定义产品
       orderItems[index] = {
         ...orderItems[index],
         productId: '', // 清空产品ID
+        productName: '', // 清空产品名称
+        productCode: '', // 清空产品编码
+        brand: '', // 清空品牌
+        model: '', // 清空型号
+        spec: '', // 清空规格
+        categoryId: undefined, // 清空分类
+        price: 0, // 重置价格
+        amount: 0, // 重置金额
         isCustomProduct: true,
         batchNumber: '', // 清空批次号
+        productionDate: null, // 清空生产日期
+        remark: '', // 清空备注
+        expectedQuantity: originalQuantity, // 保留原数量
       };
 
       // 更新产品选择状态 - 自定义产品也设置为已选择，这样可以输入批次号
@@ -377,7 +397,16 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         productId: '', // 确保清空产品ID
         productName: '', // 清空产品名称
         productCode: '', // 清空产品编码
+        brand: '', // 清空品牌
+        model: '', // 清空型号
+        spec: '', // 清空规格
+        categoryId: undefined, // 清空分类
+        price: 0, // 重置价格
+        amount: 0, // 重置金额
         batchNumber: '', // 清空批次号
+        productionDate: null, // 清空生产日期
+        remark: '', // 清空备注
+        expectedQuantity: originalQuantity, // 保留原数量
       };
 
       // 更新产品选择状态 - 系统产品需要选择后才能输入批次号
@@ -393,6 +422,26 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
     // 清空批次号选项
     setBatchNumberOptions([]);
+    
+    // 重置批次号存在状态
+    setExistingBatchNumbers((prev) => ({
+      ...prev,
+      [index]: false,
+    }));
+    
+    // 重置产品编码检验状态
+    setProductCodeValid((prev) => ({
+      ...prev,
+      [index]: false,
+    }));
+    
+    setProductCodeError((prev) => ({
+      ...prev,
+      [index]: '',
+    }));
+    
+    // 重新计算总金额
+    calculateTotals(formName);
   };
 
   // 处理数量或价格变化
@@ -540,6 +589,12 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
         // 将生成的批次号添加到选项中
         setBatchNumberOptions([newBatchNumber]);
+        
+        // 新生成的批次号不是已存在的批次号
+        setExistingBatchNumbers(prev => ({
+          ...prev,
+          [index]: false
+        }));
 
         // 手动验证当前字段，确保表单状态更新
         form.validateFields([['orderItems', index, 'batchNumber']]).catch(() => {
@@ -1191,6 +1246,21 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                             // 如果清空了输入，也要清空选项
                             if (!value) {
                               setBatchNumberOptions([]);
+                              // 重置已存在批次号状态
+                              setExistingBatchNumbers(prev => ({
+                                ...prev,
+                                [index]: false
+                              }));
+                            } else {
+                              // 检查选择的批次号是否是从下拉选项中选择的已存在批次号
+                              // 如果新值在批次号选项中(除了第一项可能是用户刚输入的)，且不是空值，则认为是选择了已存在的批次号
+                              const isExistingBatch = batchNumberOptions.length > 1 && 
+                                batchNumberOptions.slice(1).some(batch => batch === value);
+                              
+                              setExistingBatchNumbers(prev => ({
+                                ...prev,
+                                [index]: isExistingBatch
+                              }));
                             }
                           }}
                           disabled={
@@ -1212,13 +1282,14 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                         {...restField}
                         name={[name, 'productionDate']}
                         label='生产日期'
-                        rules={[{ required: true, message: '请选择生产日期' }]}
+                        rules={[{ required: !existingBatchNumbers[index], message: '请选择生产日期' }]}
                       >
                         <DatePicker
                           style={{ width: '100%' }}
                           locale={locale}
                           format='YYYY-MM-DD'
                           defaultValue={null}
+                          disabled={existingBatchNumbers[index]} // 如果是已存在的批次号，禁用生产日期编辑
                         />
                       </Form.Item>
                     </Col>
