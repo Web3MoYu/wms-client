@@ -19,6 +19,7 @@ export interface InspectionDto {
   endTime: string; // 结束时间
 
   status: number; // 质检状态：0-未质检，1-通过，2-不通过，3-部分异常,为null查询全部
+  receiveStatus: number; // 上架状态：0-未上架，1-已完成，2-进行中，为null查询全部
   createTimeAsc: boolean; // 创建时间排序 true-升序 false-降序
 }
 export interface Inspection {
@@ -30,6 +31,7 @@ export interface Inspection {
   inspector: string; // 质检员
   inspectionTime: string; // 质检时间
   status: number; // 质检状态：0-未质检，1-通过，2-不通过，3-部分异常,为null查询全部
+  receiveStatus: number; // 上架状态：0-未上架，1-已完成，2-进行中，为null查询全部
   remark: string; // 备注
   createTime: string; // 创建时间
   updateTime: string; // 更新时间
@@ -46,6 +48,7 @@ export interface InspectionItem {
   qualifiedQuantity: number; // 合格数量
   unqualifiedQuantity: number; // 不合格数量
   qualityStatus: number; // 质检结果：1-合格，2-不合格
+  receiveStatus: number; // 上架状态：0-未上架，1-已完成，2-进行中，为null查询全部
   reason: string; // 异常原因
   remark: string; // 备注
   createTime: string; // 创建时间

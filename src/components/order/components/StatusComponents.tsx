@@ -53,6 +53,19 @@ export const renderItemInspectionResult = (status: number) => {
       return <Tag color='red'>不合格</Tag>;
   }
 };
+
+export const renderReceiveStatus = (status: number) => {
+  switch (status) {
+    case 0:
+      return <Tag color='warning'>未上架</Tag>;
+    case 1:
+      return <Tag color='green'>已完成</Tag>;
+    case 2:
+      return <Tag color='processing'>进行中</Tag>;
+    default:
+      return <Tag color='default'>未知</Tag>;
+  }
+};
 // 订单类型渲染
 export const renderOrderType = (type: number) => {
   return type === 1 ? (
@@ -113,6 +126,19 @@ export const InspectionTypeSelect: React.FC<Omit<SelectProps, 'options'>> = (
       <Option value={1}>入库质检</Option>
       <Option value={2}>出库质检</Option>
       <Option value={3}>库存质检</Option>
+    </Select>
+  );
+};
+
+// 收货状态选择器组件
+export const ReceiveStatusSelect: React.FC<Omit<SelectProps, 'options'>> = (
+  props
+) => {
+  return (
+    <Select {...props} placeholder='请选择收货状态' allowClear>
+      <Option value={0}>未上架</Option>
+      <Option value={1}>已完成</Option>
+      <Option value={2}>进行中</Option>
     </Select>
   );
 };

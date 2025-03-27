@@ -25,6 +25,8 @@ import {
   renderQualityStatus,
   QualityStatusSelect,
   InspectionTypeSelect,
+  renderReceiveStatus,
+  ReceiveStatusSelect,
 } from '../components/StatusComponents';
 import userStore from '../../../store/userStore';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -48,6 +50,7 @@ interface InspectionDtoWithStringDates {
   startTime: string;
   endTime: string;
   status: number;
+  receiveStatus: number;
   createTimeAsc: boolean;
   _t: number;
 }
@@ -162,9 +165,11 @@ export default function InspectManager() {
         inspector: values.inspector || '',
         startTime: startTime,
         endTime: endTime,
+        status: values.status !== undefined ? values.status : null,
+        receiveStatus:
+          values.receiveStatus !== undefined ? values.receiveStatus : null,
         createTimeAsc:
           values.createTimeAsc !== undefined ? values.createTimeAsc : false,
-        status: values.status !== undefined ? values.status : null,
         _t: new Date().getTime(),
       };
 
@@ -344,6 +349,12 @@ export default function InspectManager() {
       render: (status: number) => renderQualityStatus(status, true),
     },
     {
+      title: '上架状态',
+      dataIndex: 'receiveStatus',
+      key: 'receiveStatus',
+      render: (status: number) => renderReceiveStatus(status),
+    },
+    {
       title: '质检时间',
       dataIndex: 'inspectionTime',
       key: 'inspectionTime',
@@ -404,6 +415,11 @@ export default function InspectManager() {
           </Row>
           <Row gutter={16}>
             <Col span={6}>
+              <Form.Item name='receiveStatus' label='上架状态'>
+                <ReceiveStatusSelect />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
               <Form.Item name='dateRange' label='质检时间'>
                 <RangePicker
                   style={{ width: '100%' }}
@@ -431,7 +447,7 @@ export default function InspectManager() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12} style={{ textAlign: 'right' }}>
+            <Col span={6} style={{ textAlign: 'right' }}>
               <Space>
                 <Button
                   type='primary'
