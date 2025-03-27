@@ -15,7 +15,8 @@ interface OrderDetailItemsProps {
   onSelectProduct: (
     productId: string,
     areaId: string,
-    locations: LocationVo[]
+    locations: LocationVo[],
+    batchNumber: string
   ) => void;
 }
 
@@ -45,7 +46,8 @@ const OrderDetailItems: React.FC<OrderDetailItemsProps> = ({
             onSelectProduct(
               record.product.id,
               record.orderItems.areaId,
-              record.locationName || []
+              record.locationName || [],
+              record.orderItems.batchNumber
             )
           }
         >
