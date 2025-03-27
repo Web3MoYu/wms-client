@@ -231,7 +231,6 @@ export default function InspectDetailDrawer({
 
   // 渲染质检基本信息卡片
   const renderInspectionInfo = () => {
-    console.log('inspection', inspection);
     // 获取对应选中商品的订单项
     const orderDetail = selectedProduct
       ? detailData.find((item) => item.product?.id === selectedProduct.id)

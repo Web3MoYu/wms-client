@@ -183,18 +183,19 @@ export function getStoragesByShelfId(
   });
 }
 /**
- * 按照货架id和产品id查找库位信息
+ * 按照货架id和质检详情id查找库位信息
  *
  * @param id id
+ * @param itemId 质检详情id
  * @return 结果
  */
-export function getStorageByIdAndProductId(
+export function getStorageByIdAndItemId(
   id: string,
-  productId: string
+  itemId: string
 ): Promise<Result<Storage[]>> {
   return new Promise((resolve, reject) => {
     axios
-      .get(`/location/storage/getStorageByIdAndProductId/${id}/${productId}`)
+      .get(`/location/storage/getStorageByIdAndItemId/${id}/${itemId}`)
       .then((res) => {
         resolve(res.data);
       })

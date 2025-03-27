@@ -45,7 +45,7 @@ import {
   getProductById,
 } from '../../../../api/product-service/ProductController';
 import { getShelfListByAreaId } from '../../../../api/location-service/ShelfController';
-import { getStorageByIdAndProductId } from '../../../../api/location-service/StorageController';
+import { getStorageByIdAndItemId } from '../../../../api/location-service/StorageController';
 import { Location } from '../../../../api/stock-service/StockController';
 import OrderDetailItems from './OrderDetailItems';
 import './css/InspectDetailDrawer.css';
@@ -342,9 +342,13 @@ export default function StockInDrawer({
 
   const loadStoragesByShelfId = async (shelfId: string) => {
     try {
-      const res = await getStorageByIdAndProductId(
+      const res = await getStorageByIdAndItemId(
         shelfId,
-        selectedProduct?.id || ''
+        inspectionItems.find(
+          (item) =>
+            item.productId === selectedProduct?.id &&
+            item.batchNumber === selectedProduct?.batchNumber
+        )?.id || ''
       );
       if (res.code === 200) {
         setStoragesByShelf((prev) => ({
@@ -366,6 +370,33 @@ export default function StockInDrawer({
       locations[index].storageIds = [];
       form.setFieldsValue({ locations });
     }
+  };
+
+  // 获取同一商品已选择的所有货架ID
+  const getAllSelectedShelfIds = (currentLocationIndex: number) => {
+    const locations = form.getFieldValue('locations');
+    if (!locations) {
+      return new Set<string>();
+    }
+
+    const selectedIds = new Set<string>();
+
+    // 遍历所有位置
+    locations.forEach((loc: any, locIndex: number) => {
+      // 跳过当前正在编辑的位置
+      if (locIndex === currentLocationIndex) {
+        return;
+      }
+
+      if (!loc || !loc.shelfId) {
+        return;
+      }
+
+      // 将该位置选择的货架ID添加到集合中
+      selectedIds.add(loc.shelfId);
+    });
+
+    return selectedIds;
   };
 
   // 获取当前选中商品的订单项
@@ -753,14 +784,23 @@ export default function StockInDrawer({
                                                 handleShelfChange(value, index)
                                               }
                                             >
-                                              {shelves.map((shelf) => (
-                                                <Option
-                                                  key={shelf.id}
-                                                  value={shelf.id}
-                                                >
-                                                  {shelf.shelfName}
-                                                </Option>
-                                              ))}
+                                              {shelves.map((shelf) => {
+                                                // 检查是否已被同一商品的其他位置选择
+                                                const selectedShelfIds = getAllSelectedShelfIds(index);
+                                                const isUsed = selectedShelfIds.has(shelf.id);
+
+                                                return (
+                                                  <Option
+                                                    key={shelf.id}
+                                                    value={shelf.id}
+                                                    disabled={isUsed}
+                                                  >
+                                                    {isUsed 
+                                                      ? `${shelf.shelfName} (已选择)` 
+                                                      : shelf.shelfName}
+                                                  </Option>
+                                                );
+                                              })}
                                             </Select>
                                           </Form.Item>
                                         </Col>
@@ -806,20 +846,15 @@ export default function StockInDrawer({
                                                       index,
                                                       'shelfId',
                                                     ])
-                                                  ]
-                                                    .filter(
-                                                      (storage) =>
-                                                        storage.status === 1
-                                                    ) // 只显示可用的库位
-                                                    .map((storage) => (
-                                                      <Option
-                                                        key={storage.id}
-                                                        value={storage.id}
-                                                      >
-                                                        {storage.locationName ||
-                                                          storage.id}
-                                                      </Option>
-                                                    ))
+                                                  ].map((storage) => (
+                                                    <Option
+                                                      key={storage.id}
+                                                      value={storage.id}
+                                                    >
+                                                      {storage.locationName ||
+                                                        storage.id}
+                                                    </Option>
+                                                  ))
                                                 : []}
                                             </Select>
                                           </Form.Item>
@@ -837,7 +872,16 @@ export default function StockInDrawer({
                                               type='text'
                                               danger
                                               icon={<PlusOutlined />}
-                                              onClick={() => remove(name)}
+                                              onClick={() => {
+                                                remove(name);
+                                                // 删除位置后，强制刷新表单，触发重新渲染
+                                                setTimeout(() => {
+                                                  const currentValues = form.getFieldsValue();
+                                                  form.setFieldsValue({
+                                                    ...currentValues,
+                                                  });
+                                                }, 0);
+                                              }}
                                             />
                                           )}
                                         </Col>
@@ -849,7 +893,16 @@ export default function StockInDrawer({
                                 <Form.Item>
                                   <Button
                                     type='dashed'
-                                    onClick={() => add()}
+                                    onClick={() => {
+                                      add();
+                                      // 添加新位置后，强制刷新表单，触发重新渲染
+                                      setTimeout(() => {
+                                        const currentValues = form.getFieldsValue();
+                                        form.setFieldsValue({
+                                          ...currentValues,
+                                        });
+                                      }, 0);
+                                    }}
                                     block
                                     icon={<PlusOutlined />}
                                   >
