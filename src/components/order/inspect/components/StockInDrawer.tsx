@@ -95,9 +95,19 @@ export default function StockInDrawer({
     new Map()
   );
   const [shelves, setShelves] = useState<any[]>([]);
+  const [shelvesMap, setShelvesMap] = useState<{[shelfId: string]: any}>({});
   const [storagesByShelf, setStoragesByShelf] = useState<{
     [shelfId: string]: any[];
   }>({});
+
+  // 货架数据变化时，更新shelvesMap
+  useEffect(() => {
+    const newShelvesMap: {[shelfId: string]: any} = {};
+    shelves.forEach(shelf => {
+      newShelvesMap[shelf.id] = shelf;
+    });
+    setShelvesMap(newShelvesMap);
+  }, [shelves]);
 
   // 获取订单详情数据
   useEffect(() => {
@@ -115,6 +125,41 @@ export default function StockInDrawer({
           setDetailData(result.data.orderDetail);
           // 存储inspectionItems数据
           setInspectionItems(result.data.inspectionItems || []);
+
+          // 预加载所有区域的货架信息
+          const areaIds = new Set<string>();
+          for (const detail of result.data.orderDetail) {
+            if (detail.orderItems.areaId) {
+              areaIds.add(detail.orderItems.areaId);
+            }
+          }
+
+          // 并行加载所有区域的货架信息
+          const loadPromises = Array.from(areaIds).map(async (areaId) => {
+            try {
+              const res = await getShelfListByAreaId(areaId);
+              if (res.code === 200) {
+                setShelves((prev) => {
+                  // 合并货架列表，避免重复
+                  const currentIds = new Set(prev.map((shelf) => shelf.id));
+                  const newShelves = [...prev];
+
+                  for (const shelf of res.data) {
+                    if (!currentIds.has(shelf.id)) {
+                      newShelves.push(shelf);
+                    }
+                  }
+
+                  return newShelves;
+                });
+              }
+            } catch (error) {
+              console.error(`获取区域 ${areaId} 的货架列表失败:`, error);
+            }
+          });
+
+          // 等待所有货架信息加载完成
+          await Promise.all(loadPromises);
         } else {
           message.error(result.msg || '获取质检详情失败');
           setDetailData([]);
@@ -320,12 +365,58 @@ export default function StockInDrawer({
     }
 
     // 获取目标商品
-    const targetProduct = filteredDetailData[newIndex].product as ProductVo;
-    const targetAreaName = filteredDetailData[newIndex].areaName;
-    const targetBatchNumber =
-      filteredDetailData[newIndex].orderItems.batchNumber || '';
+    const targetDetail = filteredDetailData[newIndex];
+    const targetProduct = targetDetail.product as ProductVo;
+    const targetAreaName = targetDetail.areaName;
+    const targetBatchNumber = targetDetail.orderItems.batchNumber || '';
 
     if (targetProduct) {
+      // 在设置新商品前，先加载货架和库位信息
+      if (targetDetail?.orderItems.areaId) {
+        // 预加载货架信息
+        loadShelvesByAreaId(targetDetail.orderItems.areaId);
+
+        // 获取对应的检验项
+        const inspItem = inspectionItems.find(
+          (item) =>
+            item.productId === targetProduct.id &&
+            item.batchNumber === targetBatchNumber
+        );
+
+        // 如果此商品已有上架信息，预加载其库位信息
+        if (
+          targetDetail.orderItems.id &&
+          stockInItems.has(targetDetail.orderItems.id)
+        ) {
+          const stockInItem = stockInItems.get(targetDetail.orderItems.id);
+          if (stockInItem && stockInItem.locations) {
+            stockInItem.locations.forEach((location) => {
+              if (location.shelfId && inspItem && inspItem.id) {
+                // 异步加载库位信息
+                (async () => {
+                  try {
+                    const res = await getStorageByIdAndItemId(
+                      location.shelfId,
+                      inspItem.id
+                    );
+                    if (res.code === 200) {
+                      const storageKey = `${location.shelfId}_${targetProduct.id}_${targetBatchNumber}`;
+                      setStoragesByShelf((prev) => ({
+                        ...prev,
+                        [storageKey]: res.data,
+                      }));
+                    }
+                  } catch (error) {
+                    console.error('加载库位信息失败:', error);
+                  }
+                })();
+              }
+            });
+          }
+        }
+      }
+
+      // 现在设置新商品
       setSelectedProduct({
         ...targetProduct,
         batchNumber: targetBatchNumber,
@@ -339,13 +430,26 @@ export default function StockInDrawer({
     try {
       const res = await getShelfListByAreaId(areaId);
       if (res.code === 200) {
-        setShelves(res.data);
+        setShelves(prev => {
+          // 合并货架列表，避免替换已有的货架信息
+          const currentIds = new Set(prev.map(shelf => shelf.id));
+          const newShelves = [...prev];
+          
+          for (const shelf of res.data) {
+            if (!currentIds.has(shelf.id)) {
+              newShelves.push(shelf);
+            }
+          }
+          
+          return newShelves;
+        });
       } else {
-        setShelves([]);
+        // 不要清空现有的货架数据
+        console.error(`获取区域 ${areaId} 的货架列表失败`);
       }
     } catch (error) {
       console.error('获取货架列表失败:', error);
-      setShelves([]);
+      // 不要清空现有的货架数据
     }
   };
 
@@ -727,6 +831,131 @@ export default function StockInDrawer({
     }
   };
 
+  // 显示确认提交对话框
+  const showSubmitModal = async () => {
+    // 预加载所有上架商品的货架和库位信息
+    const loadAllStorageInfo = async () => {
+      // 先加载所有区域的货架信息
+      const areaIds = new Set<string>();
+      
+      // 收集所有需要的区域ID和货架ID
+      const shelfIds = new Set<string>();
+      
+      for (const [itemId, stockInItem] of stockInItems.entries()) {
+        // 获取该商品的区域ID
+        const detail = detailData.find(item => item.orderItems.id === itemId);
+        if (detail?.orderItems.areaId) {
+          areaIds.add(detail.orderItems.areaId);
+        }
+        
+        // 收集所有货架ID
+        if (stockInItem.locations) {
+          for (const location of stockInItem.locations) {
+            if (location.shelfId) {
+              shelfIds.add(location.shelfId);
+            }
+          }
+        }
+      }
+      
+      // 预加载所有区域的货架信息
+      const loadShelvesPromises = Array.from(areaIds).map(async (areaId) => {
+        try {
+          const res = await getShelfListByAreaId(areaId);
+          if (res.code === 200) {
+            // 添加到shelves
+            setShelves(prev => {
+              // 合并货架列表，避免重复
+              const currentIds = new Set(prev.map(shelf => shelf.id));
+              const newShelves = [...prev];
+              
+              for (const shelf of res.data) {
+                if (!currentIds.has(shelf.id)) {
+                  newShelves.push(shelf);
+                }
+              }
+              
+              return newShelves;
+            });
+          }
+        } catch (error) {
+          console.error(`预加载货架信息失败 (区域 ${areaId}):`, error);
+        }
+      });
+      
+      // 等待所有货架加载完成
+      await Promise.all(loadShelvesPromises);
+      
+      // 手动更新shelvesMap以确保Modal渲染时能访问到最新的货架信息
+      const newShelvesMap: {[shelfId: string]: any} = {};
+      shelves.forEach(shelf => {
+        newShelvesMap[shelf.id] = shelf;
+      });
+      setShelvesMap(newShelvesMap);
+      
+      // 加载所有商品的库位信息
+      // 使用Promise.all并行处理以提高加载速度
+      const loadPromises = [];
+      
+      for (const [itemId, stockInItem] of stockInItems.entries()) {
+        // 查找对应的详情数据
+        const detail = detailData.find(item => item.orderItems.id === itemId);
+        if (!detail || !detail.product) continue;
+        
+        // 找到对应的检验项
+        const inspItem = inspectionItems.find(
+          item => 
+            item.productId === detail.product?.id && 
+            item.batchNumber === detail.orderItems.batchNumber
+        );
+        
+        if (!inspItem || !inspItem.id) continue;
+        
+        // 加载每个货架位置的库位信息
+        for (const location of stockInItem.locations) {
+          if (!location.shelfId) continue;
+          
+          const loadPromise = (async () => {
+            try {
+              // 使用组合键
+              const storageKey = `${location.shelfId}_${detail.product.id}_${detail.orderItems.batchNumber}`;
+              
+              // 检查是否已经加载过这个库位信息
+              if (storagesByShelf[storageKey]) {
+                return;
+              }
+              
+              const res = await getStorageByIdAndItemId(
+                location.shelfId,
+                inspItem.id
+              );
+              
+              if (res.code === 200) {
+                setStoragesByShelf(prev => ({
+                  ...prev,
+                  [storageKey]: res.data
+                }));
+              }
+            } catch (error) {
+              console.error(`预加载库位信息失败 (货架 ${location.shelfId}):`, error);
+            }
+          })();
+          
+          loadPromises.push(loadPromise);
+        }
+      }
+      
+      // 等待所有异步加载完成
+      await Promise.all(loadPromises);
+    };
+    
+    // 加载所有库位信息
+    await loadAllStorageInfo();
+    
+    // 显示确认对话框
+    setSubmitModalVisible(true);
+  };
+
   return (
     <>
       <Drawer
@@ -870,14 +1099,18 @@ export default function StockInDrawer({
                                                   'locations',
                                                   index,
                                                   'shelfId',
-                                                ])}_${selectedProduct.id}_${selectedProduct.batchNumber}`
+                                                ])}_${selectedProduct.id}_${
+                                                  selectedProduct.batchNumber
+                                                }`
                                               ]
                                                 ? storagesByShelf[
                                                     `${form.getFieldValue([
                                                       'locations',
                                                       index,
                                                       'shelfId',
-                                                    ])}_${selectedProduct.id}_${selectedProduct.batchNumber}`
+                                                    ])}_${selectedProduct.id}_${
+                                                      selectedProduct.batchNumber
+                                                    }`
                                                   ].map((storage) => (
                                                     <Option
                                                       key={storage.id}
@@ -1000,6 +1233,72 @@ export default function StockInDrawer({
                             )?.areaName;
 
                             if (product) {
+                              // 在设置新商品前，先加载货架和库位信息
+                              const orderDetail = filteredDetailData.find(
+                                (item) =>
+                                  item.product?.id === productId &&
+                                  item.orderItems.batchNumber === batchNumber
+                              );
+
+                              if (orderDetail?.orderItems.areaId) {
+                                // 预加载货架信息
+                                loadShelvesByAreaId(
+                                  orderDetail.orderItems.areaId
+                                );
+
+                                // 获取对应的检验项
+                                const inspItem = inspectionItems.find(
+                                  (item) =>
+                                    item.productId === productId &&
+                                    item.batchNumber === batchNumber
+                                );
+
+                                // 如果此商品已有上架信息，预加载其库位信息
+                                if (
+                                  orderDetail.orderItems.id &&
+                                  stockInItems.has(orderDetail.orderItems.id)
+                                ) {
+                                  const stockInItem = stockInItems.get(
+                                    orderDetail.orderItems.id
+                                  );
+                                  if (stockInItem && stockInItem.locations) {
+                                    stockInItem.locations.forEach(
+                                      (location) => {
+                                        if (
+                                          location.shelfId &&
+                                          inspItem &&
+                                          inspItem.id
+                                        ) {
+                                          // 异步加载库位信息
+                                          (async () => {
+                                            try {
+                                              const res =
+                                                await getStorageByIdAndItemId(
+                                                  location.shelfId,
+                                                  inspItem.id
+                                                );
+                                              if (res.code === 200) {
+                                                const storageKey = `${location.shelfId}_${productId}_${batchNumber}`;
+                                                setStoragesByShelf((prev) => ({
+                                                  ...prev,
+                                                  [storageKey]: res.data,
+                                                }));
+                                              }
+                                            } catch (error) {
+                                              console.error(
+                                                '加载库位信息失败:',
+                                                error
+                                              );
+                                            }
+                                          })();
+                                        }
+                                      }
+                                    );
+                                  }
+                                }
+                              }
+
+                              // 现在设置新商品
                               setSelectedProduct({
                                 ...product,
                                 batchNumber: batchNumber || '',
@@ -1031,13 +1330,13 @@ export default function StockInDrawer({
                           )}
 
                         {inspection?.orderStatus === 2 &&
-                          stockInItems.size === filteredDetailData.length && 
+                          stockInItems.size === filteredDetailData.length &&
                           filteredDetailData.length > 0 && (
                             <div style={{ marginTop: 16, textAlign: 'right' }}>
                               <Button
                                 type='primary'
                                 icon={<CheckCircleOutlined />}
-                                onClick={() => setSubmitModalVisible(true)}
+                                onClick={showSubmitModal}
                               >
                                 提交上架
                               </Button>
@@ -1126,9 +1425,11 @@ export default function StockInDrawer({
                 render: (locations: Location[], record: any) => (
                   <div>
                     {locations.map((loc, index) => {
-                      const shelfName =
-                        shelves.find((shelf) => shelf.id === loc.shelfId)
-                          ?.shelfName || loc.shelfId;
+                      // 尝试从shelvesMap中找到匹配的货架名称
+                      const shelfName = 
+                        shelvesMap[loc.shelfId]?.shelfName || 
+                        shelves.find((shelf) => shelf.id === loc.shelfId)?.shelfName || 
+                        loc.shelfId;
                       
                       // 使用Table中的record来获取正确的键值
                       const currentDetail = detailData.find(
@@ -1143,14 +1444,43 @@ export default function StockInDrawer({
                       
                       const storageNames = loc.storageIds
                         .map((storageId) => {
-                          // 尝试使用组合键获取库位信息
-                          const storage = storagesByShelf[storageKey]?.find(
-                            (s) => s.id === storageId
-                          ) || storagesByShelf[loc.shelfId]?.find(
+                          // 尝试多种方式获取库位信息
+                          
+                          // 1. 尝试使用当前商品的组合键获取库位信息
+                          let storage = storagesByShelf[storageKey]?.find(
                             (s) => s.id === storageId
                           );
                           
-                          return storage?.locationName || storageId;
+                          if (storage) {
+                            return storage.locationName || storageId;
+                          }
+                          
+                          // 2. 尝试按货架ID查找所有可能的库位
+                          const relevantStorageKeys = Object.keys(storagesByShelf).filter(
+                            key => key.startsWith(`${loc.shelfId}_`)
+                          );
+                          
+                          for (const key of relevantStorageKeys) {
+                            storage = storagesByShelf[key]?.find(
+                              (s) => s.id === storageId
+                            );
+                            if (storage) {
+                              return storage.locationName || storageId;
+                            }
+                          }
+                          
+                          // 3. 如果还找不到，遍历所有库位信息
+                          for (const key in storagesByShelf) {
+                            storage = storagesByShelf[key]?.find(
+                              (s) => s.id === storageId
+                            );
+                            if (storage) {
+                              return storage.locationName || storageId;
+                            }
+                          }
+                          
+                          // 如果都找不到，返回ID
+                          return storageId;
                         })
                         .join(', ');
 
