@@ -463,8 +463,8 @@ export default function StockInDrawer({
       const isProcessed = isItemProcessed();
       message.success(`${isProcessed ? '更新' : '提交'}成功`);
 
-      // 检查是否所有商品都已处理
-      if (newStockInItems.size === detailData.length) {
+      // 检查是否所有合格商品都已处理
+      if (newStockInItems.size === filteredDetailData.length) {
         setSubmitModalVisible(true);
       } else if (!isProcessed) {
         // 如果是新完成的上架项且还有未处理商品，自动跳转到下一个未处理商品
@@ -693,7 +693,7 @@ export default function StockInDrawer({
   // 提交最终上架结果
   const handleSubmitStockIn = async () => {
     if (stockInItems.size !== filteredDetailData.length) {
-      message.warning('请完成所有商品的上架处理');
+      message.warning('请完成所有合格商品的上架处理');
       return;
     }
 
@@ -1031,7 +1031,8 @@ export default function StockInDrawer({
                           )}
 
                         {inspection?.orderStatus === 2 &&
-                          stockInItems.size === filteredDetailData.length && (
+                          stockInItems.size === filteredDetailData.length && 
+                          filteredDetailData.length > 0 && (
                             <div style={{ marginTop: 16, textAlign: 'right' }}>
                               <Button
                                 type='primary'
