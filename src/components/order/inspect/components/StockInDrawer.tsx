@@ -254,6 +254,15 @@ export default function StockInDrawer({
         locations: existingStockIn.locations,
         stockInQuantity: existingStockIn.count,
       });
+
+      // 为每个货架预加载库位信息
+      if (existingStockIn.locations && existingStockIn.locations.length > 0) {
+        existingStockIn.locations.forEach((location) => {
+          if (location.shelfId) {
+            loadStoragesByShelfId(location.shelfId);
+          }
+        });
+      }
     } else if (orderDetail.orderItems.areaId) {
       // 否则加载默认值 - 从订单详情中获取位置信息
       // 加载货架信息
@@ -342,18 +351,31 @@ export default function StockInDrawer({
 
   const loadStoragesByShelfId = async (shelfId: string) => {
     try {
+      // 确保我们有selectedProduct信息
+      if (!selectedProduct) return;
+
+      // 获取当前选中商品的检验项
+      const currentInspectionItem = inspectionItems.find(
+        (item) =>
+          item.productId === selectedProduct.id &&
+          item.batchNumber === selectedProduct.batchNumber
+      );
+
+      if (!currentInspectionItem || !currentInspectionItem.id) {
+        console.error('未找到当前商品的检验项信息');
+        return;
+      }
+
       const res = await getStorageByIdAndItemId(
         shelfId,
-        inspectionItems.find(
-          (item) =>
-            item.productId === selectedProduct?.id &&
-            item.batchNumber === selectedProduct?.batchNumber
-        )?.id || ''
+        currentInspectionItem.id
       );
       if (res.code === 200) {
+        // 使用组合键（shelfId + productId + batchNumber）来缓存库位信息
+        const storageKey = `${shelfId}_${selectedProduct.id}_${selectedProduct.batchNumber}`;
         setStoragesByShelf((prev) => ({
           ...prev,
-          [shelfId]: res.data,
+          [storageKey]: res.data,
         }));
       }
     } catch (error) {
@@ -362,6 +384,7 @@ export default function StockInDrawer({
   };
 
   const handleShelfChange = (shelfId: string, index: number) => {
+    // 修改以确保在提取inspectionItem时同时使用productId和batchNumber
     loadStoragesByShelfId(shelfId);
 
     // 清空当前位置的库位选择
@@ -402,7 +425,11 @@ export default function StockInDrawer({
   // 获取当前选中商品的订单项
   const getSelectedOrderDetail = () => {
     return selectedProduct
-      ? detailData.find((item) => item.product?.id === selectedProduct.id)
+      ? detailData.find(
+          (item) =>
+            item.product?.id === selectedProduct.id &&
+            item.orderItems.batchNumber === selectedProduct.batchNumber
+        )
       : null;
   };
 
@@ -786,8 +813,12 @@ export default function StockInDrawer({
                                             >
                                               {shelves.map((shelf) => {
                                                 // 检查是否已被同一商品的其他位置选择
-                                                const selectedShelfIds = getAllSelectedShelfIds(index);
-                                                const isUsed = selectedShelfIds.has(shelf.id);
+                                                const selectedShelfIds =
+                                                  getAllSelectedShelfIds(index);
+                                                const isUsed =
+                                                  selectedShelfIds.has(
+                                                    shelf.id
+                                                  );
 
                                                 return (
                                                   <Option
@@ -795,8 +826,8 @@ export default function StockInDrawer({
                                                     value={shelf.id}
                                                     disabled={isUsed}
                                                   >
-                                                    {isUsed 
-                                                      ? `${shelf.shelfName} (已选择)` 
+                                                    {isUsed
+                                                      ? `${shelf.shelfName} (已选择)`
                                                       : shelf.shelfName}
                                                   </Option>
                                                 );
@@ -833,19 +864,20 @@ export default function StockInDrawer({
                                                 index,
                                                 'shelfId',
                                               ]) &&
+                                              selectedProduct &&
                                               storagesByShelf[
-                                                form.getFieldValue([
+                                                `${form.getFieldValue([
                                                   'locations',
                                                   index,
                                                   'shelfId',
-                                                ])
+                                                ])}_${selectedProduct.id}_${selectedProduct.batchNumber}`
                                               ]
                                                 ? storagesByShelf[
-                                                    form.getFieldValue([
+                                                    `${form.getFieldValue([
                                                       'locations',
                                                       index,
                                                       'shelfId',
-                                                    ])
+                                                    ])}_${selectedProduct.id}_${selectedProduct.batchNumber}`
                                                   ].map((storage) => (
                                                     <Option
                                                       key={storage.id}
@@ -876,7 +908,8 @@ export default function StockInDrawer({
                                                 remove(name);
                                                 // 删除位置后，强制刷新表单，触发重新渲染
                                                 setTimeout(() => {
-                                                  const currentValues = form.getFieldsValue();
+                                                  const currentValues =
+                                                    form.getFieldsValue();
                                                   form.setFieldsValue({
                                                     ...currentValues,
                                                   });
@@ -897,7 +930,8 @@ export default function StockInDrawer({
                                       add();
                                       // 添加新位置后，强制刷新表单，触发重新渲染
                                       setTimeout(() => {
-                                        const currentValues = form.getFieldsValue();
+                                        const currentValues =
+                                          form.getFieldsValue();
                                         form.setFieldsValue({
                                           ...currentValues,
                                         });
@@ -1088,17 +1122,33 @@ export default function StockInDrawer({
                 title: '货架信息',
                 dataIndex: 'locations',
                 key: 'locations',
-                render: (locations: Location[]) => (
+                render: (locations: Location[], record: any) => (
                   <div>
                     {locations.map((loc, index) => {
                       const shelfName =
                         shelves.find((shelf) => shelf.id === loc.shelfId)
                           ?.shelfName || loc.shelfId;
+                      
+                      // 使用Table中的record来获取正确的键值
+                      const currentDetail = detailData.find(
+                        (detail) => detail.orderItems.id === record.key
+                      );
+                      
+                      const productId = currentDetail?.product?.id || '';
+                      const batchNumber = currentDetail?.orderItems.batchNumber || '';
+                      
+                      // 构建组合键
+                      const storageKey = `${loc.shelfId}_${productId}_${batchNumber}`;
+                      
                       const storageNames = loc.storageIds
                         .map((storageId) => {
-                          const storage = storagesByShelf[loc.shelfId]?.find(
+                          // 尝试使用组合键获取库位信息
+                          const storage = storagesByShelf[storageKey]?.find(
+                            (s) => s.id === storageId
+                          ) || storagesByShelf[loc.shelfId]?.find(
                             (s) => s.id === storageId
                           );
+                          
                           return storage?.locationName || storageId;
                         })
                         .join(', ');
