@@ -55,7 +55,6 @@ import './css/InspectDetailDrawer.css';
 import {
   renderItemInspectionResult,
   renderQualityStatus,
-  renderReceiveStatus,
 } from '../../components/StatusComponents';
 
 const { Title, Text } = Typography;
@@ -667,10 +666,6 @@ export default function StockInDrawer({
                 ? renderItemInspectionResult(
                     getInspectionItem?.qualityStatus || 0
                   )
-                : '-'}
-              , 上架状态:{' '}
-              {selectedProduct
-                ? renderReceiveStatus(getInspectionItem?.receiveStatus || 0)
                 : '-'}
             </span>
             <Space>
