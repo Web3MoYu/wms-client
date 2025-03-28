@@ -587,10 +587,12 @@ export default function StockInDrawer({
       setStockInItems(newStockInItems);
 
       // 更新检验项的上架状态
-      setInspectionItems(prevItems => 
-        prevItems.map(item => {
-          if (item.productId === selectedProduct.id && 
-              item.batchNumber === selectedProduct.batchNumber) {
+      setInspectionItems((prevItems) =>
+        prevItems.map((item) => {
+          if (
+            item.productId === selectedProduct.id &&
+            item.batchNumber === selectedProduct.batchNumber
+          ) {
             return { ...item, receiveStatus: 1 };
           }
           return item;
@@ -865,21 +867,22 @@ export default function StockInDrawer({
       const result = await stockAll(inspection.inspectionNo);
       if (result.code === 200) {
         // 更新所有商品的上架状态
-        setInspectionItems(prevItems => 
-          prevItems.map(item => {
+        setInspectionItems((prevItems) =>
+          prevItems.map((item) => {
             // 检查该检验项对应的商品是否在已上架的列表中
-            const isStockedItem = filteredDetailData.some(detail => 
-              detail.product?.id === item.productId && 
-              detail.orderItems.batchNumber === item.batchNumber
+            const isStockedItem = filteredDetailData.some(
+              (detail) =>
+                detail.product?.id === item.productId &&
+                detail.orderItems.batchNumber === item.batchNumber
             );
-            
+
             if (isStockedItem) {
               return { ...item, receiveStatus: 1 };
             }
             return item;
           })
         );
-        
+
         message.success('上架提交成功');
         setSubmitModalVisible(false);
 
@@ -1105,27 +1108,40 @@ export default function StockInDrawer({
                                                 handleShelfChange(value, index)
                                               }
                                             >
-                                              {shelves.map((shelf) => {
-                                                // 检查是否已被同一商品的其他位置选择
-                                                const selectedShelfIds =
-                                                  getAllSelectedShelfIds(index);
-                                                const isUsed =
-                                                  selectedShelfIds.has(
-                                                    shelf.id
+                                              {shelves
+                                                .filter((shelf) => {
+                                                  // 获取当前商品的区域ID
+                                                  const orderDetail =
+                                                    getSelectedOrderDetail();
+                                                  // 只显示当前商品所在区域的货架
+                                                  return (
+                                                    orderDetail?.orderItems
+                                                      .areaId === shelf.areaId
                                                   );
+                                                })
+                                                .map((shelf) => {
+                                                  // 检查是否已被同一商品的其他位置选择
+                                                  const selectedShelfIds =
+                                                    getAllSelectedShelfIds(
+                                                      index
+                                                    );
+                                                  const isUsed =
+                                                    selectedShelfIds.has(
+                                                      shelf.id
+                                                    );
 
-                                                return (
-                                                  <Option
-                                                    key={shelf.id}
-                                                    value={shelf.id}
-                                                    disabled={isUsed}
-                                                  >
-                                                    {isUsed
-                                                      ? `${shelf.shelfName} (已选择)`
-                                                      : shelf.shelfName}
-                                                  </Option>
-                                                );
-                                              })}
+                                                  return (
+                                                    <Option
+                                                      key={shelf.id}
+                                                      value={shelf.id}
+                                                      disabled={isUsed}
+                                                    >
+                                                      {isUsed
+                                                        ? `${shelf.shelfName} (已选择)`
+                                                        : shelf.shelfName}
+                                                    </Option>
+                                                  );
+                                                })}
                                             </Select>
                                           </Form.Item>
                                         </Col>
@@ -1286,6 +1302,14 @@ export default function StockInDrawer({
                             _locations,
                             batchNumber
                           ) => {
+                            // 如果已经选中的是同一个商品，不重新设置，避免类别丢失
+                            if (
+                              selectedProduct?.id === productId &&
+                              selectedProduct?.batchNumber === batchNumber
+                            ) {
+                              return;
+                            }
+
                             const product = filteredDetailData.find(
                               (item) =>
                                 item.product?.id === productId &&
