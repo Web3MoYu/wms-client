@@ -15,7 +15,6 @@ import {
   Form,
   Modal,
   Space,
-  Table,
   Splitter,
 } from 'antd';
 import {
@@ -55,6 +54,7 @@ import './css/InspectDetailDrawer.css';
 import {
   renderItemInspectionResult,
   renderQualityStatus,
+  renderReceiveStatus,
 } from '../../components/StatusComponents';
 
 const { Title, Text } = Typography;
@@ -98,7 +98,6 @@ export default function StockInDrawer({
     new Map()
   );
   const [shelves, setShelves] = useState<any[]>([]);
-  const [shelvesMap, setShelvesMap] = useState<{ [shelfId: string]: any }>({});
   const [storagesByShelf, setStoragesByShelf] = useState<{
     [shelfId: string]: any[];
   }>({});
@@ -109,7 +108,6 @@ export default function StockInDrawer({
     shelves.forEach((shelf) => {
       newShelvesMap[shelf.id] = shelf;
     });
-    setShelvesMap(newShelvesMap);
   }, [shelves]);
 
   // 获取订单详情数据
@@ -197,13 +195,12 @@ export default function StockInDrawer({
       // 根据质检结果过滤出质检合格(qualityStatus为1)的商品
       const qualifiedProducts = detailData.filter((item) => {
         const inspectionItem = inspectionItems.find(
-          (inspItem) => inspItem.productId === item.product?.id
+          (inspItem) =>
+            inspItem.qualityStatus === 1 &&
+            inspItem.batchNumber === item.orderItems.batchNumber &&
+            inspItem.productId === item.product?.id
         );
-        return (
-          inspectionItem &&
-          inspectionItem.qualityStatus === 1 &&
-          inspectionItem.receiveStatus === 0
-        );
+        return inspectionItem;
       });
 
       setFilteredDetailData(qualifiedProducts);
@@ -543,7 +540,17 @@ export default function StockInDrawer({
   // 检查当前商品是否已上架处理
   const isItemProcessed = () => {
     const orderDetail = getSelectedOrderDetail();
-    return orderDetail && stockInItems.has(orderDetail.orderItems.id);
+    if (!orderDetail) return false;
+
+    // 获取对应的质检结果项
+    const inspectionItem = inspectionItems.find(
+      (item) =>
+        item.productId === selectedProduct?.id &&
+        item.batchNumber === selectedProduct?.batchNumber
+    );
+
+    // 如果receiveStatus为1，表示已上架
+    return inspectionItem?.receiveStatus === 1;
   };
 
   // 处理提交当前商品上架结果
@@ -579,8 +586,19 @@ export default function StockInDrawer({
       newStockInItems.set(orderDetail.orderItems.id, stockInItem);
       setStockInItems(newStockInItems);
 
+      // 更新检验项的上架状态
+      setInspectionItems(prevItems => 
+        prevItems.map(item => {
+          if (item.productId === selectedProduct.id && 
+              item.batchNumber === selectedProduct.batchNumber) {
+            return { ...item, receiveStatus: 1 };
+          }
+          return item;
+        })
+      );
+
       const isProcessed = isItemProcessed();
-      message.success(`${isProcessed ? '更新' : '提交'}成功`);
+      message.success(`${isProcessed ? '修改' : '上架'}成功`);
 
       // 检查是否所有合格商品都已处理
       if (newStockInItems.size === filteredDetailData.length) {
@@ -626,6 +644,20 @@ export default function StockInDrawer({
     return -1; // 没有找到未处理的商品
   };
 
+  // 检查所有合格商品是否都已上架
+  const areAllProductsStocked = () => {
+    if (filteredDetailData.length === 0) return false;
+
+    return filteredDetailData.every((item) => {
+      const inspectionItem = inspectionItems.find(
+        (inspItem) =>
+          inspItem.productId === item.product?.id &&
+          inspItem.batchNumber === item.orderItems.batchNumber
+      );
+      return inspectionItem?.receiveStatus === 1;
+    });
+  };
+
   if (!inspection) {
     return null;
   }
@@ -666,6 +698,10 @@ export default function StockInDrawer({
                 ? renderItemInspectionResult(
                     getInspectionItem?.qualityStatus || 0
                   )
+                : '-'}
+              ,上架状态:{' '}
+              {selectedProduct
+                ? renderReceiveStatus(getInspectionItem?.receiveStatus || 0)
                 : '-'}
             </span>
             <Space>
@@ -828,6 +864,22 @@ export default function StockInDrawer({
       // 调用确认上架接口
       const result = await stockAll(inspection.inspectionNo);
       if (result.code === 200) {
+        // 更新所有商品的上架状态
+        setInspectionItems(prevItems => 
+          prevItems.map(item => {
+            // 检查该检验项对应的商品是否在已上架的列表中
+            const isStockedItem = filteredDetailData.some(detail => 
+              detail.product?.id === item.productId && 
+              detail.orderItems.batchNumber === item.batchNumber
+            );
+            
+            if (isStockedItem) {
+              return { ...item, receiveStatus: 1 };
+            }
+            return item;
+          })
+        );
+        
         message.success('上架提交成功');
         setSubmitModalVisible(false);
 
@@ -909,7 +961,6 @@ export default function StockInDrawer({
       shelves.forEach((shelf) => {
         newShelvesMap[shelf.id] = shelf;
       });
-      setShelvesMap(newShelvesMap);
 
       // 并行加载所有商品的库位信息
       const loadPromises = [];
@@ -1208,7 +1259,7 @@ export default function StockInDrawer({
                                     )
                                   }
                                 >
-                                  {isItemProcessed() ? '更新' : '提交'}
+                                  {isItemProcessed() ? '修改' : '上架'}
                                 </Button>
                               </Col>
                             </Row>
@@ -1333,7 +1384,8 @@ export default function StockInDrawer({
 
                         {inspection?.orderStatus === 2 &&
                           stockInItems.size > 0 &&
-                          stockInItems.size < filteredDetailData.length && (
+                          stockInItems.size < filteredDetailData.length &&
+                          !areAllProductsStocked() && (
                             <div style={{ marginTop: 16, textAlign: 'right' }}>
                               <Text type='warning'>
                                 已完成 {stockInItems.size}/
@@ -1343,8 +1395,8 @@ export default function StockInDrawer({
                           )}
 
                         {inspection?.orderStatus === 2 &&
-                          stockInItems.size === filteredDetailData.length &&
-                          filteredDetailData.length > 0 && (
+                          filteredDetailData.length > 0 &&
+                          areAllProductsStocked() && (
                             <div style={{ marginTop: 16, textAlign: 'right' }}>
                               <Button
                                 type='primary'
@@ -1395,129 +1447,6 @@ export default function StockInDrawer({
         }
       >
         <p>所有商品已完成上架处理，提交后不可修改，确定提交上架吗？</p>
-
-        <div
-          style={{ maxHeight: '400px', overflow: 'auto', marginTop: '16px' }}
-        >
-          <Table
-            size='small'
-            dataSource={Array.from(stockInItems.entries()).map(
-              ([key, item]) => {
-                const product = detailData.find(
-                  (detail) => detail.orderItems.id === key
-                )?.product;
-                return {
-                  key,
-                  productName: product?.productName || '未知商品',
-                  productCode: product?.productCode || '-',
-                  count: item.count,
-                  locations: item.locations,
-                };
-              }
-            )}
-            columns={[
-              {
-                title: '商品名称',
-                dataIndex: 'productName',
-                key: 'productName',
-              },
-              {
-                title: '商品编码',
-                dataIndex: 'productCode',
-                key: 'productCode',
-              },
-              {
-                title: '上架数量',
-                dataIndex: 'count',
-                key: 'count',
-              },
-              {
-                title: '货架信息',
-                dataIndex: 'locations',
-                key: 'locations',
-                render: (locations: Location[], record: any) => (
-                  <div>
-                    {locations.map((loc, index) => {
-                      // 查找货架名称
-                      const shelfName =
-                        shelvesMap[loc.shelfId]?.shelfName ||
-                        shelves.find((shelf) => shelf.id === loc.shelfId)
-                          ?.shelfName ||
-                        loc.shelfId;
-
-                      // 获取商品信息
-                      const currentDetail = detailData.find(
-                        (detail) => detail.orderItems.id === record.key
-                      );
-
-                      const productId = currentDetail?.product?.id || '';
-                      const batchNumber =
-                        currentDetail?.orderItems.batchNumber || '';
-
-                      // 组合键
-                      const storageKey = `${loc.shelfId}_${productId}_${batchNumber}`;
-
-                      // 获取库位名称
-                      const storageNames = loc.storageIds
-                        .map((storageId) => {
-                          // 三级查找策略
-
-                          // 1. 精确匹配 - 当前商品的组合键
-                          let storage = storagesByShelf[storageKey]?.find(
-                            (s) => s.id === storageId
-                          );
-
-                          if (storage) {
-                            return storage.locationName || storageId;
-                          }
-
-                          // 2. 同货架查找 - 相同货架下的所有库位
-                          const relevantStorageKeys = Object.keys(
-                            storagesByShelf
-                          ).filter((key) => key.startsWith(`${loc.shelfId}_`));
-
-                          for (const key of relevantStorageKeys) {
-                            storage = storagesByShelf[key]?.find(
-                              (s) => s.id === storageId
-                            );
-                            if (storage) {
-                              return storage.locationName || storageId;
-                            }
-                          }
-
-                          // 3. 全局查找 - 所有库位
-                          for (const key in storagesByShelf) {
-                            storage = storagesByShelf[key]?.find(
-                              (s) => s.id === storageId
-                            );
-                            if (storage) {
-                              return storage.locationName || storageId;
-                            }
-                          }
-
-                          return storageId;
-                        })
-                        .join(', ');
-
-                      return (
-                        <div
-                          key={index}
-                          style={{
-                            marginBottom:
-                              index < locations.length - 1 ? '8px' : 0,
-                          }}
-                        >
-                          <Tag color='blue'>{shelfName}</Tag>: {storageNames}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ),
-              },
-            ]}
-            pagination={false}
-          />
-        </div>
       </Modal>
     </>
   );
