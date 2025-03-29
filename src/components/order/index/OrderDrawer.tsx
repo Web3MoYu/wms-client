@@ -1306,6 +1306,10 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                           format='YYYY-MM-DD'
                           defaultValue={null}
                           disabled={existingBatchNumbers[index]} // 如果是已存在的批次号，禁用生产日期编辑
+                          disabledDate={(current) => {
+                            // 禁用未来日期，只允许选择当前日期及以前的日期
+                            return current && current.valueOf() > Date.now();
+                          }}
                         />
                       </Form.Item>
                     </Col>
