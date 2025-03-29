@@ -16,6 +16,7 @@ interface ShelfFormProps {
 const ShelfForm: React.FC<ShelfFormProps> = ({
   form,
   areaList,
+  editingShelf,
   validateShelfCode,
   validateShelfName,
 }) => {
@@ -67,7 +68,7 @@ const ShelfForm: React.FC<ShelfFormProps> = ({
         validateTrigger="blur"
         tooltip="货架编码在同一区域内不能重复"
       >
-        <Input placeholder="请输入货架编码" />
+        <Input placeholder="请输入货架编码" disabled={!!editingShelf} />
       </Form.Item>
       
       <Form.Item

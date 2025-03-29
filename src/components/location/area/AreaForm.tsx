@@ -326,7 +326,7 @@ const AreaForm: React.FC<AreaFormProps> = ({
               { validator: validateAreaCode }
             ]}
           >
-            <Input placeholder="请输入区域编码" maxLength={20} />
+            <Input placeholder="请输入区域编码" maxLength={20} disabled={isEdit} />
           </Form.Item>
         </Col>
       </Row>
