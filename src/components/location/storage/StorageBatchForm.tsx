@@ -279,6 +279,11 @@ const StorageBatchForm = forwardRef<BatchFormRef, StorageBatchFormProps>(
               updatedItem.codeValid = undefined;
               updatedItem.codeError = undefined;
             }
+            
+            // 当选择产品时，自动将状态设置为"占用"
+            if (field === 'productId' && value) {
+              updatedItem.status = 0; // 0表示占用状态
+            }
 
             return updatedItem;
           }
@@ -599,6 +604,7 @@ const StorageBatchForm = forwardRef<BatchFormRef, StorageBatchFormProps>(
             value={item.status}
             onChange={(value) => updateBatchItem(item.key, 'status', value)}
             style={{ width: '100%' }}
+            disabled={!!item.productId} // 当选择了产品时禁用状态选择
           >
             <Option value={1}>空闲</Option>
             <Option value={0}>占用</Option>

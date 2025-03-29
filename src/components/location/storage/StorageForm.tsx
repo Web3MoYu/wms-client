@@ -36,6 +36,7 @@ const StorageForm: React.FC<StorageFormProps> = ({
 }) => {
   const [locationCodePrefix, setLocationCodePrefix] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
+  const [hasProduct, setHasProduct] = useState<boolean>(!!editingStorage?.productId);
 
   // 当区域代码或货架代码变化时，更新库位代码前缀
   useEffect(() => {
@@ -58,6 +59,7 @@ const StorageForm: React.FC<StorageFormProps> = ({
           updateTime: '',
         },
       ]);
+      setHasProduct(!!editingStorage.productId);
     }
     if (areaCode && shelfCode) {
       setLocationCodePrefix(`${areaCode}-${shelfCode}-`);
@@ -71,6 +73,30 @@ const StorageForm: React.FC<StorageFormProps> = ({
       }
     }
   }, [areaCode, shelfCode, form, editingStorage]);
+
+  // 当选择产品变化时，自动设置状态为占用
+  useEffect(() => {
+    const productId = form.getFieldValue('productId');
+    setHasProduct(!!productId);
+    
+    if (productId) {
+      // 如果选择了产品，自动设置状态为占用(0)
+      form.setFieldsValue({
+        status: 0,
+      });
+    }
+  }, [form.getFieldValue('productId')]);
+
+  // 监听产品选择变化
+  const handleProductChange = (value: string) => {
+    setHasProduct(!!value);
+    // 如果选择了产品，自动设置状态为占用
+    if (value) {
+      form.setFieldsValue({
+        status: 0,
+      });
+    }
+  };
 
   // 当库位编码变化时，自动更新库位名称
   const handleLocationCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,6 +214,7 @@ const StorageForm: React.FC<StorageFormProps> = ({
           defaultValue={editingStorage?.productId}
           filterOption={false}
           onSearch={handleProductSearch}
+          onChange={handleProductChange}
           disabled={!!editingStorage}
         >
           {products.map((product) => (
@@ -204,7 +231,7 @@ const StorageForm: React.FC<StorageFormProps> = ({
         initialValue={1}
         rules={[{ required: true, message: '请选择状态' }]}
       >
-        <Select placeholder='请选择状态' disabled={editingStorage?.status === 0}>
+        <Select placeholder='请选择状态' disabled={editingStorage?.status === 0 || hasProduct}>
           <Option value={1}>空闲</Option>
           <Option value={0}>占用</Option>
           <Option value={2}>禁用</Option>
