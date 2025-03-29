@@ -107,6 +107,9 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     Record<number, boolean>
   >({});
 
+  // 添加批次号重复错误状态
+  const [batchNumberErrors, setBatchNumberErrors] = useState<Record<number, string>>({});
+
   // 处理关闭抽屉的函数，清除表单数据后再关闭
   const handleClose = () => {
     // 重置所有表单数据
@@ -624,6 +627,44 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     }
   }, [orderInForm, visible]);
 
+  // 检查批次号是否重复
+  const checkDuplicateBatchNumber = (index: number, batchNumber: string, formName: string) => {
+    if (!batchNumber) return false;
+    
+    const form = formName === 'inbound' ? orderInForm : orderOutForm;
+    const orderItems = form.getFieldValue('orderItems');
+    
+    // 获取当前产品ID或产品编码
+    const currentItem = orderItems[index];
+    const currentProductId = currentItem.isCustomProduct ? currentItem.productCode : currentItem.productId;
+    
+    if (!currentProductId) return false;
+    
+    // 检查其他相同产品是否已使用该批次号
+    const duplicateIndex = orderItems.findIndex((item: any, idx: number) => {
+      if (idx === index) return false; // 排除自身
+      
+      const itemProductId = item.isCustomProduct ? item.productCode : item.productId;
+      return itemProductId === currentProductId && item.batchNumber === batchNumber;
+    });
+    
+    // 如果找到重复，显示错误
+    if (duplicateIndex !== -1) {
+      setBatchNumberErrors(prev => ({
+        ...prev,
+        [index]: `批次号与第${duplicateIndex + 1}项商品重复，同一商品不能有相同批次号`
+      }));
+      return true;
+    }
+    
+    // 清除错误
+    setBatchNumberErrors(prev => ({
+      ...prev,
+      [index]: ''
+    }));
+    return false;
+  };
+
   // 提交表单
   const handleSubmit = async (formName: string) => {
     try {
@@ -663,6 +704,44 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
       if (hasMissingBatchNumber) {
         message.error('存在未设置批次号的商品，请完善后重试');
+        return;
+      }
+      
+      // 检查是否有重复的批次号
+      let hasDuplicateBatchNumber = false;
+      
+      // 清空所有批次号错误，重新检查一遍
+      setBatchNumberErrors({});
+      
+      // 创建一个Map来跟踪每个产品的批次号
+      const productBatchMap = new Map<string, Set<string>>();
+      
+      values.orderItems.forEach((item: any, index: number) => {
+        const productId = item.isCustomProduct ? item.productCode : item.productId;
+        const batchNumber = item.batchNumber;
+        
+        if (!productId || !batchNumber) return;
+        
+        if (!productBatchMap.has(productId)) {
+          productBatchMap.set(productId, new Set());
+        }
+        
+        const batchSet = productBatchMap.get(productId);
+        
+        // 如果此批次号已经被同一产品使用，说明有重复
+        if (batchSet?.has(batchNumber)) {
+          setBatchNumberErrors(prev => ({
+            ...prev,
+            [index]: `此批次号已被相同商品使用，请修改`
+          }));
+          hasDuplicateBatchNumber = true;
+        } else {
+          batchSet?.add(batchNumber);
+        }
+      });
+      
+      if (hasDuplicateBatchNumber) {
+        message.error('存在重复的批次号，同一商品不能使用相同批次号');
         return;
       }
 
@@ -1251,13 +1330,18 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                             orderItems[index].batchNumber = value || '';
                             orderInForm.setFieldsValue({ orderItems });
 
-                            // 如果清空了输入，也要清空选项
+                            // 如果清空了输入，也要清空选项和错误
                             if (!value) {
                               setBatchNumberOptions([]);
                               // 重置已存在批次号状态
                               setExistingBatchNumbers((prev) => ({
                                 ...prev,
                                 [index]: false,
+                              }));
+                              // 清除批次号错误
+                              setBatchNumberErrors(prev => ({
+                                ...prev,
+                                [index]: ''
                               }));
                             } else {
                               // 检查选择的批次号是否是从下拉选项中选择的已存在批次号
@@ -1272,6 +1356,9 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                                 ...prev,
                                 [index]: isExistingBatch,
                               }));
+                              
+                              // 检查批次号是否重复
+                              checkDuplicateBatchNumber(index, value, 'inbound');
                             }
                           }}
                           disabled={
@@ -1285,7 +1372,13 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                           style={{ width: '100%' }}
                           allowClear
                           backfill
+                          status={batchNumberErrors[index] ? 'error' : undefined}
                         />
+                        {batchNumberErrors[index] && (
+                          <div style={{ color: 'red', fontSize: '12px' }}>
+                            {batchNumberErrors[index]}
+                          </div>
+                        )}
                       </Form.Item>
                     </Col>
                     <Col span={8}>
