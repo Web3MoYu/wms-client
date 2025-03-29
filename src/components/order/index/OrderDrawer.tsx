@@ -877,6 +877,10 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                 showTime
                 format='YYYY-MM-DD HH:mm:ss'
                 defaultValue={null}
+                disabledDate={(current) => {
+                  // 只禁用今天之前的日期，允许选择今天及未来日期
+                  return current && current.startOf('day').valueOf() < Date.now() - 8.64e7; // 减去一天的毫秒数
+                }}
               />
             </Form.Item>
           </Col>
