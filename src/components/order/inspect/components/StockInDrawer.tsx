@@ -35,12 +35,12 @@ import {
 import {
   stockAll,
   stockOne,
-} from '../../../../api/order-service/OrderController';
+  StockInDto,
+} from '../../../../api/order-service/InspectController';
 import {
   OrderDetailVo,
   OrderInItem,
   OrderOutItem,
-  StockInDto,
 } from '../../../../api/order-service/OrderController';
 import {
   ProductVo,
@@ -851,7 +851,7 @@ export default function StockInDrawer({
 
   // 提交最终上架结果
   const handleSubmitStockIn = async () => {
-    if (stockInItems.size !== filteredDetailData.length) {
+    if (!areAllProductsStocked()) {
       message.warning('请完成所有合格商品的上架处理');
       return;
     }

@@ -143,13 +143,6 @@ export interface OrderDetailVo<T> {
   locationName: LocationVo[];
 }
 
-export interface StockInDto {
-  itemId: string; // 订单详情id
-  productId: string; // 产品id
-  count: number; // 上架数量
-  locations: Location[]; // 位置信息
-}
-
 /**
  * 按照条件查询订单列表
  * @param queryDto 查询条件
@@ -265,44 +258,6 @@ export function receiveGoods(id: string): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .put(`/order/receive/${id}`)
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
-}
-
-/**
- * 确认上架
- *
- * @param inspectNo 质检编号
- * @return 上架结果
- */
-export function stockAll(inspectNo: string): Promise<Result<string>> {
-  return new Promise((resolve, reject) => {
-    axios
-      .put(`/order/stockAll/${inspectNo}`)
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
-}
-
-/**
- * 上架单个商品
- *
- * @param dto 商品信息
- * @return 上架结果
- */
-export function stockOne(dto: StockInDto): Promise<Result<string>> {
-  return new Promise((resolve, reject) => {
-    axios
-      .put('/order/stockOne', dto)
       .then((res) => {
         resolve(res.data);
       })

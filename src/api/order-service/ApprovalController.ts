@@ -1,13 +1,13 @@
 import axios from '../../utils/mxAxios';
 import { Page, Result } from '../Model';
-import { MyLocation } from '../stock-service/StockController';
+import { Location } from '../stock-service/StockController';
 import { OrderQueryDto, OrderVo } from './OrderController';
 
 export interface ApprovalDto {
   id: string; // 详情id
   areaId: string; // 区域id
   productId: string; // 产品id
-  location: MyLocation[]; // 位置
+  location: Location[]; // 位置
 }
 
 /**

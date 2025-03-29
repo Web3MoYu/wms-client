@@ -375,7 +375,7 @@ export default function InspectManager() {
       render: (_: any, record: InspectionVo) => (
         <Space size='middle'>
           <a onClick={() => handleOpenDetail(record)}>查看详情</a>
-          {record.orderStatus === 2 && (
+          {record.orderStatus === 2 && !(record.receiveStatus !== 2) && (
             <a onClick={() => handleOpenStockIn(record)}>上架</a>
           )}
         </Space>

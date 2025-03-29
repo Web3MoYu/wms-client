@@ -78,6 +78,14 @@ export interface InspectionDetailVo<T> {
   orderDetail: OrderDetailVo<T>[];
   inspectionItems: InspectionItem[];
 }
+
+export interface StockInDto {
+  itemId: string; // 订单详情id
+  productId: string; // 产品id
+  count: number; // 上架数量
+  locations: Location[]; // 位置信息
+}
+
 /**
  * 查询入库订单列表
  *
@@ -130,6 +138,44 @@ export function inInspectDetail(
   return new Promise((resolve, reject) => {
     axios
       .get('/order/inspect/inDetail', { params: { id } })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 确认上架
+ *
+ * @param inspectNo 质检编号
+ * @return 上架结果
+ */
+export function stockAll(inspectNo: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/order/inspect/stockAll/${inspectNo}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 上架单个商品
+ *
+ * @param dto 商品信息
+ * @return 上架结果
+ */
+export function stockOne(dto: StockInDto): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put('/order/inspect/stockOne', dto)
       .then((res) => {
         resolve(res.data);
       })
