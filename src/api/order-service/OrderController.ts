@@ -254,10 +254,13 @@ export function cancel(
  * @param id 订单id
  * @return 收货结果
  */
-export function receiveGoods(id: string): Promise<Result<string>> {
+export function receiveGoods(
+  id: string,
+  type: number
+): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
-      .put(`/order/receive/${id}`)
+      .put(`/order/receive/${type}/${id}`)
       .then((res) => {
         resolve(res.data);
       })

@@ -386,7 +386,7 @@ export default function OrderManager() {
       onOk: async () => {
         try {
           setLoading(true);
-          const result = await receiveGoods(record.id);
+          const result = await receiveGoods(record.id, record.type);
           if (result.code === 200) {
             message.success('收货成功');
             // 刷新订单列表
