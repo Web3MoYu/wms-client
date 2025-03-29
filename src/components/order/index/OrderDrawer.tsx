@@ -112,7 +112,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     // 重置所有表单数据
     orderInForm.resetFields();
     orderOutForm.resetFields();
-    
+
     // 重置其他状态
     setProductOptions([]);
     setBatchNumberOptions([]);
@@ -123,7 +123,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     setExistingBatchNumbers({});
     setApproverOptions([]);
     setActiveTab('inbound'); // 重置回入库订单标签
-    
+
     // 调用父组件传入的关闭函数
     onClose();
   };
@@ -142,7 +142,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
           productName: '',
           productCode: '',
           expectedQuantity: 1,
-          price: 0,
+          price: null,
           amount: 0,
           isCustomProduct: false,
           batchNumber: '',
@@ -375,7 +375,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         model: '', // 清空型号
         spec: '', // 清空规格
         categoryId: undefined, // 清空分类
-        price: 0, // 重置价格
+        price: null, // 重置价格
         amount: 0, // 重置金额
         isCustomProduct: true,
         batchNumber: '', // 清空批次号
@@ -401,7 +401,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         model: '', // 清空型号
         spec: '', // 清空规格
         categoryId: undefined, // 清空分类
-        price: 0, // 重置价格
+        price: null, // 重置价格
         amount: 0, // 重置金额
         batchNumber: '', // 清空批次号
         productionDate: null, // 清空生产日期
@@ -422,24 +422,24 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
     // 清空批次号选项
     setBatchNumberOptions([]);
-    
+
     // 重置批次号存在状态
     setExistingBatchNumbers((prev) => ({
       ...prev,
       [index]: false,
     }));
-    
+
     // 重置产品编码检验状态
     setProductCodeValid((prev) => ({
       ...prev,
       [index]: false,
     }));
-    
+
     setProductCodeError((prev) => ({
       ...prev,
       [index]: '',
     }));
-    
+
     // 重新计算总金额
     calculateTotals(formName);
   };
@@ -589,17 +589,19 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
         // 将生成的批次号添加到选项中
         setBatchNumberOptions([newBatchNumber]);
-        
+
         // 新生成的批次号不是已存在的批次号
-        setExistingBatchNumbers(prev => ({
+        setExistingBatchNumbers((prev) => ({
           ...prev,
-          [index]: false
+          [index]: false,
         }));
 
         // 手动验证当前字段，确保表单状态更新
-        form.validateFields([['orderItems', index, 'batchNumber']]).catch(() => {
-          // 忽略验证错误，因为我们知道值已设置
-        });
+        form
+          .validateFields([['orderItems', index, 'batchNumber']])
+          .catch(() => {
+            // 忽略验证错误，因为我们知道值已设置
+          });
 
         message.success('批次号生成成功');
       } else {
@@ -879,7 +881,10 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                 defaultValue={null}
                 disabledDate={(current) => {
                   // 只禁用今天之前的日期，允许选择今天及未来日期
-                  return current && current.startOf('day').valueOf() < Date.now() - 8.64e7; // 减去一天的毫秒数
+                  return (
+                    current &&
+                    current.startOf('day').valueOf() < Date.now() - 8.64e7
+                  ); // 减去一天的毫秒数
                 }}
               />
             </Form.Item>
@@ -1091,7 +1096,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                         name={[name, 'price']}
                         label='单价'
                         rules={[{ required: true, message: '请输入单价' }]}
-                        initialValue={0}
                       >
                         <InputNumber
                           min={0}
@@ -1246,24 +1250,27 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                               orderInForm.getFieldValue('orderItems');
                             orderItems[index].batchNumber = value || '';
                             orderInForm.setFieldsValue({ orderItems });
-                            
+
                             // 如果清空了输入，也要清空选项
                             if (!value) {
                               setBatchNumberOptions([]);
                               // 重置已存在批次号状态
-                              setExistingBatchNumbers(prev => ({
+                              setExistingBatchNumbers((prev) => ({
                                 ...prev,
-                                [index]: false
+                                [index]: false,
                               }));
                             } else {
                               // 检查选择的批次号是否是从下拉选项中选择的已存在批次号
                               // 如果新值在批次号选项中(除了第一项可能是用户刚输入的)，且不是空值，则认为是选择了已存在的批次号
-                              const isExistingBatch = batchNumberOptions.length > 1 && 
-                                batchNumberOptions.slice(1).some(batch => batch === value);
-                              
-                              setExistingBatchNumbers(prev => ({
+                              const isExistingBatch =
+                                batchNumberOptions.length > 1 &&
+                                batchNumberOptions
+                                  .slice(1)
+                                  .some((batch) => batch === value);
+
+                              setExistingBatchNumbers((prev) => ({
                                 ...prev,
-                                [index]: isExistingBatch
+                                [index]: isExistingBatch,
                               }));
                             }
                           }}
@@ -1286,7 +1293,12 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                         {...restField}
                         name={[name, 'productionDate']}
                         label='生产日期'
-                        rules={[{ required: !existingBatchNumbers[index], message: '请选择生产日期' }]}
+                        rules={[
+                          {
+                            required: !existingBatchNumbers[index],
+                            message: '请选择生产日期',
+                          },
+                        ]}
                       >
                         <DatePicker
                           style={{ width: '100%' }}
@@ -1316,7 +1328,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                     add({
                       key: generateId(),
                       expectedQuantity: 1,
-                      price: 0,
+                      price: null,
                       amount: 0, // 初始金额会在添加后自动计算
                       isCustomProduct: false,
                       status: 0,
