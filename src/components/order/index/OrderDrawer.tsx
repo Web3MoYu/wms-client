@@ -442,6 +442,15 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
       ...prev,
       [index]: '',
     }));
+    
+    // 显式重置产品编码字段的验证状态
+    form.setFields([
+      {
+        name: ['orderItems', index, 'productCode'],
+        errors: [],
+        validating: false,
+      }
+    ]);
 
     // 重新计算总金额
     calculateTotals(formName);
@@ -1115,9 +1124,23 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                         label='产品编码'
                         rules={[{ required: true, message: '请输入产品编码' }]}
                         validateStatus={
-                          productCodeError[index] ? 'error' : undefined
+                          orderInForm.getFieldValue([
+                            'orderItems',
+                            index,
+                            'isCustomProduct',
+                          ]) && productCodeError[index] 
+                            ? 'error' 
+                            : undefined
                         }
-                        help={productCodeError[index] || undefined}
+                        help={
+                          orderInForm.getFieldValue([
+                            'orderItems',
+                            index,
+                            'isCustomProduct',
+                          ]) 
+                            ? productCodeError[index] 
+                            : undefined
+                        }
                         extra={
                           orderInForm.getFieldValue([
                             'orderItems',
