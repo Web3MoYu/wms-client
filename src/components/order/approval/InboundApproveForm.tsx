@@ -37,6 +37,7 @@ import {
   OrderInItem,
 } from '../../../api/order-service/OrderController';
 import { ApprovalDto } from '../../../api/order-service/ApprovalController';
+import { getStockByProductIdAndBatch } from '../../../api/stock-service/StockController';
 
 const { Text, Title } = Typography;
 const { Option } = Select;
@@ -63,6 +64,10 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
   const [initialized, setInitialized] = useState(false);
   // 当前激活的面板
   const [activeKey, setActiveKey] = useState<string | string[]>([]);
+  // 存在库存的商品及其对应的区域ID映射
+  const [stockAreaMapping, setStockAreaMapping] = useState<{
+    [key: string]: string;
+  }>({});
 
   // 组件加载时获取订单详情和区域列表
   useEffect(() => {
@@ -73,6 +78,7 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
     setStorages({});
     setAvailableShelves({});
     setActiveKey([]);
+    setStockAreaMapping({});
 
     // 获取数据
     fetchOrderDetails();
@@ -94,6 +100,12 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
 
           // 初始化表单数据
           initFormData(details);
+          
+          // 检查每个产品的库存状态
+          for (const item of details) {
+            await checkProductStock(item);
+          }
+          
           setInitialized(true);
 
           // 默认全部关闭，不展开任何项目
@@ -105,6 +117,38 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
       message.error('获取订单详情失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 检查产品库存信息
+  const checkProductStock = async (orderItem: OrderInItem) => {
+    if (orderItem.productId && orderItem.batchNumber) {
+      try {
+        const res = await getStockByProductIdAndBatch(orderItem.productId, orderItem.batchNumber);
+        if (res.code === 200 && res.data) {
+          // 使用商品ID和批次号的组合作为键
+          const stockKey = `${orderItem.productId}_${orderItem.batchNumber}`;
+          
+          // 如果存在库存，记录对应的区域
+          setStockAreaMapping(prev => ({
+            ...prev,
+            [stockKey]: res.data.areaId
+          }));
+          
+          // 更新表单中的区域值为库存中的区域
+          const approvalItems = form.getFieldValue('approvalItems');
+          const index = approvalItems.findIndex((item: any) => item.id === orderItem.id);
+          if (index !== -1) {
+            approvalItems[index].areaId = res.data.areaId;
+            form.setFieldsValue({ approvalItems });
+            
+            // 立即加载该区域的货架列表
+            loadShelves(res.data.areaId);
+          }
+        }
+      } catch (error) {
+        console.error('获取产品库存信息失败:', error);
+      }
     }
   };
 
@@ -219,6 +263,37 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
 
   // 处理区域变更
   const handleAreaChange = (areaId: string, index: number) => {
+    const detail = orderDetails[index];
+    // 检查该商品(ID+批次号)是否有库存记录
+    const stockKey = `${detail.productId}_${detail.batchNumber}`;
+    const stockAreaId = stockAreaMapping[stockKey];
+    
+    if (stockAreaId && stockAreaId !== areaId) {
+      // 如果有库存记录但选择了不同区域，显示提示信息
+      message.warning(`该商品批次已有库存记录，只能分配到原区域：${areas.find(a => a.id === stockAreaId)?.areaName}`);
+      
+      // 将区域值设置为库存记录中的区域
+      const approvalItems = form.getFieldValue('approvalItems');
+      approvalItems[index].areaId = stockAreaId;
+      form.setFieldsValue({ approvalItems });
+      
+      // 清空当前项的货架和库位选择并加载正确区域的货架
+      if (approvalItems && approvalItems[index]) {
+        // 设置新的位置
+        approvalItems[index].location = [
+          {
+            shelfId: '',
+            storageIds: [],
+          },
+        ];
+        form.setFieldsValue({ approvalItems });
+      }
+      
+      // 加载正确区域的货架列表
+      loadShelves(stockAreaId);
+      return;
+    }
+    
     // 清空当前项的货架和库位选择
     const approvalItems = form.getFieldValue('approvalItems');
     if (approvalItems && approvalItems[index]) {
@@ -397,25 +472,34 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
   };
 
   // 商品信息头部
-  const renderProductHeader = (detail: OrderInItem) => (
-    <Row align='middle' gutter={16} style={{ width: '100%' }}>
-      <Col flex='auto'>
-        <Space>
-          <Badge status='processing' />
-          <Text strong style={{ fontSize: 16 }}>
-            {detail?.productName || '商品'}
-          </Text>
-          <Text type='secondary'>(ID: {detail?.productId || '-'})</Text>
-        </Space>
-      </Col>
-      <Col>
-        <Space>
-          <Text>预期数量:</Text>
-          <Text strong>{detail?.expectedQuantity || 0}</Text>
-        </Space>
-      </Col>
-    </Row>
-  );
+  const renderProductHeader = (detail: OrderInItem) => {
+    // 检查该商品是否有库存记录
+    const stockKey = `${detail.productId}_${detail.batchNumber}`;
+    const hasStockRecord = !!stockAreaMapping[stockKey];
+    
+    return (
+      <Row align='middle' gutter={16} style={{ width: '100%' }}>
+        <Col flex='auto'>
+          <Space>
+            <Badge status='processing' />
+            <Text strong style={{ fontSize: 16 }}>
+              {detail?.productName || '商品'}
+            </Text>
+            <Text type='secondary'>(批次号: {detail?.batchNumber || '-'})</Text>
+            {hasStockRecord && (
+              <Tag color="blue">已有库存记录</Tag>
+            )}
+          </Space>
+        </Col>
+        <Col>
+          <Space>
+            <Text>预期数量:</Text>
+            <Text strong>{detail?.expectedQuantity || 0}</Text>
+          </Space>
+        </Col>
+      </Row>
+    );
+  };
 
   return (
     <Card bordered={false} className='inbound-approve-form'>
@@ -424,10 +508,15 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
           <Title level={4}>入库订单审批</Title>
           <Alert
             message={
-              <Space>
-                <InfoCircleOutlined />
-                <Text strong>
-                  库位分配规则：同一个库位只能分配给一个商品的一个位置，不能重复选择相同的库位
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Space>
+                  <InfoCircleOutlined />
+                  <Text strong>
+                    库位分配规则：同一个库位只能分配给一个商品的一个位置，不能重复选择相同的库位
+                  </Text>
+                </Space>
+                <Text strong style={{ color: '#1890ff' }}>
+                  注意：如果商品批次已有库存记录，只能分配到原区域，无法选择其他区域
                 </Text>
               </Space>
             }
@@ -479,6 +568,17 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                       index,
                       'areaId',
                     ]);
+                    
+                    // 根据商品ID和批次号检查是否有库存记录
+                    const stockKey = `${detail.productId}_${detail.batchNumber}`;
+                    const stockAreaId = stockAreaMapping[stockKey];
+                    const hasStockRecord = !!stockAreaId;
+                    console.log(stockAreaMapping);
+                    
+                    // 根据库存状态过滤可选区域
+                    const filteredAreas = hasStockRecord 
+                      ? areas.filter(area => area.id === stockAreaId)
+                      : areas;
 
                     return (
                       <Panel
@@ -492,7 +592,16 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                             <Form.Item
                               {...restField}
                               name={[name, 'areaId']}
-                              label={<Text strong>选择区域</Text>}
+                              label={
+                                <Space>
+                                  <Text strong>选择区域</Text>
+                                  {hasStockRecord && (
+                                    <Tooltip title={`此商品批次已有库存记录，只能选择原区域: ${filteredAreas[0]?.areaName}`}>
+                                      <InfoCircleOutlined style={{ color: '#1890ff' }} />
+                                    </Tooltip>
+                                  )}
+                                </Space>
+                              }
                               rules={[
                                 { required: true, message: '请选择区域' },
                               ]}
@@ -508,9 +617,13 @@ const InboundApproveForm: React.FC<InboundApproveFormProps> = ({
                                 showSearch
                                 optionFilterProp='children'
                               >
-                                {areas.map((area) => (
-                                  <Option key={area.id} value={area.id}>
+                                {filteredAreas.map((area) => (
+                                  <Option 
+                                    key={area.id} 
+                                    value={area.id}
+                                  >
                                     {area.areaName}
+                                    {hasStockRecord && stockAreaId === area.id ? " (已有库存)" : ""}
                                   </Option>
                                 ))}
                               </Select>

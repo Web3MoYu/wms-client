@@ -135,3 +135,27 @@ export function getStockByProductIdAndBatchNumber(
       .catch((err) => reject(err));
   });
 }
+
+/**
+ * 根据产品id和批次号获取库存信息
+ *
+ * @param productId   产品id
+ * @param batchNumber 批次号
+ * @return 库存信息
+ */
+export function getStockByProductIdAndBatch(
+  productId: string,
+  batchNumber: string
+): Promise<Result<Stock>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/stock/getStockByProductIdAndBatch`, {
+        params: {
+          productId,
+          batchNumber,
+        },
+      })
+      .then((res) => resolve(res.data))
+      .catch((err) => reject(err));
+  });
+}
