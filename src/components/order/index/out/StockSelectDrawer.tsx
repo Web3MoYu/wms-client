@@ -764,51 +764,6 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
           scroll={{ y: 'calc(100vh - 480px)' }}
           bordered
         />
-        
-        <style>
-          {`
-            .stock-select-drawer .ant-drawer-body {
-              padding: 16px;
-            }
-            
-            .disabled-row {
-              background-color: #f5f5f5;
-              color: #d9d9d9;
-            }
-            
-            .selected-row {
-              background-color: #e6f7ff;
-            }
-            
-            .selected-stocks-card .ant-card-head {
-              min-height: 40px;
-              padding: 0 16px;
-            }
-            
-            .selected-stocks-card .ant-card-head-title,
-            .selected-stocks-card .ant-card-extra {
-              padding: 8px 0;
-            }
-            
-            .search-card .ant-form-item-label > label {
-              height: 24px;
-            }
-            
-            .search-card .ant-select {
-              width: 100%;
-            }
-            
-            /* 调整表格行高 */
-            .ant-table-tbody > tr > td {
-              padding: 8px 12px;
-            }
-            
-            /* 调整分页器样式 */
-            .ant-pagination {
-              margin: 12px 0 0 0;
-            }
-          `}
-        </style>
       </Drawer>
     </ConfigProvider>
   );
