@@ -42,11 +42,11 @@ import {
 } from '../../../api/product-service/ProductCatController';
 import { getBatchNumberByCode } from '../../../api/stock-service/StockController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
+import OutboundOrderForm from './out/OutboundOrderForm';
 
 const { Option } = Select;
 const { TextArea } = Input;
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 
 // 抽屉属性接口
 interface OrderDrawerProps {
@@ -1483,10 +1483,28 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   // 出库订单表单内容
   const renderOutboundForm = () => {
     return (
-      <div>
-        <Text>出库订单表单 - 待实现</Text>
-      </div>
+      <OutboundOrderForm
+        form={orderOutForm}
+        approverOptions={approverOptions}
+        productOptions={productOptions}
+        batchNumberOptions={batchNumberOptions}
+        currentUserId={currentUserId}
+        handleApproverSearch={handleApproverSearch}
+        handleProductSearch={handleProductSearch}
+        handleProductSelect={handleProductSelect}
+        handleQuantityOrPriceChange={handleQuantityOrPriceChange}
+        handleBatchNumberSearch={handleBatchNumberSearch}
+        generateBatchNumber={handleGenerateBatchNumber}
+        calculateTotals={calculateTotals}
+        generateId={generateId}
+        visible={visible && activeTab === 'outbound'}
+      />
     );
+  };
+
+  // 修改Tab切换函数
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
   };
 
   return (
@@ -1512,14 +1530,22 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         </div>
       }
     >
-      <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)}>
-        <TabPane tab='入库订单' key='inbound'>
-          {renderInboundForm()}
-        </TabPane>
-        <TabPane tab='出库订单' key='outbound'>
-          {renderOutboundForm()}
-        </TabPane>
-      </Tabs>
+      <Tabs
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        items={[
+          {
+            key: 'inbound',
+            label: '入库订单',
+            children: renderInboundForm(),
+          },
+          {
+            key: 'outbound',
+            label: '出库订单',
+            children: renderOutboundForm(),
+          },
+        ]}
+      />
     </Drawer>
   );
 };

@@ -1,0 +1,659 @@
+import { useState, useEffect } from 'react';
+import {
+  Drawer,
+  Table,
+  Card,
+  Form,
+  Select,
+  Button,
+  Row,
+  Col,
+  Space,
+  message,
+  ConfigProvider,
+  InputNumber,
+  Typography,
+  Badge,
+} from 'antd';
+import {
+  SearchOutlined,
+  ClearOutlined,
+  CheckOutlined,
+  ShoppingCartOutlined,
+} from '@ant-design/icons';
+import { SortOrder } from 'antd/es/table/interface';
+import debounce from 'lodash/debounce';
+import {
+  StockVo,
+  StockDto,
+  getStockList,
+  getBatchNumber,
+} from '../../../../api/stock-service/StockController';
+import {
+  Area,
+  getAllAreas,
+} from '../../../../api/location-service/AreaController';
+import {
+  searchProducts,
+  Product,
+  getProductById,
+} from '../../../../api/product-service/ProductController';
+import zhCN from 'antd/es/locale/zh_CN';
+
+const { Text } = Typography;
+
+// 选择的库存数据结构，增加了expectedQuantity和price字段
+interface SelectedStock extends StockVo {
+  expectedQuantity: number;
+  price: number; // 添加价格字段
+}
+
+interface StockSelectDrawerProps {
+  visible: boolean;
+  onClose: () => void;
+  onSelectStock: (selectedStocks: SelectedStock[]) => void;
+  placement?: 'top' | 'right' | 'bottom' | 'left';
+}
+
+const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
+  visible,
+  onClose,
+  onSelectStock,
+  placement = 'bottom',
+}) => {
+  // 状态管理
+  const [stocks, setStocks] = useState<StockVo[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [batchNumbers, setBatchNumbers] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [total, setTotal] = useState(0);
+
+  // 选择的库存和数量 - 改为Map存储多个选择
+  const [selectedStocks, setSelectedStocks] = useState<Map<string, SelectedStock>>(new Map());
+  // 产品价格加载状态
+  const [loadingPrices, setLoadingPrices] = useState<Map<string, boolean>>(new Map());
+
+  // 表单和分页
+  const [form] = Form.useForm();
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
+
+  // 排序状态
+  const [sortConfig, setSortConfig] = useState<{
+    prodDate?: boolean;
+    quantity?: boolean;
+    availableQuantity?: boolean;
+  }>({});
+
+  // 初始化加载
+  useEffect(() => {
+    if (visible) {
+      fetchAreas();
+      fetchStocks();
+      // 每次打开抽屉时重置已选状态
+      setSelectedStocks(new Map());
+      setLoadingPrices(new Map());
+    }
+  }, [visible]);
+
+  // 监听分页改变，重新加载数据
+  useEffect(() => {
+    if (visible) {
+      fetchStocks();
+    }
+  }, [pagination.current, pagination.pageSize, sortConfig, visible]);
+
+  // 获取所有区域
+  const fetchAreas = async () => {
+    try {
+      const res = await getAllAreas();
+      if (res.code === 200) {
+        setAreas(res.data);
+      }
+    } catch (error) {
+      console.error('获取区域列表失败:', error);
+    }
+  };
+
+  // 获取库存列表
+  const fetchStocks = async () => {
+    setLoading(true);
+    try {
+      const values = form.getFieldsValue();
+
+      const stockDto: StockDto = {
+        page: pagination.current,
+        pageSize: pagination.pageSize,
+        productId: values.productId || '',
+        areaId: values.areaId || '',
+        batchNumber: values.batchNumber || '',
+        status: 0, // 使用0表示全部状态
+        ascSortByProdDate:
+          sortConfig.prodDate === undefined ? null : sortConfig.prodDate,
+        ascSortByQuantity:
+          sortConfig.quantity === undefined ? null : sortConfig.quantity,
+        ascSortByAvailableQuantity:
+          sortConfig.availableQuantity === undefined
+            ? null
+            : sortConfig.availableQuantity,
+      };
+
+      const res = await getStockList(stockDto);
+      if (res.code === 200) {
+        setStocks(res.data.records);
+        setTotal(res.data.total);
+      } else {
+        message.error(res.msg || '获取库存列表失败');
+      }
+    } catch (error) {
+      console.error('获取库存列表失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 产品搜索（防抖）
+  const handleProductSearch = debounce(async (productName: string) => {
+    if (!productName || productName.length < 1) {
+      setProducts([]);
+      return;
+    }
+
+    try {
+      const res = await searchProducts(productName);
+      if (res.code === 200) {
+        setProducts(res.data);
+      }
+    } catch (error) {
+      console.error('搜索产品失败:', error);
+    }
+  }, 500);
+
+  // 批次号搜索（防抖）
+  const handleBatchNumberSearch = debounce(async (batchNumber: string) => {
+    if (!batchNumber || batchNumber.length < 1) {
+      setBatchNumbers([]);
+      return;
+    }
+
+    try {
+      const res = await getBatchNumber(batchNumber);
+      if (res.code === 200 && res.data) {
+        const batchList = Array.isArray(res.data)
+          ? res.data
+          : typeof res.data === 'string'
+          ? res.data.split(',')
+          : [String(res.data)];
+
+        setBatchNumbers(batchList);
+      } else {
+        setBatchNumbers([]);
+      }
+    } catch (error) {
+      console.error('搜索批次号失败:', error);
+      setBatchNumbers([]);
+    }
+  }, 500);
+
+  // 获取产品价格
+  const fetchProductPrice = async (productId: string, stockId: string) => {
+    if (!productId) return 0;
+    
+    // 设置加载状态
+    setLoadingPrices(prev => new Map(prev).set(stockId, true));
+    
+    try {
+      const res = await getProductById(productId);
+      if (res.code === 200 && res.data) {
+        const price = Number(res.data.price) || 0;
+        
+        // 更新选中项的价格
+        setSelectedStocks(prev => {
+          const newMap = new Map(prev);
+          if (newMap.has(stockId)) {
+            const stock = newMap.get(stockId);
+            if (stock) {
+              newMap.set(stockId, {
+                ...stock,
+                price: price
+              });
+            }
+          }
+          return newMap;
+        });
+        
+        return price;
+      }
+      return 0;
+    } catch (error) {
+      console.error('获取产品价格失败:', error);
+      return 0;
+    } finally {
+      setLoadingPrices(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(stockId);
+        return newMap;
+      });
+    }
+  };
+
+  // 分页变化处理
+  const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
+    setPagination({
+      current: pagination.current,
+      pageSize: pagination.pageSize,
+    });
+
+    // 清空之前的排序状态
+    const newSortConfig: {
+      prodDate?: boolean;
+      quantity?: boolean;
+      availableQuantity?: boolean;
+    } = {};
+
+    // 根据当前排序字段设置排序状态
+    if (sorter.field) {
+      switch (sorter.field) {
+        case 'productionDate':
+          newSortConfig.prodDate = sorter.order === 'ascend';
+          break;
+        case 'quantity':
+          newSortConfig.quantity = sorter.order === 'ascend';
+          break;
+        case 'availableQuantity':
+          newSortConfig.availableQuantity = sorter.order === 'ascend';
+          break;
+      }
+    }
+
+    setSortConfig(newSortConfig);
+  };
+
+  // 处理选择库存
+  const handleSelectStock = async (record: StockVo) => {
+    // 获取当前选择Map的复制
+    const newSelectedStocks = new Map(selectedStocks);
+    
+    // 如果已经选中了该记录，取消选中
+    if (newSelectedStocks.has(record.id)) {
+      newSelectedStocks.delete(record.id);
+      setSelectedStocks(newSelectedStocks);
+      return;
+    }
+    
+    // 获取产品价格
+    const price = await fetchProductPrice(record.productId, record.id);
+    
+    // 添加到选中列表，默认数量为1和获取到的价格
+    const stockToAdd: SelectedStock = {
+      ...record,
+      expectedQuantity: Math.min(1, record.availableQuantity),
+      price: price
+    };
+    
+    newSelectedStocks.set(record.id, stockToAdd);
+    
+    // 更新选中状态
+    setSelectedStocks(newSelectedStocks);
+  };
+
+  // 处理数量变化
+  const handleQuantityChange = (stockId: string, value: number | null) => {
+    if (value === null) return;
+    
+    // 获取当前选中的库存
+    const newSelectedStocks = new Map(selectedStocks);
+    const selectedStock = newSelectedStocks.get(stockId);
+    
+    if (!selectedStock) return;
+
+    // 确保数量不超过可用数量
+    if (value > selectedStock.availableQuantity) {
+      message.warning('出库数量不能超过可用数量！');
+      // 设置为最大可用数量
+      newSelectedStocks.set(stockId, {
+        ...selectedStock,
+        expectedQuantity: selectedStock.availableQuantity,
+      });
+    } else {
+      // 更新数量
+      newSelectedStocks.set(stockId, {
+        ...selectedStock,
+        expectedQuantity: value,
+      });
+    }
+    
+    setSelectedStocks(newSelectedStocks);
+  };
+
+  // 确认选择
+  const handleConfirmSelect = () => {
+    if (selectedStocks.size === 0) {
+      message.warning('请至少选择一项库存！');
+      return;
+    }
+
+    // 将Map转换为数组
+    const selectedStocksArray = Array.from(selectedStocks.values());
+    
+    // 校验每个选中项的数量
+    for (const stock of selectedStocksArray) {
+      if (stock.expectedQuantity <= 0) {
+        message.warning(`商品 ${stock.productName} 的出库数量必须大于0！`);
+        return;
+      }
+
+      if (stock.expectedQuantity > stock.availableQuantity) {
+        message.warning(`商品 ${stock.productName} 的出库数量不能超过可用数量！`);
+        return;
+      }
+    }
+
+    // 传递选中的库存数组给父组件
+    onSelectStock(selectedStocksArray);
+
+    // 重置选择状态并关闭抽屉
+    setSelectedStocks(new Map());
+    onClose();
+  };
+
+  // 取消选择并关闭抽屉
+  const handleCancel = () => {
+    setSelectedStocks(new Map());
+    onClose();
+  };
+
+  // 渲染已选商品列表
+  const renderSelectedStocksList = () => {
+    if (selectedStocks.size === 0) return null;
+
+    return (
+      <div
+        style={{
+          marginBottom: 16,
+          padding: 16,
+          border: '1px solid #d9d9d9',
+          borderRadius: 4,
+          backgroundColor: '#f5f5f5',
+        }}
+      >
+        <Row align="middle" style={{ marginBottom: 8 }}>
+          <Col span={16}>
+            <Text strong>
+              <ShoppingCartOutlined /> 已选商品 ({selectedStocks.size})
+            </Text>
+          </Col>
+          <Col span={8} style={{ textAlign: 'right' }}>
+            <Button 
+              type="link" 
+              danger 
+              onClick={() => setSelectedStocks(new Map())}
+            >
+              清空
+            </Button>
+          </Col>
+        </Row>
+        
+        {Array.from(selectedStocks.values()).map(stock => (
+          <Row key={stock.id} gutter={16} align="middle" style={{ marginBottom: 8 }}>
+            <Col span={14}>
+              <Text style={{ marginRight: 8 }}>{stock.productName}</Text>
+              <Text type="secondary">({stock.batchNumber})</Text>
+              {loadingPrices.has(stock.id) && <Text type="secondary"> 价格加载中...</Text>}
+              {!loadingPrices.has(stock.id) && stock.price > 0 && (
+                <Text type="secondary"> 单价: ¥{stock.price.toFixed(2)}</Text>
+              )}
+            </Col>
+            <Col span={10}>
+              <Space>
+                <Text>数量:</Text>
+                <InputNumber
+                  min={1}
+                  max={stock.availableQuantity}
+                  value={stock.expectedQuantity}
+                  onChange={(value) => handleQuantityChange(stock.id, value)}
+                  style={{ width: 90 }}
+                />
+                <Text type="secondary">/ {stock.availableQuantity}</Text>
+              </Space>
+            </Col>
+          </Row>
+        ))}
+      </div>
+    );
+  };
+
+  // 表格列定义
+  const columns = [
+    {
+      title: '选择',
+      key: 'select',
+      width: 80,
+      render: (_: any, record: StockVo) => (
+        <Button
+          type={selectedStocks.has(record.id) ? 'primary' : 'default'}
+          icon={<CheckOutlined />}
+          size="small"
+          disabled={record.availableQuantity <= 0}
+          onClick={() => handleSelectStock(record)}
+          loading={loadingPrices.has(record.id)}
+        >
+          {selectedStocks.has(record.id) ? '已选' : '选择'}
+        </Button>
+      ),
+    },
+    {
+      title: '商品名称',
+      dataIndex: 'productName',
+      key: 'productName',
+    },
+    {
+      title: '所属区域',
+      dataIndex: 'areaName',
+      key: 'areaName',
+    },
+    {
+      title: '批次号',
+      dataIndex: 'batchNumber',
+      key: 'batchNumber',
+    },
+    {
+      title: '数量',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
+    },
+    {
+      title: '可用数量',
+      dataIndex: 'availableQuantity',
+      key: 'availableQuantity',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
+      render: (availableQuantity: number) => (
+        <span style={{ color: availableQuantity <= 0 ? '#ff4d4f' : 'inherit' }}>
+          {availableQuantity}
+        </span>
+      ),
+    },
+    {
+      title: '生产日期',
+      dataIndex: 'productionDate',
+      key: 'productionDate',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
+    },
+  ];
+
+  return (
+    <ConfigProvider locale={zhCN}>
+      <Drawer
+        title={
+          <Space>
+            <span>选择出库商品</span>
+            {selectedStocks.size > 0 && (
+              <Badge count={selectedStocks.size} style={{ backgroundColor: '#52c41a' }} />
+            )}
+          </Space>
+        }
+        placement={placement}
+        height={700}
+        width={1000}
+        onClose={handleCancel}
+        open={visible}
+        extra={
+          <Space>
+            <Button onClick={handleCancel}>取消</Button>
+            <Button
+              type='primary'
+              onClick={handleConfirmSelect}
+              disabled={selectedStocks.size === 0}
+            >
+              确认选择
+            </Button>
+          </Space>
+        }
+      >
+        <Card style={{ marginBottom: 16 }}>
+          <Form form={form} layout='horizontal' onFinish={fetchStocks}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Form.Item
+                  name='areaId'
+                  label='区域'
+                  labelCol={{ span: 6 }}
+                  wrapperCol={{ span: 18 }}
+                >
+                  <Select placeholder='请选择区域' allowClear>
+                    <Select.Option value=''>全部</Select.Option>
+                    {areas.map((area) => (
+                      <Select.Option key={area.id} value={area.id}>
+                        {area.areaName}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Form.Item
+                  name='productId'
+                  label='产品'
+                  labelCol={{ span: 6 }}
+                  wrapperCol={{ span: 18 }}
+                >
+                  <Select
+                    placeholder='请输入产品名称搜索'
+                    allowClear
+                    showSearch
+                    filterOption={false}
+                    onSearch={handleProductSearch}
+                  >
+                    {products.map((product) => (
+                      <Select.Option key={product.id} value={product.id}>
+                        {product.productName}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Form.Item
+                  name='batchNumber'
+                  label='批次号'
+                  labelCol={{ span: 6 }}
+                  wrapperCol={{ span: 18 }}
+                >
+                  <Select
+                    placeholder='请输入批次号搜索'
+                    allowClear
+                    showSearch
+                    filterOption={false}
+                    onSearch={handleBatchNumberSearch}
+                  >
+                    {batchNumbers.map((batch) => (
+                      <Select.Option key={batch} value={batch}>
+                        {batch}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col
+                span={24}
+                style={{
+                  textAlign: 'right',
+                  marginTop: 8,
+                }}
+              >
+                <Form.Item style={{ marginBottom: 0 }}>
+                  <Button
+                    type='primary'
+                    htmlType='submit'
+                    icon={<SearchOutlined />}
+                    style={{ marginRight: 8, borderRadius: '4px' }}
+                  >
+                    查询
+                  </Button>
+                  <Button
+                    icon={<ClearOutlined />}
+                    onClick={() => {
+                      form.resetFields();
+                      fetchStocks();
+                    }}
+                    style={{ borderRadius: '4px' }}
+                  >
+                    重置
+                  </Button>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        </Card>
+
+        <Card>
+          {/* 渲染已选商品列表 */}
+          {renderSelectedStocksList()}
+
+          <Table
+            columns={columns}
+            dataSource={stocks}
+            rowKey='id'
+            loading={loading}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: total,
+              pageSizeOptions: ['5', '10', '20', '50'],
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 条记录`,
+            }}
+            onChange={handleTableChange}
+            rowClassName={(record) =>
+              record.availableQuantity <= 0 ? 'disabled-row' : (
+                selectedStocks.has(record.id) ? 'selected-row' : ''
+              )
+            }
+          />
+        </Card>
+        
+        <style>
+          {`
+            .disabled-row {
+              background-color: #f5f5f5;
+              color: #d9d9d9;
+            }
+            .selected-row {
+              background-color: #e6f7ff;
+            }
+          `}
+        </style>
+      </Drawer>
+    </ConfigProvider>
+  );
+};
+
+export default StockSelectDrawer; 
