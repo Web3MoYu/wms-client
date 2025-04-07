@@ -79,9 +79,13 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
   const [total, setTotal] = useState(0);
 
   // 选择的库存和数量 - 改为Map存储多个选择
-  const [selectedStocks, setSelectedStocks] = useState<Map<string, SelectedStock>>(new Map());
+  const [selectedStocks, setSelectedStocks] = useState<
+    Map<string, SelectedStock>
+  >(new Map());
   // 产品价格加载状态
-  const [loadingPrices, setLoadingPrices] = useState<Map<string, boolean>>(new Map());
+  const [loadingPrices, setLoadingPrices] = useState<Map<string, boolean>>(
+    new Map()
+  );
 
   // 表单和分页
   const [form] = Form.useForm();
@@ -210,30 +214,30 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
   // 获取产品价格
   const fetchProductPrice = async (productId: string, stockId: string) => {
     if (!productId) return 0;
-    
+
     // 设置加载状态
-    setLoadingPrices(prev => new Map(prev).set(stockId, true));
-    
+    setLoadingPrices((prev) => new Map(prev).set(stockId, true));
+
     try {
       const res = await getProductById(productId);
       if (res.code === 200 && res.data) {
         const price = Number(res.data.price) || 0;
-        
+
         // 更新选中项的价格
-        setSelectedStocks(prev => {
+        setSelectedStocks((prev) => {
           const newMap = new Map(prev);
           if (newMap.has(stockId)) {
             const stock = newMap.get(stockId);
             if (stock) {
               newMap.set(stockId, {
                 ...stock,
-                price: price
+                price: price,
               });
             }
           }
           return newMap;
         });
-        
+
         return price;
       }
       return 0;
@@ -241,7 +245,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
       console.error('获取产品价格失败:', error);
       return 0;
     } finally {
-      setLoadingPrices(prev => {
+      setLoadingPrices((prev) => {
         const newMap = new Map(prev);
         newMap.delete(stockId);
         return newMap;
@@ -285,26 +289,26 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
   const handleSelectStock = async (record: StockVo) => {
     // 获取当前选择Map的复制
     const newSelectedStocks = new Map(selectedStocks);
-    
+
     // 如果已经选中了该记录，取消选中
     if (newSelectedStocks.has(record.id)) {
       newSelectedStocks.delete(record.id);
       setSelectedStocks(newSelectedStocks);
       return;
     }
-    
+
     // 获取产品价格
     const price = await fetchProductPrice(record.productId, record.id);
-    
+
     // 添加到选中列表，默认数量为1和获取到的价格
     const stockToAdd: SelectedStock = {
       ...record,
       expectedQuantity: Math.min(1, record.availableQuantity),
-      price: price
+      price: price,
     };
-    
+
     newSelectedStocks.set(record.id, stockToAdd);
-    
+
     // 更新选中状态
     setSelectedStocks(newSelectedStocks);
   };
@@ -312,11 +316,11 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
   // 处理数量变化
   const handleQuantityChange = (stockId: string, value: number | null) => {
     if (value === null) return;
-    
+
     // 获取当前选中的库存
     const newSelectedStocks = new Map(selectedStocks);
     const selectedStock = newSelectedStocks.get(stockId);
-    
+
     if (!selectedStock) return;
 
     // 确保数量不超过可用数量
@@ -334,7 +338,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
         expectedQuantity: value,
       });
     }
-    
+
     setSelectedStocks(newSelectedStocks);
   };
 
@@ -347,7 +351,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
 
     // 将Map转换为数组
     const selectedStocksArray = Array.from(selectedStocks.values());
-    
+
     // 校验每个选中项的数量
     for (const stock of selectedStocksArray) {
       if (stock.expectedQuantity <= 0) {
@@ -356,7 +360,9 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
       }
 
       if (stock.expectedQuantity > stock.availableQuantity) {
-        message.warning(`商品 ${stock.productName} 的出库数量不能超过可用数量！`);
+        message.warning(
+          `商品 ${stock.productName} 的出库数量不能超过可用数量！`
+        );
         return;
       }
     }
@@ -392,72 +398,82 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
     if (selectedStocks.size === 0) return null;
 
     return (
-      <Card 
-        className="selected-stocks-card"
+      <Card
+        className='selected-stocks-card'
         title={
           <Space>
             <ShoppingCartOutlined />
             <span>已选商品</span>
-            <Badge 
-              count={selectedStocks.size} 
+            <Badge
+              count={selectedStocks.size}
               style={{ backgroundColor: '#52c41a' }}
             />
           </Space>
         }
         extra={
-          <Button 
-            type="link" 
-            danger 
-            icon={<DeleteOutlined />} 
+          <Button
+            type='link'
+            danger
+            icon={<DeleteOutlined />}
             onClick={handleClearSelected}
           >
             清空
           </Button>
         }
         style={{ marginBottom: 16 }}
-        size="small"
-        bodyStyle={{ padding: '12px 16px', maxHeight: '200px', overflowY: 'auto' }}
+        size='small'
+        bodyStyle={{
+          padding: '12px 16px',
+          maxHeight: '200px',
+          overflowY: 'auto',
+        }}
       >
         {Array.from(selectedStocks.values()).map((stock, index) => (
           <div key={stock.id}>
             {index > 0 && <Divider style={{ margin: '8px 0' }} />}
-            <Row gutter={16} align="middle">
+            <Row gutter={16} align='middle'>
               <Col span={10}>
-                <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                  <Text strong ellipsis>{stock.productName}</Text>
+                <Space direction='vertical' size={0} style={{ width: '100%' }}>
+                  <Text strong ellipsis>
+                    {stock.productName}
+                  </Text>
                   <Space size={4}>
-                    <Tag color="blue">{stock.batchNumber}</Tag>
-                    <Tag color="cyan">{stock.areaName}</Tag>
+                    <Tag color='blue'>{stock.batchNumber}</Tag>
+                    <Tag color='cyan'>{stock.areaName}</Tag>
                   </Space>
                 </Space>
               </Col>
               <Col span={10}>
                 <Space>
                   {loadingPrices.has(stock.id) ? (
-                    <Text type="secondary">价格加载中...</Text>
+                    <Text type='secondary'>价格加载中...</Text>
                   ) : (
-                    <Text type="secondary">单价: ¥{stock.price.toFixed(2)}</Text>
+                    <Text type='secondary'>
+                      单价: ¥{stock.price.toFixed(2)}
+                    </Text>
                   )}
-                  <Divider type="vertical" />
+                  <Divider type='vertical' />
                   <InputNumber
                     min={1}
                     max={stock.availableQuantity}
                     value={stock.expectedQuantity}
                     onChange={(value) => handleQuantityChange(stock.id, value)}
-                    size="small"
+                    size='small'
                     controls
                     style={{ width: 80 }}
-                    addonAfter={<Text type="secondary">/ {stock.availableQuantity}</Text>}
+                    addonAfter={
+                      <Text type='secondary'>/ {stock.availableQuantity}</Text>
+                    }
                   />
                 </Space>
               </Col>
               <Col span={4} style={{ textAlign: 'right' }}>
-                <Button 
-                  type="link" 
-                  danger 
-                  icon={<DeleteOutlined />} 
+                <Button
+                  type='link'
+                  danger
+                  icon={<DeleteOutlined />}
                   onClick={() => handleRemoveSelected(stock.id)}
-                  size="small"
+                  size='small'
                 />
               </Col>
             </Row>
@@ -470,48 +486,42 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
   // 渲染排序图标
   const renderSortIcon = (field: string) => {
     let icon = null;
-    
+
     switch (field) {
       case 'productionDate':
         if (sortConfig.prodDate !== undefined) {
-          icon = sortConfig.prodDate ? <SortAscendingOutlined /> : <SortDescendingOutlined />;
+          icon = sortConfig.prodDate ? (
+            <SortAscendingOutlined />
+          ) : (
+            <SortDescendingOutlined />
+          );
         }
         break;
       case 'quantity':
         if (sortConfig.quantity !== undefined) {
-          icon = sortConfig.quantity ? <SortAscendingOutlined /> : <SortDescendingOutlined />;
+          icon = sortConfig.quantity ? (
+            <SortAscendingOutlined />
+          ) : (
+            <SortDescendingOutlined />
+          );
         }
         break;
       case 'availableQuantity':
         if (sortConfig.availableQuantity !== undefined) {
-          icon = sortConfig.availableQuantity ? <SortAscendingOutlined /> : <SortDescendingOutlined />;
+          icon = sortConfig.availableQuantity ? (
+            <SortAscendingOutlined />
+          ) : (
+            <SortDescendingOutlined />
+          );
         }
         break;
     }
-    
+
     return icon ? <span style={{ marginLeft: 4 }}>{icon}</span> : null;
   };
 
   // 表格列定义
   const columns = [
-    {
-      title: '选择',
-      key: 'select',
-      width: 80,
-      render: (_: any, record: StockVo) => (
-        <Button
-          type={selectedStocks.has(record.id) ? 'primary' : 'default'}
-          icon={<CheckOutlined />}
-          size="small"
-          disabled={record.availableQuantity <= 0}
-          onClick={() => handleSelectStock(record)}
-          loading={loadingPrices.has(record.id)}
-          style={{ padding: '0 8px' }}
-        >
-          {selectedStocks.has(record.id) ? '已选' : '选择'}
-        </Button>
-      ),
-    },
     {
       title: '商品名称',
       dataIndex: 'productName',
@@ -522,7 +532,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
         <Tooltip title={text}>
           <span>{text}</span>
         </Tooltip>
-      )
+      ),
     },
     {
       title: '所属区域',
@@ -530,11 +540,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
       key: 'areaName',
       width: 140,
       ellipsis: true,
-      render: (text: string) => (
-        <Tag color="blue">
-          {text}
-        </Tag>
-      )
+      render: (text: string) => <Tag color='blue'>{text}</Tag>,
     },
     {
       title: '批次号',
@@ -542,11 +548,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
       key: 'batchNumber',
       width: 140,
       ellipsis: true,
-      render: (text: string) => (
-        <Tag color="cyan">
-          {text}
-        </Tag>
-      )
+      render: (text: string) => <Tag color='cyan'>{text}</Tag>,
     },
     {
       title: <>数量{renderSortIcon('quantity')}</>,
@@ -564,11 +566,17 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
       sorter: true,
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (availableQuantity: number) => (
-        <span style={{ 
-          color: availableQuantity <= 0 ? '#ff4d4f' : 
-                 availableQuantity < 10 ? '#faad14' : '#52c41a',
-          fontWeight: 'bold'
-        }}>
+        <span
+          style={{
+            color:
+              availableQuantity <= 0
+                ? '#ff4d4f'
+                : availableQuantity < 10
+                ? '#faad14'
+                : '#52c41a',
+            fontWeight: 'bold',
+          }}
+        >
           {availableQuantity}
         </span>
       ),
@@ -581,6 +589,24 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
       sorter: true,
       sortDirections: ['ascend', 'descend'] as SortOrder[],
     },
+    {
+      title: '选择',
+      key: 'select',
+      width: 80,
+      render: (_: any, record: StockVo) => (
+        <Button
+          type={selectedStocks.has(record.id) ? 'primary' : 'default'}
+          icon={<CheckOutlined />}
+          size='small'
+          disabled={record.availableQuantity <= 0}
+          onClick={() => handleSelectStock(record)}
+          loading={loadingPrices.has(record.id)}
+          style={{ padding: '0 8px' }}
+        >
+          {selectedStocks.has(record.id) ? '已选' : '选择'}
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -591,7 +617,10 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
             <AppstoreOutlined />
             <span>选择出库商品</span>
             {selectedStocks.size > 0 && (
-              <Badge count={selectedStocks.size} style={{ backgroundColor: '#52c41a' }} />
+              <Badge
+                count={selectedStocks.size}
+                style={{ backgroundColor: '#52c41a' }}
+              />
             )}
           </Space>
         }
@@ -613,17 +642,17 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
             </Button>
           </Space>
         }
-        className="stock-select-drawer"
+        className='stock-select-drawer'
       >
-        <Card size="small" className="search-card" style={{ marginBottom: 16 }}>
-          <Form 
-            form={form} 
-            layout='horizontal' 
+        <Card size='small' className='search-card' style={{ marginBottom: 16 }}>
+          <Form
+            form={form}
+            layout='horizontal'
             onFinish={fetchStocks}
-            size="small"
+            size='small'
             initialValues={{ areaId: '', productId: '', batchNumber: '' }}
           >
-            <Row gutter={[16, 16]} align="middle">
+            <Row gutter={[16, 16]} align='middle'>
               <Col xs={24} sm={24} md={7} lg={7}>
                 <Form.Item
                   name='areaId'
@@ -695,7 +724,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                       type='primary'
                       htmlType='submit'
                       icon={<SearchOutlined />}
-                      size="small"
+                      size='small'
                     >
                       查询
                     </Button>
@@ -705,7 +734,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                         form.resetFields();
                         fetchStocks();
                       }}
-                      size="small"
+                      size='small'
                     >
                       重置
                     </Button>
@@ -716,25 +745,22 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
           </Form>
         </Card>
 
-        {/* 渲染已选商品列表 */}
-        {renderSelectedStocksList()}
-
         {/* 库存数量提示 */}
         {stocks.length > 0 && (
-          <Alert 
+          <Alert
             message={
               <Space>
                 <Text strong>库存说明：</Text>
-                <Text type="success">绿色</Text>
+                <Text type='success'>绿色</Text>
                 <Text>表示库存充足，</Text>
-                <Text type="warning">黄色</Text>
+                <Text type='warning'>黄色</Text>
                 <Text>表示库存较低，</Text>
-                <Text type="danger">红色</Text>
+                <Text type='danger'>红色</Text>
                 <Text>表示无可用库存</Text>
               </Space>
             }
-            type="info" 
-            showIcon 
+            type='info'
+            showIcon
             style={{ marginBottom: 16 }}
           />
         )}
@@ -756,17 +782,21 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
           }}
           onChange={handleTableChange}
           rowClassName={(record) =>
-            record.availableQuantity <= 0 ? 'disabled-row' : (
-              selectedStocks.has(record.id) ? 'selected-row' : ''
-            )
+            record.availableQuantity <= 0
+              ? 'disabled-row'
+              : selectedStocks.has(record.id)
+              ? 'selected-row'
+              : ''
           }
-          size="small"
+          size='small'
           scroll={{ y: 'calc(100vh - 480px)' }}
           bordered
         />
+        {/* 渲染已选商品列表 */}
+        {renderSelectedStocksList()}
       </Drawer>
     </ConfigProvider>
   );
 };
 
-export default StockSelectDrawer; 
+export default StockSelectDrawer;
