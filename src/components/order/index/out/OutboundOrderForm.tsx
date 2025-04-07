@@ -12,20 +12,14 @@ import {
   Col,
   Empty,
   message,
-  Space,
 } from 'antd';
-import {
-  PlusOutlined,
-  MinusCircleOutlined,
-  SaveOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import { FormInstance } from 'antd/lib/form';
 import { User } from '../../../../api/sys-service/UserController';
 import StockSelectDrawer from './StockSelectDrawer';
 import { StockVo } from '../../../../api/stock-service/StockController';
-import { addOrderOut } from '../../../../api/order-service/OrderController';
+import userStore from '../../../../store/userStore';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -37,6 +31,30 @@ interface SelectedStock extends StockVo {
   price?: number; // 添加价格字段
 }
 
+// 定义提交所需的数据结构
+export interface OutboundOrderData {
+  order: {
+    orderType: number;
+    expectedTime: string;
+    creator: string;
+    approver: string;
+    deliveryAddress: string;
+    contactName: string;
+    contactPhone: string;
+    remark: string;
+    totalAmount: number;
+    totalQuantity: number;
+  };
+  orderItems: {
+    productId: string;
+    stockId: string;
+    expectedQuantity: number;
+    price: number;
+    batchNumber: string;
+    remark: string;
+  }[];
+}
+
 interface OutboundOrderFormProps {
   form: FormInstance;
   approverOptions: User[];
@@ -45,14 +63,26 @@ interface OutboundOrderFormProps {
   currentUserId: string;
   handleApproverSearch: (name: string) => void;
   handleProductSearch: (productName: string) => void;
-  handleProductSelect: (productId: string, index: number, formName: string) => void;
+  handleProductSelect: (
+    productId: string,
+    index: number,
+    formName: string
+  ) => void;
   handleQuantityOrPriceChange: (index: number, formName: string) => void;
-  handleBatchNumberSearch: (batchNumber: string, index: number, formName: string) => void;
+  handleBatchNumberSearch: (
+    batchNumber: string,
+    index: number,
+    formName: string
+  ) => void;
   generateBatchNumber?: (index: number, formName: string) => void;
-  calculateTotals: (formName: string) => { totalAmount: number; totalQuantity: number };
+  calculateTotals: (formName: string) => {
+    totalAmount: number;
+    totalQuantity: number;
+  };
   generateId: () => string;
   visible?: boolean; // 是否可见，用于监听标签页切换
-  onSuccess?: () => void; // 提交成功回调
+  // 添加ref回调方法，用于父组件调用
+  onGetOrderData?: (callback: () => Promise<OutboundOrderData | null>) => void;
 }
 
 const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
@@ -63,14 +93,75 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
   handleApproverSearch,
   handleQuantityOrPriceChange,
   visible,
-  onSuccess,
+  onGetOrderData,
 }) => {
+  const user = new userStore();
   const { totalAmount, totalQuantity } = calculateTotals('outbound');
-  
+
   // 添加库存选择抽屉的状态控制
   const [stockDrawerVisible, setStockDrawerVisible] = useState(false);
-  // 添加提交状态
-  const [submitting, setSubmitting] = useState(false);
+
+  // 定义验证和收集数据的方法，供父组件调用
+  const validateAndGetOrderData =
+    async (): Promise<OutboundOrderData | null> => {
+      try {
+        // 表单校验
+        await form.validateFields();
+
+        // 获取表单数据
+        const values = form.getFieldsValue();
+
+        // 校验是否有商品
+        if (!values.orderItems || values.orderItems.length === 0) {
+          message.error('请至少添加一个商品');
+          return null;
+        }
+
+        // 计算总量和总金额
+        const { totalAmount, totalQuantity } = calculateTotals('outbound');
+
+        // 构造出库订单对象
+        const order = {
+          orderType: values.orderType,
+          expectedTime: values.expectedTime?.format('YYYY-MM-DD HH:mm:ss'),
+          creator: user.user.userId,
+          approver: values.approverId,
+          deliveryAddress: values.deliveryAddress,
+          contactName: values.contactName,
+          contactPhone: values.contactPhone,
+          remark: values.remark || '',
+          totalAmount,
+          totalQuantity,
+        };
+
+        // 构造订单明细
+        const orderItems = values.orderItems.map((item: any) => ({
+          productId: item.productId,
+          stockId: item.stockId,
+          expectedQuantity: item.expectedQuantity,
+          price: item.price,
+          batchNumber: item.batchNumber,
+          remark: item.remark || '',
+        }));
+
+        // 返回完整的订单数据
+        return {
+          order,
+          orderItems,
+        };
+      } catch (error) {
+        console.error('出库订单数据验证错误:', error);
+        message.error('表单校验失败，请检查必填项');
+        return null;
+      }
+    };
+
+  // 将验证方法提供给父组件
+  useEffect(() => {
+    if (onGetOrderData) {
+      onGetOrderData(validateAndGetOrderData);
+    }
+  }, [onGetOrderData]);
 
   // 当可见性变化时，重置表单
   useEffect(() => {
@@ -91,9 +182,9 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
   // 处理选择库存 - 直接覆盖表单中的订单项
   const handleSelectStocks = (selectedStocks: SelectedStock[]) => {
     if (!selectedStocks || selectedStocks.length === 0) return;
-    
+
     // 将选择的库存映射为订单项
-    const orderItems = selectedStocks.map(stock => ({
+    const orderItems = selectedStocks.map((stock) => ({
       key: generateId(),
       productId: stock.productId,
       productName: stock.productName,
@@ -111,10 +202,10 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
       qualityStatus: 0,
       remark: '',
     }));
-    
+
     // 直接设置订单项，覆盖原有数据
     form.setFieldsValue({ orderItems });
-    
+
     // 重新计算总金额和总数量
     calculateTotals('outbound');
   };
@@ -122,105 +213,6 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
   // 打开库存选择抽屉
   const openStockDrawer = () => {
     setStockDrawerVisible(true);
-  };
-
-  // 处理提交
-  const handleSubmit = async () => {
-    try {
-      // 表单校验
-      await form.validateFields();
-      
-      // 获取表单数据
-      const values = form.getFieldsValue();
-      
-      // 设置提交状态
-      setSubmitting(true);
-      
-      // 校验是否有商品
-      if (!values.orderItems || values.orderItems.length === 0) {
-        message.error('请至少添加一个商品');
-        setSubmitting(false);
-        return;
-      }
-      
-      // 计算总量和总金额
-      const { totalAmount, totalQuantity } = calculateTotals('outbound');
-      
-      // 构造出库订单对象 - 只包含表单中的字段，后端会处理其他字段
-      const order = {
-        orderType: values.orderType,
-        expectedTime: values.expectedTime?.format('YYYY-MM-DD HH:mm:ss'),
-        creatorId: values.creatorId,
-        approverId: values.approverId,
-        deliveryAddress: values.deliveryAddress,
-        contactName: values.contactName,
-        contactPhone: values.contactPhone,
-        remark: values.remark || '',
-        totalAmount,
-        totalQuantity,
-      };
-      
-      // 构造订单明细 - 只包含表单中的字段
-      const orderItems = values.orderItems.map((item: any) => ({
-        productId: item.productId,
-        stockId: item.stockId,
-        expectedQuantity: item.expectedQuantity,
-        price: item.price,
-        batchNumber: item.batchNumber,
-        remark: item.remark || '',
-      }));
-      
-      // 收集商品信息
-      const productIdsObject: Record<string, any> = {};
-      values.orderItems.forEach((item: any) => {
-        if (item.productId && item.productCode) {
-          productIdsObject[item.productCode] = {
-            id: item.productId,
-            productCode: item.productCode,
-            productName: item.productName || '',
-            brand: '',
-            model: '',
-            spec: '',
-            categoryId: '',
-            price: item.price || 0,
-            minStock: 0,
-            maxStock: 0,
-            imageUrl: '',
-            description: '',
-          };
-        }
-      });
-      
-      // 准备OrderDto对象
-      const orderDto = {
-        order,
-        orderItems,
-        products: productIdsObject,
-      };
-      
-      // 调用出库订单接口
-      const res = await addOrderOut(orderDto as any);
-      
-      if (res.code === 200) {
-        message.success('出库订单提交成功');
-        
-        // 重置表单
-        form.resetFields();
-        form.setFieldValue('orderItems', []);
-        
-        // 如果有回调则执行
-        if (onSuccess) {
-          onSuccess();
-        }
-      } else {
-        message.error(res.msg || '出库订单提交失败');
-      }
-    } catch (error) {
-      console.error('出库订单提交错误:', error);
-      message.error('表单校验失败，请检查必填项');
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   return (
@@ -356,7 +348,7 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
           {(fields, { remove }) => (
             <>
               {fields.length === 0 ? (
-                <Empty description="暂无商品，请点击上方按钮添加" />
+                <Empty description='暂无商品，请点击上方按钮添加' />
               ) : (
                 fields.map(({ key, name, ...restField }, index) => (
                   <div
@@ -417,14 +409,24 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
                           {...restField}
                           name={[name, 'expectedQuantity']}
                           label='出库数量'
-                          rules={[{ required: true, message: '请输入出库数量' }]}
+                          rules={[
+                            { required: true, message: '请输入出库数量' },
+                          ]}
                         >
                           <InputNumber
                             min={1}
-                            max={form.getFieldValue(['orderItems', name, 'maxQuantity']) || 9999}
+                            max={
+                              form.getFieldValue([
+                                'orderItems',
+                                name,
+                                'maxQuantity',
+                              ]) || 9999
+                            }
                             style={{ width: '100%' }}
                             placeholder='请输入出库数量'
-                            onChange={() => handleQuantityOrPriceChange(index, 'outbound')}
+                            onChange={() =>
+                              handleQuantityOrPriceChange(index, 'outbound')
+                            }
                           />
                         </Form.Item>
                       </Col>
@@ -433,7 +435,9 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
                           {...restField}
                           name={[name, 'price']}
                           label='单价'
-                          rules={[{ required: true, message: '单价由系统自动获取' }]}
+                          rules={[
+                            { required: true, message: '单价由系统自动获取' },
+                          ]}
                         >
                           <InputNumber
                             min={0}
@@ -467,12 +471,11 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
                           {...restField}
                           name={[name, 'batchNumber']}
                           label='批次号'
-                          rules={[{ required: true, message: '请选择库存获取批次号' }]}
+                          rules={[
+                            { required: true, message: '请选择库存获取批次号' },
+                          ]}
                         >
-                          <Input
-                            disabled
-                            placeholder='自动获取批次号'
-                          />
+                          <Input disabled placeholder='自动获取批次号' />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
@@ -487,10 +490,7 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
                             },
                           ]}
                         >
-                          <Input
-                            disabled
-                            placeholder='自动获取生产日期'
-                          />
+                          <Input disabled placeholder='自动获取生产日期' />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -519,15 +519,6 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
             <Text strong>总金额：¥ {totalAmount.toFixed(2)}</Text>
           </Col>
         </Row>
-
-        {/* 添加提交按钮 */}
-        <div style={{ marginTop: 24, textAlign: 'right' }}>
-          <Space>
-            <Button type="primary" icon={submitting ? <LoadingOutlined /> : <SaveOutlined />} onClick={handleSubmit} loading={submitting}>
-              提交订单
-            </Button>
-          </Space>
-        </div>
       </Form>
 
       {/* 库存选择抽屉 */}
@@ -535,10 +526,10 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
         visible={stockDrawerVisible}
         onClose={() => setStockDrawerVisible(false)}
         onSelectStock={handleSelectStocks}
-        placement="bottom"
+        placement='bottom'
       />
     </>
   );
 };
 
-export default OutboundOrderForm; 
+export default OutboundOrderForm;

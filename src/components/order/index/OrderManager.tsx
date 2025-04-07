@@ -344,7 +344,6 @@ export default function OrderManager() {
         try {
           setLoading(true);
           const result = await cancel(record.id, record.type, remark);
-          console.log(result);
           if (result.code === 200) {
             message.success('订单已成功取消');
             // 刷新订单列表

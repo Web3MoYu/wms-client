@@ -29,6 +29,7 @@ import {
   insertOrderIn,
   OrderIn,
   OrderInItem,
+  addOrderOut,
 } from '../../../api/order-service/OrderController';
 import {
   searchProducts,
@@ -43,6 +44,7 @@ import {
 import { getBatchNumberByCode } from '../../../api/stock-service/StockController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import OutboundOrderForm from './out/OutboundOrderForm';
+import { OutboundOrderData } from './out/OutboundOrderForm';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -109,6 +111,44 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
 
   // 添加批次号重复错误状态
   const [batchNumberErrors, setBatchNumberErrors] = useState<Record<number, string>>({});
+
+  // 在组件内部添加状态
+  const [getOutboundOrderData, setGetOutboundOrderData] = useState<() => Promise<OutboundOrderData | null>>(() => async () => null);
+  const [outboundSubmitting, setOutboundSubmitting] = useState(false);
+
+  // 处理获取出库订单数据的回调
+  const handleGetOutboundOrderData = (callback: () => Promise<OutboundOrderData | null>) => {
+    setGetOutboundOrderData(() => callback);
+  };
+
+  // 处理出库订单的提交
+  const handleSubmitOutbound = async () => {
+    setOutboundSubmitting(true);
+    try {
+      const orderData = await getOutboundOrderData();
+      
+      if (!orderData) {
+        setOutboundSubmitting(false);
+        return;
+      }
+      
+      // 调用出库订单接口
+      const res = await addOrderOut(orderData as any);
+      
+      if (res.code === 200) {
+        message.success('出库订单创建成功');
+        // 先调用onSuccess刷新表格数据，再关闭抽屉
+        onSuccess();
+        handleClose(); // 使用handleClose关闭抽屉并清除数据
+      } else {
+        message.error(res.msg || '出库订单创建失败');
+      }
+    } catch (error) {
+      message.error('提交出库订单失败', error as any);
+    } finally {
+      setOutboundSubmitting(false);
+    }
+  };
 
   // 处理关闭抽屉的函数，清除表单数据后再关闭
   const handleClose = () => {
@@ -674,91 +714,90 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     return false;
   };
 
-  // 提交表单
+  // 处理表单提交的方法修改为：
   const handleSubmit = async (formName: string) => {
-    try {
-      const form = formName === 'inbound' ? orderInForm : orderOutForm;
-      // 首先执行表单验证，这会触发所有必填字段的验证，包括批次号
-      const values = await form.validateFields();
+    if (formName === 'inbound') {
+      try {
+        const form = formName === 'inbound' ? orderInForm : orderOutForm;
+        // 首先执行表单验证，这会触发所有必填字段的验证，包括批次号
+        const values = await form.validateFields();
 
-      // 检查所有自定义产品的编码是否有效
-      const hasInvalidCode = values.orderItems.some(
-        (item: any, index: number) => {
-          if (item.isCustomProduct && !productCodeValid[index]) {
-            return true;
+        // 检查所有自定义产品的编码是否有效
+        const hasInvalidCode = values.orderItems.some(
+          (item: any, index: number) => {
+            if (item.isCustomProduct && !productCodeValid[index]) {
+              return true;
+            }
+            return false;
           }
-          return false;
+        );
+
+        if (hasInvalidCode) {
+          message.error('存在无效的产品编码，请修改后重试');
+          return;
         }
-      );
 
-      if (hasInvalidCode) {
-        message.error('存在无效的产品编码，请修改后重试');
-        return;
-      }
+        // 检查所有系统商品是否已选择产品
+        const hasMissingProduct = values.orderItems.some((item: any) => {
+          return !item.isCustomProduct && !item.productId;
+        });
 
-      // 检查所有系统商品是否已选择产品
-      const hasMissingProduct = values.orderItems.some((item: any) => {
-        return !item.isCustomProduct && !item.productId;
-      });
+        if (hasMissingProduct) {
+          message.error('存在未选择产品的系统商品，请选择产品后重试');
+          return;
+        }
 
-      if (hasMissingProduct) {
-        message.error('存在未选择产品的系统商品，请选择产品后重试');
-        return;
-      }
+        // 再次检查所有商品是否有批次号（双重保险）
+        const hasMissingBatchNumber = values.orderItems.some((item: any) => {
+          return !item.batchNumber || item.batchNumber.trim() === '';
+        });
 
-      // 再次检查所有商品是否有批次号（双重保险）
-      const hasMissingBatchNumber = values.orderItems.some((item: any) => {
-        return !item.batchNumber || item.batchNumber.trim() === '';
-      });
-
-      if (hasMissingBatchNumber) {
-        message.error('存在未设置批次号的商品，请完善后重试');
-        return;
-      }
-      
-      // 检查是否有重复的批次号
-      let hasDuplicateBatchNumber = false;
-      
-      // 清空所有批次号错误，重新检查一遍
-      setBatchNumberErrors({});
-      
-      // 创建一个Map来跟踪每个产品的批次号
-      const productBatchMap = new Map<string, Set<string>>();
-      
-      values.orderItems.forEach((item: any, index: number) => {
-        const productId = item.isCustomProduct ? item.productCode : item.productId;
-        const batchNumber = item.batchNumber;
-        
-        if (!productId || !batchNumber) return;
-        
-        if (!productBatchMap.has(productId)) {
-          productBatchMap.set(productId, new Set());
+        if (hasMissingBatchNumber) {
+          message.error('存在未设置批次号的商品，请完善后重试');
+          return;
         }
         
-        const batchSet = productBatchMap.get(productId);
+        // 检查是否有重复的批次号
+        let hasDuplicateBatchNumber = false;
         
-        // 如果此批次号已经被同一产品使用，说明有重复
-        if (batchSet?.has(batchNumber)) {
-          setBatchNumberErrors(prev => ({
-            ...prev,
-            [index]: `此批次号已被相同商品使用，请修改`
-          }));
-          hasDuplicateBatchNumber = true;
-        } else {
-          batchSet?.add(batchNumber);
+        // 清空所有批次号错误，重新检查一遍
+        setBatchNumberErrors({});
+        
+        // 创建一个Map来跟踪每个产品的批次号
+        const productBatchMap = new Map<string, Set<string>>();
+        
+        values.orderItems.forEach((item: any, index: number) => {
+          const productId = item.isCustomProduct ? item.productCode : item.productId;
+          const batchNumber = item.batchNumber;
+          
+          if (!productId || !batchNumber) return;
+          
+          if (!productBatchMap.has(productId)) {
+            productBatchMap.set(productId, new Set());
+          }
+          
+          const batchSet = productBatchMap.get(productId);
+          
+          // 如果此批次号已经被同一产品使用，说明有重复
+          if (batchSet?.has(batchNumber)) {
+            setBatchNumberErrors(prev => ({
+              ...prev,
+              [index]: `此批次号已被相同商品使用，请修改`
+            }));
+            hasDuplicateBatchNumber = true;
+          } else {
+            batchSet?.add(batchNumber);
+          }
+        });
+        
+        if (hasDuplicateBatchNumber) {
+          message.error('存在重复的批次号，同一商品不能使用相同批次号');
+          return;
         }
-      });
-      
-      if (hasDuplicateBatchNumber) {
-        message.error('存在重复的批次号，同一商品不能使用相同批次号');
-        return;
-      }
 
-      setLoading(true);
+        setLoading(true);
 
-      // 处理入库订单
-      if (formName === 'inbound') {
-        // 准备订单数据
+        // 处理入库订单
         const { totalAmount, totalQuantity } = calculateTotals('inbound');
 
         const orderIn: OrderIn = {
@@ -922,16 +961,14 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         } else {
           message.error(result.msg || '入库订单创建失败');
         }
+      } catch (error) {
+        message.error('提交订单失败，请检查表单数据', error as any);
+      } finally {
+        setLoading(false);
       }
-      // 处理出库订单 - 需要补充出库订单的接口和实现
-      else {
-        message.info('出库订单功能尚未实现');
-      }
-    } catch (error) {
-      console.error('提交订单失败:', error);
-      message.error('提交订单失败，请检查表单数据');
-    } finally {
-      setLoading(false);
+    } else if (formName === 'outbound') {
+      // 出库订单处理逻辑
+      await handleSubmitOutbound();
     }
   };
 
@@ -1498,6 +1535,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         calculateTotals={calculateTotals}
         generateId={generateId}
         visible={visible && activeTab === 'outbound'}
+        onGetOrderData={handleGetOutboundOrderData}
       />
     );
   };
@@ -1521,7 +1559,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             <Button
               type='primary'
               onClick={() => handleSubmit(activeTab)}
-              loading={loading}
+              loading={activeTab === 'inbound' ? loading : outboundSubmitting}
               icon={<SaveOutlined />}
             >
               提交
