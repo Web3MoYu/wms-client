@@ -14,12 +14,21 @@ import {
   InputNumber,
   Typography,
   Badge,
+  Divider,
+  Tag,
+  Alert,
+  Tooltip,
 } from 'antd';
 import {
   SearchOutlined,
   ClearOutlined,
   CheckOutlined,
   ShoppingCartOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  AppstoreOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
 } from '@ant-design/icons';
 import { SortOrder } from 'antd/es/table/interface';
 import debounce from 'lodash/debounce';
@@ -366,64 +375,121 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
     onClose();
   };
 
+  // 移除选中的商品
+  const handleRemoveSelected = (stockId: string) => {
+    const newSelectedStocks = new Map(selectedStocks);
+    newSelectedStocks.delete(stockId);
+    setSelectedStocks(newSelectedStocks);
+  };
+
+  // 清空所有选中商品
+  const handleClearSelected = () => {
+    setSelectedStocks(new Map());
+  };
+
   // 渲染已选商品列表
   const renderSelectedStocksList = () => {
     if (selectedStocks.size === 0) return null;
 
     return (
-      <div
-        style={{
-          marginBottom: 16,
-          padding: 16,
-          border: '1px solid #d9d9d9',
-          borderRadius: 4,
-          backgroundColor: '#f5f5f5',
-        }}
+      <Card 
+        className="selected-stocks-card"
+        title={
+          <Space>
+            <ShoppingCartOutlined />
+            <span>已选商品</span>
+            <Badge 
+              count={selectedStocks.size} 
+              style={{ backgroundColor: '#52c41a' }}
+            />
+          </Space>
+        }
+        extra={
+          <Button 
+            type="link" 
+            danger 
+            icon={<DeleteOutlined />} 
+            onClick={handleClearSelected}
+          >
+            清空
+          </Button>
+        }
+        style={{ marginBottom: 16 }}
+        size="small"
+        bodyStyle={{ padding: '12px 16px', maxHeight: '200px', overflowY: 'auto' }}
       >
-        <Row align="middle" style={{ marginBottom: 8 }}>
-          <Col span={16}>
-            <Text strong>
-              <ShoppingCartOutlined /> 已选商品 ({selectedStocks.size})
-            </Text>
-          </Col>
-          <Col span={8} style={{ textAlign: 'right' }}>
-            <Button 
-              type="link" 
-              danger 
-              onClick={() => setSelectedStocks(new Map())}
-            >
-              清空
-            </Button>
-          </Col>
-        </Row>
-        
-        {Array.from(selectedStocks.values()).map(stock => (
-          <Row key={stock.id} gutter={16} align="middle" style={{ marginBottom: 8 }}>
-            <Col span={14}>
-              <Text style={{ marginRight: 8 }}>{stock.productName}</Text>
-              <Text type="secondary">({stock.batchNumber})</Text>
-              {loadingPrices.has(stock.id) && <Text type="secondary"> 价格加载中...</Text>}
-              {!loadingPrices.has(stock.id) && stock.price > 0 && (
-                <Text type="secondary"> 单价: ¥{stock.price.toFixed(2)}</Text>
-              )}
-            </Col>
-            <Col span={10}>
-              <Space>
-                <Text>数量:</Text>
-                <InputNumber
-                  min={1}
-                  max={stock.availableQuantity}
-                  value={stock.expectedQuantity}
-                  onChange={(value) => handleQuantityChange(stock.id, value)}
-                  style={{ width: 90 }}
+        {Array.from(selectedStocks.values()).map((stock, index) => (
+          <div key={stock.id}>
+            {index > 0 && <Divider style={{ margin: '8px 0' }} />}
+            <Row gutter={16} align="middle">
+              <Col span={10}>
+                <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                  <Text strong ellipsis>{stock.productName}</Text>
+                  <Space size={4}>
+                    <Tag color="blue">{stock.batchNumber}</Tag>
+                    <Tag color="cyan">{stock.areaName}</Tag>
+                  </Space>
+                </Space>
+              </Col>
+              <Col span={10}>
+                <Space>
+                  {loadingPrices.has(stock.id) ? (
+                    <Text type="secondary">价格加载中...</Text>
+                  ) : (
+                    <Text type="secondary">单价: ¥{stock.price.toFixed(2)}</Text>
+                  )}
+                  <Divider type="vertical" />
+                  <InputNumber
+                    min={1}
+                    max={stock.availableQuantity}
+                    value={stock.expectedQuantity}
+                    onChange={(value) => handleQuantityChange(stock.id, value)}
+                    size="small"
+                    controls
+                    style={{ width: 80 }}
+                    addonAfter={<Text type="secondary">/ {stock.availableQuantity}</Text>}
+                  />
+                </Space>
+              </Col>
+              <Col span={4} style={{ textAlign: 'right' }}>
+                <Button 
+                  type="link" 
+                  danger 
+                  icon={<DeleteOutlined />} 
+                  onClick={() => handleRemoveSelected(stock.id)}
+                  size="small"
                 />
-                <Text type="secondary">/ {stock.availableQuantity}</Text>
-              </Space>
-            </Col>
-          </Row>
+              </Col>
+            </Row>
+          </div>
         ))}
-      </div>
+      </Card>
     );
+  };
+
+  // 渲染排序图标
+  const renderSortIcon = (field: string) => {
+    let icon = null;
+    
+    switch (field) {
+      case 'productionDate':
+        if (sortConfig.prodDate !== undefined) {
+          icon = sortConfig.prodDate ? <SortAscendingOutlined /> : <SortDescendingOutlined />;
+        }
+        break;
+      case 'quantity':
+        if (sortConfig.quantity !== undefined) {
+          icon = sortConfig.quantity ? <SortAscendingOutlined /> : <SortDescendingOutlined />;
+        }
+        break;
+      case 'availableQuantity':
+        if (sortConfig.availableQuantity !== undefined) {
+          icon = sortConfig.availableQuantity ? <SortAscendingOutlined /> : <SortDescendingOutlined />;
+        }
+        break;
+    }
+    
+    return icon ? <span style={{ marginLeft: 4 }}>{icon}</span> : null;
   };
 
   // 表格列定义
@@ -440,6 +506,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
           disabled={record.availableQuantity <= 0}
           onClick={() => handleSelectStock(record)}
           loading={loadingPrices.has(record.id)}
+          style={{ padding: '0 8px' }}
         >
           {selectedStocks.has(record.id) ? '已选' : '选择'}
         </Button>
@@ -449,40 +516,68 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
       title: '商品名称',
       dataIndex: 'productName',
       key: 'productName',
+      width: 180,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip title={text}>
+          <span>{text}</span>
+        </Tooltip>
+      )
     },
     {
       title: '所属区域',
       dataIndex: 'areaName',
       key: 'areaName',
+      width: 140,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tag color="blue">
+          {text}
+        </Tag>
+      )
     },
     {
       title: '批次号',
       dataIndex: 'batchNumber',
       key: 'batchNumber',
+      width: 140,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tag color="cyan">
+          {text}
+        </Tag>
+      )
     },
     {
-      title: '数量',
+      title: <>数量{renderSortIcon('quantity')}</>,
       dataIndex: 'quantity',
       key: 'quantity',
+      width: 100,
       sorter: true,
       sortDirections: ['ascend', 'descend'] as SortOrder[],
     },
     {
-      title: '可用数量',
+      title: <>可用数量{renderSortIcon('availableQuantity')}</>,
       dataIndex: 'availableQuantity',
       key: 'availableQuantity',
+      width: 120,
       sorter: true,
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (availableQuantity: number) => (
-        <span style={{ color: availableQuantity <= 0 ? '#ff4d4f' : 'inherit' }}>
+        <span style={{ 
+          color: availableQuantity <= 0 ? '#ff4d4f' : 
+                 availableQuantity < 10 ? '#faad14' : '#52c41a',
+          fontWeight: 'bold'
+        }}>
           {availableQuantity}
         </span>
       ),
     },
     {
-      title: '生产日期',
+      title: <>生产日期{renderSortIcon('productionDate')}</>,
       dataIndex: 'productionDate',
       key: 'productionDate',
+      width: 140,
       sorter: true,
       sortDirections: ['ascend', 'descend'] as SortOrder[],
     },
@@ -493,6 +588,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
       <Drawer
         title={
           <Space>
+            <AppstoreOutlined />
             <span>选择出库商品</span>
             {selectedStocks.size > 0 && (
               <Badge count={selectedStocks.size} style={{ backgroundColor: '#52c41a' }} />
@@ -511,21 +607,30 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
               type='primary'
               onClick={handleConfirmSelect}
               disabled={selectedStocks.size === 0}
+              icon={<PlusOutlined />}
             >
               确认选择
             </Button>
           </Space>
         }
+        className="stock-select-drawer"
       >
-        <Card style={{ marginBottom: 16 }}>
-          <Form form={form} layout='horizontal' onFinish={fetchStocks}>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12} md={8} lg={6}>
+        <Card size="small" className="search-card" style={{ marginBottom: 16 }}>
+          <Form 
+            form={form} 
+            layout='horizontal' 
+            onFinish={fetchStocks}
+            size="small"
+            initialValues={{ areaId: '', productId: '', batchNumber: '' }}
+          >
+            <Row gutter={[16, 16]} align="middle">
+              <Col xs={24} sm={24} md={7} lg={7}>
                 <Form.Item
                   name='areaId'
                   label='区域'
                   labelCol={{ span: 6 }}
                   wrapperCol={{ span: 18 }}
+                  style={{ marginBottom: 0 }}
                 >
                   <Select placeholder='请选择区域' allowClear>
                     <Select.Option value=''>全部</Select.Option>
@@ -537,12 +642,13 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                   </Select>
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={24} sm={24} md={7} lg={7}>
                 <Form.Item
                   name='productId'
                   label='产品'
                   labelCol={{ span: 6 }}
                   wrapperCol={{ span: 18 }}
+                  style={{ marginBottom: 0 }}
                 >
                   <Select
                     placeholder='请输入产品名称搜索'
@@ -559,12 +665,13 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                   </Select>
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={24} sm={24} md={7} lg={7}>
                 <Form.Item
                   name='batchNumber'
                   label='批次号'
                   labelCol={{ span: 6 }}
                   wrapperCol={{ span: 18 }}
+                  style={{ marginBottom: 0 }}
                 >
                   <Select
                     placeholder='请输入批次号搜索'
@@ -581,73 +688,124 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                   </Select>
                 </Form.Item>
               </Col>
-              <Col
-                span={24}
-                style={{
-                  textAlign: 'right',
-                  marginTop: 8,
-                }}
-              >
+              <Col xs={24} sm={24} md={3} lg={3} style={{ textAlign: 'right' }}>
                 <Form.Item style={{ marginBottom: 0 }}>
-                  <Button
-                    type='primary'
-                    htmlType='submit'
-                    icon={<SearchOutlined />}
-                    style={{ marginRight: 8, borderRadius: '4px' }}
-                  >
-                    查询
-                  </Button>
-                  <Button
-                    icon={<ClearOutlined />}
-                    onClick={() => {
-                      form.resetFields();
-                      fetchStocks();
-                    }}
-                    style={{ borderRadius: '4px' }}
-                  >
-                    重置
-                  </Button>
+                  <Space>
+                    <Button
+                      type='primary'
+                      htmlType='submit'
+                      icon={<SearchOutlined />}
+                      size="small"
+                    >
+                      查询
+                    </Button>
+                    <Button
+                      icon={<ClearOutlined />}
+                      onClick={() => {
+                        form.resetFields();
+                        fetchStocks();
+                      }}
+                      size="small"
+                    >
+                      重置
+                    </Button>
+                  </Space>
                 </Form.Item>
               </Col>
             </Row>
           </Form>
         </Card>
 
-        <Card>
-          {/* 渲染已选商品列表 */}
-          {renderSelectedStocksList()}
+        {/* 渲染已选商品列表 */}
+        {renderSelectedStocksList()}
 
-          <Table
-            columns={columns}
-            dataSource={stocks}
-            rowKey='id'
-            loading={loading}
-            pagination={{
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-              total: total,
-              pageSizeOptions: ['5', '10', '20', '50'],
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `共 ${total} 条记录`,
-            }}
-            onChange={handleTableChange}
-            rowClassName={(record) =>
-              record.availableQuantity <= 0 ? 'disabled-row' : (
-                selectedStocks.has(record.id) ? 'selected-row' : ''
-              )
+        {/* 库存数量提示 */}
+        {stocks.length > 0 && (
+          <Alert 
+            message={
+              <Space>
+                <Text strong>库存说明：</Text>
+                <Text type="success">绿色</Text>
+                <Text>表示库存充足，</Text>
+                <Text type="warning">黄色</Text>
+                <Text>表示库存较低，</Text>
+                <Text type="danger">红色</Text>
+                <Text>表示无可用库存</Text>
+              </Space>
             }
+            type="info" 
+            showIcon 
+            style={{ marginBottom: 16 }}
           />
-        </Card>
+        )}
+
+        <Table
+          columns={columns}
+          dataSource={stocks}
+          rowKey='id'
+          loading={loading}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: total,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total) => `共 ${total} 条记录`,
+            size: 'small',
+          }}
+          onChange={handleTableChange}
+          rowClassName={(record) =>
+            record.availableQuantity <= 0 ? 'disabled-row' : (
+              selectedStocks.has(record.id) ? 'selected-row' : ''
+            )
+          }
+          size="small"
+          scroll={{ y: 'calc(100vh - 480px)' }}
+          bordered
+        />
         
         <style>
           {`
+            .stock-select-drawer .ant-drawer-body {
+              padding: 16px;
+            }
+            
             .disabled-row {
               background-color: #f5f5f5;
               color: #d9d9d9;
             }
+            
             .selected-row {
               background-color: #e6f7ff;
+            }
+            
+            .selected-stocks-card .ant-card-head {
+              min-height: 40px;
+              padding: 0 16px;
+            }
+            
+            .selected-stocks-card .ant-card-head-title,
+            .selected-stocks-card .ant-card-extra {
+              padding: 8px 0;
+            }
+            
+            .search-card .ant-form-item-label > label {
+              height: 24px;
+            }
+            
+            .search-card .ant-select {
+              width: 100%;
+            }
+            
+            /* 调整表格行高 */
+            .ant-table-tbody > tr > td {
+              padding: 8px 12px;
+            }
+            
+            /* 调整分页器样式 */
+            .ant-pagination {
+              margin: 12px 0 0 0;
             }
           `}
         </style>

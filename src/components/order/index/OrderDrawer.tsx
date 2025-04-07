@@ -1576,7 +1576,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   return (
     <Drawer
       title='新增订单'
-      width={720}
+      width={1000}
       onClose={handleClose}
       visible={visible}
       bodyStyle={{ paddingBottom: 80 }}
