@@ -32,8 +32,8 @@ import {
   receiveGoods,
 } from '../../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
-import OrderDrawer from './OrderDrawer';
-import OrderDetailDrawer from './OrderDetailDrawer';
+import AddOrderDrawer from './AddOrderDrawer';
+import OrderInDetailDrawer from './detail/OrderInDetailDrawer';
 import {
   renderOrderStatus,
   renderQualityStatus,
@@ -627,7 +627,7 @@ export default function OrderManager() {
       </Card>
 
       {/* 新增订单抽屉 */}
-      <OrderDrawer
+      <AddOrderDrawer
         visible={drawerVisible}
         onClose={handleCloseDrawer}
         onSuccess={handleOrderSuccess}
@@ -636,7 +636,7 @@ export default function OrderManager() {
 
       {/* 订单详情抽屉 */}
       {currentOrder && (
-        <OrderDetailDrawer
+        <OrderInDetailDrawer
           visible={detailDrawerVisible}
           onClose={handleCloseDetailDrawer}
           order={currentOrder}

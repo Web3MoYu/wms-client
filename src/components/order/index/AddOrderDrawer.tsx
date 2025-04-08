@@ -64,7 +64,7 @@ const generateId = () => {
 };
 
 // 订单抽屉组件
-const OrderDrawer: React.FC<OrderDrawerProps> = ({
+const AddOrderDrawer: React.FC<OrderDrawerProps> = ({
   visible,
   onClose,
   onSuccess,
@@ -1616,4 +1616,4 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   );
 };
 
-export default OrderDrawer;
+export default AddOrderDrawer;

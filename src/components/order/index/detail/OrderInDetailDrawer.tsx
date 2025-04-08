@@ -20,12 +20,12 @@ import {
   OrderInItem,
   OrderOutItem,
   OrderDetailVo,
-} from '../../../api/order-service/OrderController';
+} from '../../../../api/order-service/OrderController';
 import {
   renderOrderStatus,
   renderQualityStatus,
   renderOrderType,
-} from '../components/StatusComponents';
+} from '../../components/StatusComponents';
 
 interface OrderDetailDrawerProps {
   visible: boolean;
@@ -35,7 +35,7 @@ interface OrderDetailDrawerProps {
   onApproval?: (order: OrderVo) => void;
 }
 
-export default function OrderDetailDrawer({
+export default function OrderInDetailDrawer({
   visible,
   onClose,
   order,
