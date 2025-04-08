@@ -19,7 +19,7 @@ import locale from 'antd/es/date-picker/locale/zh_CN';
 import { OrderVo } from '../../../api/order-service/OrderController';
 import { pageOrder } from '../../../api/order-service/ApprovalController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
-import OrderDetailDrawer from '../index/detail/OrderInDetailDrawer';
+import OrderDetailDrawer from '../index/OrderDetailDrawer';
 import OrderApprovalDrawer from './OrderApprovalDrawer';
 import userStore from '../../../store/userStore';
 import { useLocation } from 'react-router-dom';

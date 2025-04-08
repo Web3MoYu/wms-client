@@ -20,12 +20,14 @@ import {
   OrderInItem,
   OrderOutItem,
   OrderDetailVo,
-} from '../../../../api/order-service/OrderController';
+  outOrder,
+  OrderOut,
+} from '../../../api/order-service/OrderController';
 import {
   renderOrderStatus,
   renderQualityStatus,
   renderOrderType,
-} from '../../components/StatusComponents';
+} from '../components/StatusComponents';
 
 interface OrderDetailDrawerProps {
   visible: boolean;
@@ -35,7 +37,7 @@ interface OrderDetailDrawerProps {
   onApproval?: (order: OrderVo) => void;
 }
 
-export default function OrderInDetailDrawer({
+export default function OrderDetailDrawer({
   visible,
   onClose,
   order,
@@ -46,6 +48,7 @@ export default function OrderInDetailDrawer({
   const [detailData, setDetailData] = useState<
     OrderDetailVo<OrderInItem | OrderOutItem>[]
   >([]);
+  const [outOrderInfo, setOutOrderInfo] = useState<OrderOut | null>(null);
 
   // 获取订单详情
   const fetchOrderDetail = async () => {
@@ -59,12 +62,23 @@ export default function OrderInDetailDrawer({
         result = await inDetail(order.id);
         if (result.code === 200) {
           setDetailData(result.data);
+          setOutOrderInfo(null); // 重置出库订单信息
         }
       } else {
         // 出库订单
         result = await outDetail(order.id);
         if (result.code === 200) {
           setDetailData(result.data);
+          
+          // 获取出库订单的额外信息（配送地址、联系人等）
+          try {
+            const outOrderResult = await outOrder(order.id);
+            if (outOrderResult.code === 200) {
+              setOutOrderInfo(outOrderResult.data);
+            }
+          } catch (err) {
+            console.error('获取出库订单信息失败:', err);
+          }
         }
       }
 
@@ -145,6 +159,20 @@ export default function OrderInDetailDrawer({
               ? moment(order.actualTime).format('YYYY-MM-DD HH:mm:ss')
               : '-'}
           </Descriptions.Item>
+          {/* 出库订单特有字段 */}
+          {order?.type !== 1 && outOrderInfo && (
+            <>
+              <Descriptions.Item label='配送地址' span={3}>
+                {outOrderInfo.deliveryAddress || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label='联系人' span={1}>
+                {outOrderInfo.contactName || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label='联系电话' span={1}>
+                {outOrderInfo.contactPhone || '-'}
+              </Descriptions.Item>
+            </>
+          )}
           <Descriptions.Item label='备注' span={2}>
             {order?.remark || '-'}
           </Descriptions.Item>

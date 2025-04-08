@@ -33,7 +33,7 @@ import {
 } from '../../../api/order-service/OrderController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import AddOrderDrawer from './AddOrderDrawer';
-import OrderInDetailDrawer from './detail/OrderInDetailDrawer';
+import OrderDetailDrawer from './OrderDetailDrawer';
 import {
   renderOrderStatus,
   renderQualityStatus,
@@ -636,7 +636,7 @@ export default function OrderManager() {
 
       {/* 订单详情抽屉 */}
       {currentOrder && (
-        <OrderInDetailDrawer
+        <OrderDetailDrawer
           visible={detailDrawerVisible}
           onClose={handleCloseDetailDrawer}
           order={currentOrder}
