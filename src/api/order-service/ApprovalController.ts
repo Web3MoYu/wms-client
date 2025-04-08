@@ -69,7 +69,30 @@ export function approveInbound(
 ): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
-      .post(`/order/approval/${id}/${inspector}`, dto)
+      .post(`/order/approval/in/${id}/${inspector}`, dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 审批出库订单
+ *
+ * @param id        订单ID
+ * @param inspector 质检人员
+ * @return 审批结果
+ */
+export function approveOutbound(
+  id: string,
+  inspector: string
+): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post(`/order/approval/out/${id}/${inspector}`)
       .then((res) => {
         resolve(res.data);
       })

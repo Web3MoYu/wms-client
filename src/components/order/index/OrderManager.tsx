@@ -475,7 +475,7 @@ export default function OrderManager() {
           {record.status === 0 && (
             <a onClick={() => handleCancelOrder(record)}>取消订单</a>
           )}
-          {record.status === 1 && record.actualTime === null && (
+          {record.status === 1 && record.type === 1 && record.actualTime === null && (
             <a onClick={() => handleReceiveGoods(record)}>收货</a>
           )}
         </Space>

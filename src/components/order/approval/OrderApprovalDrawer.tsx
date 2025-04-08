@@ -15,10 +15,10 @@ import { OrderVo } from '../../../api/order-service/OrderController';
 import {
   reject,
   approveInbound,
+  approveOutbound,
 } from '../../../api/order-service/ApprovalController';
 import OrderRejectForm from './OrderRejectForm';
 import InboundApproveForm from './InboundApproveForm';
-import OutboundApproveForm from './OutboundApproveForm';
 import debounce from 'lodash/debounce';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 
@@ -89,7 +89,11 @@ export default function OrderApprovalDrawer({
             return;
           }
           // 调用入库订单批准API，添加质检员ID参数
-          result = await approveInbound(approvalItems, order.id, values.inspectorId);
+          result = await approveInbound(
+            approvalItems,
+            order.id,
+            values.inspectorId
+          );
         } else {
           // 出库订单
           // 确保质检员ID存在
@@ -105,7 +109,7 @@ export default function OrderApprovalDrawer({
             return;
           }
           // 调用入库订单批准API，添加质检员ID参数
-          result = await approveInbound([], order.id, values.inspectorId);
+          result = await approveOutbound(order.id, values.inspectorId);
         }
 
         if (result.code === 200) {
@@ -174,11 +178,7 @@ export default function OrderApprovalDrawer({
           key={`inbound-${order.id}`}
         />
       ) : (
-        <OutboundApproveForm
-          form={form}
-          order={order}
-          key={`outbound-${order.id}`}
-        />
+        <></>
       );
     }
   };
