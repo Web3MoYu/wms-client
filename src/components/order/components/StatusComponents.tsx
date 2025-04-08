@@ -25,7 +25,7 @@ export const renderOrderStatus = (status: number) => {
 
 // 质检状态渲染
 export const renderQualityStatus = (
-  status: number,
+  status: number | null,
   isOrderLevel: boolean = true
 ) => {
   switch (status) {
