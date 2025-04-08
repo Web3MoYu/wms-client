@@ -460,7 +460,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                     onChange={(value) => handleQuantityChange(stock.id, value)}
                     size='small'
                     controls
-                    style={{ width: 80 }}
+                    style={{ width: 100 }}
                     addonAfter={
                       <Text type='secondary'>/ {stock.availableQuantity}</Text>
                     }
@@ -653,7 +653,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
             initialValues={{ areaId: '', productId: '', batchNumber: '' }}
           >
             <Row gutter={[16, 16]} align='middle'>
-              <Col xs={24} sm={24} md={7} lg={7}>
+              <Col xs={24} sm={12} md={6} lg={6}>
                 <Form.Item
                   name='areaId'
                   label='区域'
@@ -671,7 +671,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                   </Select>
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={24} md={7} lg={7}>
+              <Col xs={24} sm={12} md={6} lg={6}>
                 <Form.Item
                   name='productId'
                   label='产品'
@@ -694,7 +694,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                   </Select>
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={24} md={7} lg={7}>
+              <Col xs={24} sm={12} md={6} lg={6}>
                 <Form.Item
                   name='batchNumber'
                   label='批次号'
@@ -717,14 +717,13 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                   </Select>
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={24} md={3} lg={3} style={{ textAlign: 'right' }}>
+              <Col xs={24} sm={12} md={6} lg={6} style={{ textAlign: 'center' }}>
                 <Form.Item style={{ marginBottom: 0 }}>
-                  <Space>
+                  <Space size="middle" style={{ display: 'flex', justifyContent: 'center' }}>
                     <Button
                       type='primary'
                       htmlType='submit'
                       icon={<SearchOutlined />}
-                      size='small'
                     >
                       查询
                     </Button>
@@ -734,7 +733,6 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                         form.resetFields();
                         fetchStocks();
                       }}
-                      size='small'
                     >
                       重置
                     </Button>

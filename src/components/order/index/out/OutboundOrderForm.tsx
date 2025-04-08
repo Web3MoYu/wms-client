@@ -526,7 +526,7 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
         visible={stockDrawerVisible}
         onClose={() => setStockDrawerVisible(false)}
         onSelectStock={handleSelectStocks}
-        placement='bottom'
+        placement='right'
       />
     </>
   );
