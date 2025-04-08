@@ -78,7 +78,6 @@ export interface OrderInItem {
   location: Location[]; // 具体位置
   batchNumber: string; // 批次号
   productionDate: Date; // 生产日期
-  expiryDate: Date; // 过期日期
   status: number; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
   qualityStatus: number; // 质检状态：0-未质检，1-质检通过，2-质检不通过，3-部分异常
   remark: string; // 备注
@@ -122,7 +121,6 @@ export interface OrderOutItem {
   location: Location[] | null; // 具体位置
   batchNumber: string; // 批次号
   productionDate: Date; // 生产日期
-  expiryDate: Date | null; // 过期日期
   status: number | null; // 状态：0-待审核，1-审批通过，2-入库中/出库中，3-已完成，-1-已取消，-2-审批拒绝
   qualityStatus: number | null; // 质检状态：0-未质检，1-质检通过，2-质检不通过，3-部分异常
   remark: string; // 备注

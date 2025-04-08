@@ -873,7 +873,6 @@ const AddOrderDrawer: React.FC<OrderDrawerProps> = ({
               productionDate: item.productionDate
                 ? item.productionDate.format('YYYY-MM-DD')
                 : (null as any),
-              expiryDate: null as any, // 过期日期为空
               status: 0, // 状态：0-待开始
               qualityStatus: 0, // 质检状态：0-未质检
               remark: item.remark || '',
