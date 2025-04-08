@@ -5,6 +5,7 @@ import { getUnReadMsgCount, getUnReadMsg, getReadMsg, readMsg } from '../../api/
 import { WSModel, Msg } from '../../api/msg-service/MsgController';
 import userStore from '../../store/userStore';
 import { useNavigate } from 'react-router-dom';
+import { getPriorityStyle, getPriorityText, getBizTypeText, handleMessageNavigation } from './CommonRender';
 
 const { Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -118,48 +119,6 @@ const MessageNotifier: React.FC = () => {
     }
   };
 
-  // 获取消息优先级样式
-  const getPriorityStyle = (priority: number) => {
-    switch (priority) {
-      case 2:
-        return styles.priorityHigh; // 紧急
-      case 1:
-        return styles.priorityMedium; // 重要
-      default:
-        return styles.priorityNormal; // 普通
-    }
-  };
-
-  // 获取优先级文本
-  const getPriorityText = (priority: number) => {
-    switch (priority) {
-      case 2:
-        return '紧急';
-      case 1:
-        return '重要';
-      default:
-        return '普通';
-    }
-  };
-
-  // 获取业务类型文本
-  const getBizTypeText = (bizType: number) => {
-    switch (bizType) {
-      case 1:
-        return '入库单';
-      case 2:
-        return '出库单';
-      case 3:
-        return '质检单';
-      case 4:
-        return '异常标记';
-      case 5:
-        return '库存预警';
-      default:
-        return '未知类型';
-    }
-  };
-
   // 标记消息为已读
   const handleReadMessage = async (msgId: string) => {
     Modal.confirm({
@@ -226,35 +185,9 @@ const MessageNotifier: React.FC = () => {
 
   // 处理消息点击，根据业务类型跳转到不同页面
   const handleMessageClick = (msg: Msg) => {
-    // 如果没有关联的业务ID，则不跳转
-    if (!msg.relatedBizId) {
-      return;
-    }
-
-    // 根据业务类型跳转到不同页面
-    switch (msg.relatedBizType) {
-      case 1: // 入库单
-        // 跳转到审批页面，设置订单编号为业务ID，订单状态为null
-        navigate(`/order/approval?orderNo=${msg.relatedBizId}&status=null`);
-        break;
-      case 2: // 出库单
-        // 目前暂不处理，可以后续添加
-        break;
-      case 3: // 质检单
-        // 跳转到质检页面，设置质检编号为业务ID
-        navigate(`/order/inspect?inspectionNo=${msg.relatedBizId}`);
-        break;
-      case 4: // 异常标记
-        // 目前暂不处理，可以后续添加
-        break;
-      case 5: // 库存预警
-        // 目前暂不处理，可以后续添加
-        break;
-      default:
-        console.log('未知业务类型：', msg.relatedBizType);
-        break;
-    }
-
+    // 使用公共导航函数处理跳转
+    handleMessageNavigation(msg, navigate);
+    
     // 如果是未读消息，自动标记为已读（但不显示确认框）
     if (activeTab === 'unread') {
       markMessageAsReadDirectly(msg.id);
@@ -391,7 +324,7 @@ const MessageNotifier: React.FC = () => {
       message: (
         <div>
           {msg.title}
-          <Text style={{ ...priorityStyle, marginLeft: 6, fontSize: '12px' }}>
+          <Text style={{ color: priorityStyle.color, marginLeft: 6, fontSize: '12px' }}>
             {`[${priorityText}]`}
           </Text>
         </div>
@@ -489,7 +422,7 @@ const MessageNotifier: React.FC = () => {
             <Text style={styles.notificationTitle}>{item.title}</Text>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <Text
-                style={{ ...getPriorityStyle(item.priority), ...styles.time }}
+                style={{ ...getPriorityStyle(item.priority), fontSize: '11px', color: getPriorityStyle(item.priority).color }}
               >
                 {getPriorityText(item.priority)}
               </Text>

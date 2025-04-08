@@ -11,7 +11,6 @@ import {
   DatePicker,
   Row,
   Col,
-  Tag,
   Modal,
 } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
@@ -26,9 +25,18 @@ import {
   readMsg,
 } from '../../api/msg-service/MsgController';
 import { getUsersByName, User } from '../../api/sys-service/UserController';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { 
+  renderPriority, 
+  renderMsgType, 
+  renderReadStatus, 
+  renderBizType,
+  PrioritySelect,
+  MsgTypeSelect,
+  ReadStatusSelect,
+  handleMessageNavigation
+} from './CommonRender';
 
-const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 // 从URL获取查询参数
@@ -40,6 +48,7 @@ export default function MsgManager() {
   // 获取URL查询参数
   const query = useQuery();
   const readStatusParam = query.get('readStatus');
+  const navigate = useNavigate();
 
   // 状态定义
   const [loading, setLoading] = useState<boolean>(false);
@@ -180,47 +189,6 @@ export default function MsgManager() {
     });
   };
 
-  // 渲染消息优先级
-  const renderPriority = (priority: number) => {
-    switch (priority) {
-      case 2:
-        return <Tag color='red'>紧急</Tag>;
-      case 1:
-        return <Tag color='orange'>重要</Tag>;
-      default:
-        return <Tag color='green'>普通</Tag>;
-    }
-  };
-
-  // 渲染消息类型
-  const renderType = (type: number) => {
-    switch (type) {
-      case 1:
-        return <Tag color='blue'>库存预警</Tag>;
-      case 2:
-        return <Tag color='cyan'>质检通知</Tag>;
-      case 3:
-        return <Tag color='green'>订单通知</Tag>;
-      case 4:
-        return <Tag color='red'>异常通知</Tag>;
-      case 5:
-        return <Tag color='orange'>补货通知</Tag>;
-      case 6:
-        return <Tag color='purple'>其他</Tag>;
-      default:
-        return <Tag color='default'>未知类型</Tag>;
-    }
-  };
-
-  // 渲染读取状态
-  const renderReadStatus = (status: number) => {
-    return status === 1 ? (
-      <Tag color='green'>已读</Tag>
-    ) : (
-      <Tag color='red'>未读</Tag>
-    );
-  };
-
   // 表格列定义
   const columns = [
     {
@@ -248,7 +216,7 @@ export default function MsgManager() {
       title: '类型',
       dataIndex: 'type',
       key: 'type',
-      render: renderType,
+      render: renderMsgType,
     },
     {
       title: '优先级',
@@ -266,28 +234,22 @@ export default function MsgManager() {
       title: '业务ID',
       dataIndex: 'relatedBizId',
       key: 'relatedBizId',
-      render: (text: string) => text || '-',
+      render: (text: string, record: Msg) => {
+        if (!text) return '-';
+        
+        // 判断是否可导航的业务类型
+        const canNavigate = [1, 2, 3].includes(record.relatedBizType || 0);
+        
+        return canNavigate ? (
+          <a onClick={() => handleMessageNavigation(record, navigate)}>{text}</a>
+        ) : text;
+      },
     },
     {
       title: '业务类型',
       dataIndex: 'relatedBizType',
       key: 'relatedBizType',
-      render: (type: number) => {
-        switch (type) {
-          case 1:
-            return <Tag color='purple'>入库单</Tag>;
-          case 2:
-            return <Tag color='geekblue'>出库单</Tag>;
-          case 3:
-            return <Tag color='cyan'>质检单</Tag>;
-          case 4:
-            return <Tag color='red'>异常标记</Tag>;
-          case 5:
-            return <Tag color='orange'>库存预警</Tag>;
-          default:
-            return <Tag color='default'>未知类型</Tag>;
-        }
-      },
+      render: renderBizType,
     },
     {
       title: '发送时间',
@@ -336,31 +298,17 @@ export default function MsgManager() {
             </Col>
             <Col span={6}>
               <Form.Item name='type' label='消息类型'>
-                <Select placeholder='请选择消息类型' allowClear>
-                  <Option value={1}>库存预警</Option>
-                  <Option value={2}>质检通知</Option>
-                  <Option value={3}>订单状态</Option>
-                  <Option value={4}>异常通知</Option>
-                  <Option value={5}>补货通知</Option>
-                  <Option value={6}>其他</Option>
-                </Select>
+                <MsgTypeSelect />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name='readStatus' label='读取状态'>
-                <Select placeholder='请选择读取状态' allowClear>
-                  <Option value={0}>未读</Option>
-                  <Option value={1}>已读</Option>
-                </Select>
+                <ReadStatusSelect />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name='priority' label='优先级'>
-                <Select placeholder='请选择优先级' allowClear>
-                  <Option value={0}>普通</Option>
-                  <Option value={1}>重要</Option>
-                  <Option value={2}>紧急</Option>
-                </Select>
+                <PrioritySelect />
               </Form.Item>
             </Col>
           </Row>
@@ -375,9 +323,9 @@ export default function MsgManager() {
                   allowClear
                 >
                   {senderOptions.map((user) => (
-                    <Option key={user.userId} value={user.userId}>
+                    <Select.Option key={user.userId} value={user.userId}>
                       {user.realName}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -429,6 +377,17 @@ export default function MsgManager() {
             showTotal: (total) => `共 ${total} 条记录`,
           }}
           onChange={handleTableChange}
+          onRow={(record) => {
+            const canNavigate = record.relatedBizId && [1, 2, 3].includes(record.relatedBizType || 0);
+            return {
+              style: canNavigate ? { cursor: 'pointer' } : {},
+              onClick: () => {
+                if (canNavigate) {
+                  handleMessageNavigation(record, navigate);
+                }
+              }
+            };
+          }}
         />
       </Card>
     </div>
