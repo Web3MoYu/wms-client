@@ -161,7 +161,7 @@ const OutboundOrderForm: React.FC<OutboundOrderFormProps> = ({
     if (onGetOrderData) {
       onGetOrderData(validateAndGetOrderData);
     }
-  }, [onGetOrderData]);
+  }, []);
 
   // 当可见性变化时，重置表单
   useEffect(() => {
