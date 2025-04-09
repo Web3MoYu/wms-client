@@ -2,7 +2,7 @@ import axios from '../../utils/mxAxios';
 import { User } from '../sys-service/UserController';
 import { Page, Result } from '../Model';
 import { Location } from '../stock-service/StockController';
-import { OrderDetailVo, OrderInItem } from './OrderController';
+import { OrderDetailVo, OrderInItem, OrderOutItem } from './OrderController';
 
 export interface InspectionDto {
   // 基本分页参数
@@ -138,6 +138,27 @@ export function inInspectDetail(
   return new Promise((resolve, reject) => {
     axios
       .get('/order/inspect/inDetail', { params: { id } })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 出库质检详情
+ *
+ * @param id 质检ID
+ * @return 结果
+ */
+export function outInspectDetail(
+  id: string
+): Promise<Result<InspectionDetailVo<OrderOutItem>>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/order/inspect/outDetail', { params: { id } })
       .then((res) => {
         resolve(res.data);
       })

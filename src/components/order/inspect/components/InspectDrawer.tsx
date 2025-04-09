@@ -32,6 +32,7 @@ import {
   InBoundInspectDto,
   inInspectDetail,
   InspectionItem,
+  outInspectDetail,
 } from '../../../../api/order-service/InspectController';
 import { LocationVo } from '../../../../api/stock-service/StockController';
 import {
@@ -112,10 +113,18 @@ export default function InspectDetailDrawer({
             setInspectionItems([]);
           }
         } else if (inspection.inspectionType === 2) {
-          // 暂时保留，后续需换成出库质检专用接口
-          message.info('出库质检详情功能暂未实现');
-          setDetailData([]);
-          setInspectionItems([]);
+          // 使用新的出库质检详情接口
+          const result = await outInspectDetail(inspection.id);
+          if (result.code === 200) {
+            // 直接使用返回的orderDetail数据，因为它已经是OrderDetailVo<OrderOutItem>[]类型
+            setDetailData(result.data.orderDetail);
+            // 存储inspectionItems数据
+            setInspectionItems(result.data.inspectionItems || []);
+          } else {
+            message.error(result.msg || '获取质检详情失败');
+            setDetailData([]);
+            setInspectionItems([]);
+          }
         } else {
           // 库存质检暂不实现
           message.info('库存质检详情功能暂未实现');
