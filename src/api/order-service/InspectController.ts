@@ -63,6 +63,7 @@ export interface InspectionVo extends Inspection {
 export interface ItemInspect {
   itemId: string; // 质检详情id
   productId: string; // 产品id
+  actualQuantity: number; // 实际数量
   count: number; // 合格数量
   remark: string; // 质检详情备注
   approval: boolean; // 通过

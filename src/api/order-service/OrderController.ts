@@ -272,36 +272,28 @@ export function receiveGoods(
  * 新增出库订单
  * @param order 出库订单
  */
-export function addOrderOut(
-  order: OrderDto<OrderOut, OrderOutItem>
-): Promise<Result<string>> {
+export function addOrderOut(order: OrderDto<OrderOut, OrderOutItem>): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
-    axios
-      .post('/order/addOrderOut', order)
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((err) => {
-        reject(err);
-      });
+    axios.post('/order/addOrderOut', order).then((res) => {
+      resolve(res.data);
+    }).catch((err) => {
+      reject(err);
+    });
   });
 }
 
 /**
- * 获取出库订单信息
- *
- * @param id 订单ID
- * @return OrderOut
+     * 获取出库订单信息
+     *
+     * @param id 订单ID
+     * @return OrderOut
  */
 export function outOrder(id: string): Promise<Result<OrderOut>> {
   return new Promise((resolve, reject) => {
-    axios
-      .get('/order/outOrder', { params: { id } })
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((err) => {
-        reject(err);
-      });
+    axios.get('/order/outOrder', { params: { id } }).then((res) => {
+      resolve(res.data);
+    }).catch((err) => {
+      reject(err);
+    });
   });
 }

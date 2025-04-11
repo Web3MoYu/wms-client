@@ -208,7 +208,8 @@ export default function InspectDetailDrawer({
     if (existingInspect) {
       // 自动加载已存在的质检数据到表单
       form.setFieldsValue({
-        actualQuantity: existingInspect.count,
+        actualQuantity: existingInspect.actualQuantity,
+        qualifiedQuantity: existingInspect.count,
         approval: existingInspect.approval ? 'true' : 'false',
         itemRemark: existingInspect.remark,
       });
@@ -216,6 +217,7 @@ export default function InspectDetailDrawer({
       // 否则加载默认值
       form.setFieldsValue({
         actualQuantity: orderDetail.orderItems.expectedQuantity || 0,
+        qualifiedQuantity: null,
         approval: 'true',
         itemRemark: '',
       });
@@ -290,7 +292,8 @@ export default function InspectDetailDrawer({
         const itemInspect: ItemInspect = {
           itemId: inspectionItem?.id || '',
           productId: selectedProduct.id,
-          count: values.actualQuantity,
+          actualQuantity: values.actualQuantity,
+          count: values.qualifiedQuantity,
           approval: values.approval === 'true',
           remark: values.itemRemark || '',
         };
@@ -358,6 +361,7 @@ export default function InspectDetailDrawer({
                         form.setFieldsValue({
                           actualQuantity:
                             nextDetail.orderItems.expectedQuantity || 0,
+                          qualifiedQuantity: null,
                           approval: 'true',
                           itemRemark: '',
                         });
@@ -395,10 +399,14 @@ export default function InspectDetailDrawer({
                     getInspectionItem?.qualityStatus || 0
                   )
                 : '-'}
-              , 上架状态:{' '}
-              {selectedProduct
-                ? renderReceiveStatus(getInspectionItem?.receiveStatus || 0)
-                : '-'}
+              {inspection.inspectionType === 1 && (
+                <>
+                  ,上架状态:
+                  {selectedProduct
+                    ? renderReceiveStatus(getInspectionItem?.receiveStatus || 0)
+                    : '-'}
+                </>
+              )}
             </span>
             <Space>
               {canOperate && (
@@ -428,13 +436,18 @@ export default function InspectDetailDrawer({
             <Descriptions.Item label='质检编号'>
               {inspection.inspectionNo}
             </Descriptions.Item>
-            <Descriptions.Item label='预期数量'>
-              {orderItem?.expectedQuantity || '请选择商品'}
-            </Descriptions.Item>
             <Descriptions.Item label='质检员'>
               {inspection.inspectorInfo?.realName ||
                 inspection.inspector ||
                 '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label='预期数量'>
+              {orderItem?.expectedQuantity || '请选择商品'}
+            </Descriptions.Item>
+            <Descriptions.Item label='实际数量'>
+              {inspection.status !== 0
+                ? getInspectionItem?.inspectionQuantity
+                : '-'}
             </Descriptions.Item>
             <Descriptions.Item label='合格数量'>
               {inspection.status !== 0
@@ -463,20 +476,71 @@ export default function InspectDetailDrawer({
                 }}
               >
                 <Row gutter={16}>
-                  <Col span={8}>
+                  <Col span={4}>
                     <Form.Item
                       name='actualQuantity'
-                      label='合格数量'
-                      rules={[{ required: true, message: '请输入合格数量' }]}
+                      label='实际数量'
+                      rules={[{ required: true, message: '请输入实际数量' }]}
                     >
                       <InputNumber
                         min={0}
-                        max={getInspectionItem?.inspectionQuantity || 0}
+                        max={orderItem?.expectedQuantity || 0}
                         style={{ width: '100%' }}
+                        onChange={(value) => {
+                          // 当实际数量发生变化时，重置合格数量
+                          const currentQualified =
+                            form.getFieldValue('qualifiedQuantity');
+                          if (
+                            value &&
+                            currentQualified &&
+                            currentQualified > value
+                          ) {
+                            form.setFieldsValue({ qualifiedQuantity: value });
+                          } else if (!value) {
+                            form.setFieldsValue({ qualifiedQuantity: null });
+                          }
+                        }}
                       />
                     </Form.Item>
                   </Col>
-                  <Col span={8}>
+                  <Col span={4}>
+                    <Form.Item
+                      name='qualifiedQuantity'
+                      label='合格数量'
+                      dependencies={['actualQuantity']}
+                      rules={[
+                        { required: true, message: '请输入合格数量' },
+                        ({ getFieldValue }) => ({
+                          validator(_, value) {
+                            const actualQuantity =
+                              getFieldValue('actualQuantity');
+                            if (
+                              actualQuantity === undefined ||
+                              actualQuantity === null
+                            ) {
+                              return Promise.reject(
+                                new Error('请先输入实际数量')
+                              );
+                            }
+                            if (value > actualQuantity) {
+                              return Promise.reject(
+                                new Error('合格数量不能大于实际数量')
+                              );
+                            }
+                            return Promise.resolve();
+                          },
+                        }),
+                      ]}
+                    >
+                      <InputNumber
+                        min={0}
+                        max={form.getFieldValue('actualQuantity') || 0}
+                        style={{ width: '100%' }}
+                        disabled={!form.getFieldValue('actualQuantity')}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={4}>
                     <Form.Item
                       name='approval'
                       label='是否通过'

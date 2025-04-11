@@ -352,7 +352,13 @@ export default function InspectManager() {
       title: '上架状态',
       dataIndex: 'receiveStatus',
       key: 'receiveStatus',
-      render: (status: number) => renderReceiveStatus(status),
+      render: (status: number, record: InspectionVo) => {
+        // 只在入库质检时显示上架状态
+        if (record.inspectionType === 1) {
+          return renderReceiveStatus(status);
+        }
+        return '-';
+      },
     },
     {
       title: '质检时间',
@@ -381,7 +387,7 @@ export default function InspectManager() {
           >
             查看详情
           </a>
-          {record.orderStatus === 2 && record.receiveStatus !== 1 && (
+          {record.orderStatus === 2 && record.receiveStatus !== 1 && record.inspectionType === 1 && (
             <a onClick={() => handleOpenStockIn(record)}>上架</a>
           )}
         </Space>
