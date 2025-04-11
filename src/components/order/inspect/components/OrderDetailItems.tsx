@@ -96,7 +96,7 @@ const OrderDetailItems: React.FC<OrderDetailItemsProps> = ({
   return (
     <Card title='订单详情' bordered={false}>
       <Table
-        dataSource={data}
+        dataSource={data as any}
         columns={inspectionType === 1 ? inColumns : outColumns}
         rowKey={(record) => record.orderItems.id}
         pagination={false}
