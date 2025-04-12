@@ -460,7 +460,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
                     onChange={(value) => handleQuantityChange(stock.id, value)}
                     size='small'
                     controls
-                    style={{ width: 100 }}
+                    style={{ width: '100%' }}
                     addonAfter={
                       <Text type='secondary'>/ {stock.availableQuantity}</Text>
                     }
