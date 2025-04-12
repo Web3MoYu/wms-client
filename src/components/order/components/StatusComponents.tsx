@@ -66,6 +66,21 @@ export const renderReceiveStatus = (status: number) => {
       return <Tag color='default'>未知</Tag>;
   }
 };
+
+// 拣货状态渲染
+export const renderPickingStatus = (status: number) => {
+  switch (status) {
+    case 0:
+      return <Tag color='warning'>待拣货</Tag>;
+    case 1:
+      return <Tag color='processing'>拣货中</Tag>;
+    case 2:
+      return <Tag color='success'>已完成</Tag>;
+    default:
+      return <Tag color='default'>未知状态</Tag>;
+  }
+};
+
 // 订单类型渲染
 export const renderOrderType = (type: number) => {
   return type === 1 ? (
@@ -139,6 +154,19 @@ export const ReceiveStatusSelect: React.FC<Omit<SelectProps, 'options'>> = (
       <Option value={0}>未上架</Option>
       <Option value={1}>已完成</Option>
       <Option value={2}>进行中</Option>
+    </Select>
+  );
+};
+
+// 拣货状态选择器组件
+export const PickingStatusSelect: React.FC<Omit<SelectProps, 'options'>> = (
+  props
+) => {
+  return (
+    <Select {...props} placeholder='请选择拣货状态' allowClear>
+      <Option value={0}>待拣货</Option>
+      <Option value={1}>拣货中</Option>
+      <Option value={2}>已完成</Option>
     </Select>
   );
 };
