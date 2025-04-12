@@ -4,14 +4,14 @@ import { SelectProps } from 'antd/lib/select';
 const { Option } = Select;
 
 // 订单状态渲染
-export const renderOrderStatus = (status: number) => {
+export const renderOrderStatus = (status: number, type: number) => {
   switch (status) {
     case 0:
       return <Tag color='blue'>待审核</Tag>;
     case 1:
       return <Tag color='green'>审批通过</Tag>;
     case 2:
-      return <Tag color='orange'>入库中</Tag>;
+      return <Tag color='orange'>{type === 1 ? '入库中' : '出库中'}</Tag>;
     case 3:
       return <Tag color='green'>已完成</Tag>;
     case -1:

@@ -450,7 +450,8 @@ export default function OrderManager() {
       title: '订单状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: number) => renderOrderStatus(status),
+      render: (status: number, record: OrderVo) =>
+        renderOrderStatus(status, record.type),
     },
     {
       title: '质检状态',
