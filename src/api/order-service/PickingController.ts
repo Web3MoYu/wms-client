@@ -50,3 +50,22 @@ export function pickingPage(
       });
   });
 }
+
+/**
+ * 批量增加拣货信息
+ *
+ * @param ids 出库订单ID列表
+ * @return 是否增加成功。
+ */
+export function batchAddPickings(ids: string[]): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/order/picking/add', ids)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

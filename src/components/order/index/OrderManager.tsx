@@ -13,6 +13,7 @@ import {
   Col,
   Modal,
   Typography,
+  Popconfirm,
 } from 'antd';
 import {
   SearchOutlined,
@@ -20,6 +21,7 @@ import {
   PlusOutlined,
   ExclamationCircleOutlined,
   InboxOutlined,
+  ShoppingOutlined,
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
@@ -31,6 +33,7 @@ import {
   cancel,
   receiveGoods,
 } from '../../../api/order-service/OrderController';
+import { batchAddPickings } from '../../../api/order-service/PickingController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import AddOrderDrawer from './AddOrderDrawer';
 import OrderDetailDrawer from './OrderDetailDrawer';
@@ -91,6 +94,10 @@ export default function OrderManager() {
     current: 1,
     pageSize: 10,
   });
+
+  // 添加选择行的状态
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [orderBatchLoading, setOrderBatchLoading] = useState<boolean>(false);
 
   // 初始化
   useEffect(() => {
@@ -403,6 +410,85 @@ export default function OrderManager() {
     });
   };
 
+  // 处理批量拣货
+  const handleBatchPicking = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请先选择要拣货的订单');
+      return;
+    }
+
+    // 验证所选订单都符合拣货条件（出库且已审批通过）
+    const invalidOrders = orders.filter(
+      (order) =>
+        selectedRowKeys.includes(order.id) &&
+        (order.type !== 0 || order.status !== 1)
+    );
+
+    if (invalidOrders.length > 0) {
+      message.error('只能对审批通过的出库订单进行拣货操作');
+      return;
+    }
+
+    Modal.confirm({
+      title: '确认批量拣货',
+      icon: <ShoppingOutlined />,
+      content: `确定为选中的 ${selectedRowKeys.length} 个订单创建拣货单吗？`,
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          setOrderBatchLoading(true);
+          const result = await batchAddPickings(selectedRowKeys as string[]);
+          if (result.code === 200) {
+            message.success('拣货单创建成功');
+            // 清空选择
+            setSelectedRowKeys([]);
+            // 刷新列表
+            fetchOrders();
+          } else {
+            message.error(result.msg || '创建拣货单失败');
+          }
+        } catch (error) {
+          console.error('批量创建拣货单失败:', error);
+          message.error('创建拣货单失败，请稍后重试');
+        } finally {
+          setOrderBatchLoading(false);
+        }
+      },
+    });
+  };
+
+  // 处理单个订单拣货
+  const handleSinglePicking = async (orderId: string) => {
+    try {
+      setLoading(true);
+      const result = await batchAddPickings([orderId]);
+      if (result.code === 200) {
+        message.success('拣货单创建成功');
+        // 刷新订单列表
+        fetchOrders();
+      } else {
+        message.error(result.msg || '创建拣货单失败');
+      }
+    } catch (error) {
+      console.error('创建拣货单失败:', error);
+      message.error('创建拣货单失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 行选择配置
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys);
+    },
+    getCheckboxProps: (record: OrderVo) => ({
+      disabled: record.type !== 0 || record.status !== 1, // 只允许选择出库且状态为审批通过的订单
+    }),
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -478,6 +564,17 @@ export default function OrderManager() {
           )}
           {record.status === 1 && record.type === 1 && record.actualTime === null && (
             <a onClick={() => handleReceiveGoods(record)}>收货</a>
+          )}
+          {record.status === 1 && record.type === 0 && (
+            <Popconfirm
+              title="确定为该订单创建拣货单吗？"
+              icon={<ShoppingOutlined style={{ color: '#1890ff' }} />}
+              onConfirm={() => handleSinglePicking(record.id)}
+              okText="确认"
+              cancelText="取消"
+            >
+              <a>拣货</a>
+            </Popconfirm>
           )}
         </Space>
       ),
@@ -600,16 +697,34 @@ export default function OrderManager() {
       </Card>
 
       <Card style={{ marginTop: 16 }}>
-        <div style={{ marginBottom: 16 }}>
-          <Button
-            type='primary'
-            icon={<PlusOutlined />}
-            onClick={handleAddOrder}
-          >
-            新增订单
-          </Button>
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+          <div>
+            <Button
+              type='primary'
+              icon={<PlusOutlined />}
+              onClick={handleAddOrder}
+            >
+              新增订单
+            </Button>
+            <Button
+              type='primary'
+              icon={<ShoppingOutlined />}
+              onClick={handleBatchPicking}
+              disabled={selectedRowKeys.length === 0}
+              loading={orderBatchLoading}
+              style={{ marginLeft: 8 }}
+            >
+              批量拣货
+            </Button>
+          </div>
+          <div>
+            <span style={{ marginRight: 8 }}>
+              {selectedRowKeys.length > 0 ? `已选择 ${selectedRowKeys.length} 项` : ''}
+            </span>
+          </div>
         </div>
         <Table
+          rowSelection={rowSelection}
           columns={columns}
           dataSource={orders}
           rowKey='id'
