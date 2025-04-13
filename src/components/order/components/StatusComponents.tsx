@@ -71,11 +71,13 @@ export const renderReceiveStatus = (status: number) => {
 export const renderPickingStatus = (status: number) => {
   switch (status) {
     case 0:
-      return <Tag color='warning'>待拣货</Tag>;
+      return <Tag color='default'>待拣货</Tag>;
     case 1:
       return <Tag color='processing'>拣货中</Tag>;
     case 2:
       return <Tag color='success'>已完成</Tag>;
+    case 3:
+      return <Tag color='error'>异常</Tag>;
     default:
       return <Tag color='default'>未知状态</Tag>;
   }

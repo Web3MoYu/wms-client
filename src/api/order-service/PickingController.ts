@@ -1,5 +1,6 @@
 import axios from '../../utils/mxAxios';
 import { Page, Result } from '../Model';
+import { LocationVo } from '../stock-service/StockController';
 import { User } from '../sys-service/UserController';
 import { OrderDetailVo, OrderOut, OrderOutItem } from './OrderController';
 
@@ -61,7 +62,12 @@ export interface PickingOrderVo extends PickingOrder {
 export interface PickingDetailVo {
   order: OrderOut; // 出库订单
   orderInfo: OrderDetailVo<OrderOutItem>[]; //  出库订单详情
-  pickingItems: PickingItem[]; // 分拣详情
+  pickingItems: PickingItemVo[]; // 分拣详情
+}
+
+export interface PickingItemVo extends PickingItem {
+  areaName: string; // 区域名称
+  locations: LocationVo[]; // 具体位置
 }
 
 /**

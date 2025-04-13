@@ -69,7 +69,7 @@ export default function OrderDetailDrawer({
         result = await outDetail(order.id);
         if (result.code === 200) {
           setDetailData(result.data);
-          
+
           // 获取出库订单的额外信息（配送地址、联系人等）
           try {
             const outOrderResult = await outOrder(order.id);
@@ -135,7 +135,7 @@ export default function OrderDetailDrawer({
             {order?.inspector?.phone || '-'}
           </Descriptions.Item>
           <Descriptions.Item label='订单状态' span={1}>
-            {renderOrderStatus(order?.status)}
+            {renderOrderStatus(order?.status, order?.type)}
           </Descriptions.Item>
           <Descriptions.Item label='质检状态' span={2}>
             {renderQualityStatus(order?.qualityStatus, true)}
@@ -208,7 +208,7 @@ export default function OrderDetailDrawer({
                   <span>
                     {`商品 ${index + 1}: ${detail.product.productName} `}
                     <span style={{ marginLeft: 8 }}>
-                      {renderOrderStatus(itemStatus)}
+                      {renderOrderStatus(itemStatus, order?.type)}
                     </span>
                     <span style={{ marginLeft: 8 }}>
                       {renderQualityStatus(

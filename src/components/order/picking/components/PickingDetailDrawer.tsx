@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Drawer, Typography, Descriptions, Tabs, Spin, message } from 'antd';
+import { Drawer, Typography, Descriptions, Tabs, message } from 'antd';
 import {
   getPickingDetail,
+  PickingDetailVo,
   PickingOrderVo,
 } from '../../../../api/order-service/PickingController';
 import { renderPickingStatus } from '../../components/StatusComponents';
 import moment from 'moment';
+import PickingDetailContent from './detail/PickingDetailContent';
 
 const { Title } = Typography;
 
@@ -21,7 +23,7 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
   pickingOrder,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [detailData, setDetailData] = useState<any[]>([]);
+  const [detailData, setDetailData] = useState<PickingDetailVo[]>([]);
 
   // 获取拣货详情数据
   useEffect(() => {
@@ -97,25 +99,9 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
     },
     {
       key: '2',
-      label: '拣货详情',
+      label: '详情信息',
       children: (
-        <Spin spinning={loading}>
-          <div style={{ padding: '20px 0' }}>
-            <p>拣货详情内容（待实现）</p>
-            <p>已加载 {detailData.length} 条详情数据</p>
-          </div>
-        </Spin>
-      ),
-    },
-    {
-      key: '3',
-      label: '关联订单',
-      children: (
-        <Spin spinning={loading}>
-          <div style={{ padding: '20px 0' }}>
-            <p>关联订单内容（待实现）</p>
-          </div>
-        </Spin>
+        <PickingDetailContent loading={loading} detailData={detailData} />
       ),
     },
   ];
