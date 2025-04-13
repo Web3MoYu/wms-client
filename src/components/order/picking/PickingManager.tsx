@@ -141,6 +141,15 @@ export default function PickingManager() {
   const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
     // 处理排序
     if (sorter && sorter.field) {
+      // 重置所有排序字段为null
+      form.setFieldsValue({
+        createTimeAsc: null,
+        totalOrdersAsc: null,
+        totalItemsAsc: null,
+        totalQuantityAsc: null,
+      });
+
+      // 设置当前排序字段
       const field = sorter.field;
       if (field === 'createTime') {
         form.setFieldsValue({ createTimeAsc: sorter.order === 'ascend' });
