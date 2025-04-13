@@ -273,8 +273,8 @@ export default function PickingManager() {
       render: (_: any, record: PickingOrder) => (
         <Space size='middle'>
           <a onClick={() => {}}>查看详情</a>
-          {record.status === 0 && <a onClick={() => {}}>开始拣货</a>}
-          {record.status === 1 && <a onClick={() => {}}>继续拣货</a>}
+          {record.status === 0 && <a onClick={() => {}}>开始分拣</a>}
+          {record.status === 1 && <a onClick={() => {}}>继续分拣</a>}
         </Space>
       ),
     },
