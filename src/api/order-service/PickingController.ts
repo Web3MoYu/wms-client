@@ -1,5 +1,6 @@
 import axios from '../../utils/mxAxios';
 import { Page, Result } from '../Model';
+import { User } from '../sys-service/UserController';
 
 interface PickingOrderDto {
   // 基本分页参数
@@ -30,6 +31,9 @@ interface PickingOrder {
   updateTime: string; // 更新时间
 }
 
+interface PickingOrderVo extends PickingOrder {
+  pickingUser: User;
+}
 /**
  * 分页查询拣货列表
  *
@@ -38,7 +42,7 @@ interface PickingOrder {
  */
 export function pickingPage(
   dto: PickingOrderDto
-): Promise<Result<Page<PickingOrder>>> {
+): Promise<Result<Page<PickingOrderVo>>> {
   return new Promise((resolve, reject) => {
     axios
       .post('/order/picking/page', dto)

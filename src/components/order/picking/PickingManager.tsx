@@ -249,9 +249,9 @@ export default function PickingManager() {
     },
     {
       title: '拣货员',
-      dataIndex: 'pickerInfo',
-      key: 'pickerInfo',
-      render: (picker: User) => picker?.realName || '-',
+      dataIndex: 'pickingUser',
+      key: 'pickingUser',
+      render: (pickingUser: User) => pickingUser?.realName || '-',
     },
     {
       title: '拣货状态',
