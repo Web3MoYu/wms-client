@@ -14,33 +14,23 @@ import {
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
-import { pickingPage } from '../../../api/order-service/PickingController';
+import {
+  PickingOrder,
+  PickingOrderVo,
+  pickingPage,
+} from '../../../api/order-service/PickingController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import userStore from '../../../store/userStore';
 import {
   renderPickingStatus,
   PickingStatusSelect,
 } from '../../order/components/StatusComponents';
+import PickingDetailDrawer from './components/PickingDetailDrawer';
 
 // 创建store实例
 const userStoreInstance = new userStore();
 
 const { Option } = Select;
-
-// 从PickingController.ts定义的接口
-interface PickingOrder {
-  id: string; // 拣货单ID
-  pickingNo: string; // 拣货单号
-  picker: string; // 拣货人员
-  pickerInfo?: User; // 拣货人员信息
-  status: number; // 状态：0-待拣货，1-拣货中，2-已完成，3-异常
-  remark: string; // 备注
-  totalOrders: number; // 包含订单数量
-  totalItems: number; // 包含商品种类数
-  totalQuantity: number; // 总拣货数量
-  createTime: string; // 创建时间
-  updateTime: string; // 更新时间
-}
 
 export default function PickingManager() {
   // 状态定义
@@ -61,6 +51,12 @@ export default function PickingManager() {
     current: 1,
     pageSize: 10,
   });
+
+  // 抽屉相关状态
+  const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
+  const [currentPicking, setCurrentPicking] = useState<PickingOrderVo | null>(
+    null
+  );
 
   // 初始化 - 获取当前登录用户信息
   useEffect(() => {
@@ -230,6 +226,18 @@ export default function PickingManager() {
     fetchPickingData();
   };
 
+  // 打开详情抽屉
+  const handleViewDetail = (record: any) => {
+    setCurrentPicking(record);
+    setDrawerVisible(true);
+  };
+
+  // 关闭详情抽屉
+  const handleCloseDrawer = () => {
+    setDrawerVisible(false);
+    setCurrentPicking(null);
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -279,11 +287,11 @@ export default function PickingManager() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: PickingOrder) => (
+      render: (_: any, record: any) => (
         <Space size='middle'>
-          <a onClick={() => {}}>查看详情</a>
-          {record.status === 0 && <a onClick={() => {}}>开始分拣</a>}
-          {record.status === 1 && <a onClick={() => {}}>继续分拣</a>}
+          <a onClick={() => handleViewDetail(record)}>查看详情</a>
+          {record.status === 0 && <a onClick={() => {}}>开始拣货</a>}
+          {record.status === 1 && <a onClick={() => {}}>继续拣货</a>}
         </Space>
       ),
     },
@@ -370,6 +378,15 @@ export default function PickingManager() {
           onChange={handleTableChange}
         />
       </Card>
+
+      {/* 拣货详情抽屉 */}
+      {currentPicking && (
+        <PickingDetailDrawer
+          visible={drawerVisible}
+          onClose={handleCloseDrawer}
+          pickingOrder={currentPicking}
+        />
+      )}
     </div>
   );
 }
