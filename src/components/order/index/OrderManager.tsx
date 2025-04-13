@@ -13,7 +13,6 @@ import {
   Col,
   Modal,
   Typography,
-  Popconfirm,
 } from 'antd';
 import {
   SearchOutlined,
@@ -80,6 +79,8 @@ export default function OrderManager() {
   const [creatorOptions, setCreatorOptions] = useState<User[]>([]);
   const [approverOptions, setApproverOptions] = useState<User[]>([]);
   const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
+  const [pickerOptions, setPickerOptions] = useState<User[]>([]);
+  const [selectedPicker, setSelectedPicker] = useState<string>('');
 
   // 新增订单抽屉状态
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
@@ -97,7 +98,15 @@ export default function OrderManager() {
 
   // 添加选择行的状态
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [orderBatchLoading, setOrderBatchLoading] = useState<boolean>(false);
+
+  // 添加Modal显示状态
+  const [batchPickingModalVisible, setBatchPickingModalVisible] =
+    useState<boolean>(false);
+  const [singlePickingModalVisible, setSinglePickingModalVisible] =
+    useState<boolean>(false);
+  const [currentOrderId, setCurrentOrderId] = useState<string>('');
+  const [modalConfirmLoading, setModalConfirmLoading] =
+    useState<boolean>(false);
 
   // 初始化
   useEffect(() => {
@@ -258,6 +267,20 @@ export default function OrderManager() {
       console.error('搜索质检员失败:', error);
     }
   }, 500);
+
+  // 防抖搜索分拣人员 - 保留模糊搜索功能
+  const handlePickerSearch = debounce(async (name: string) => {
+    // 确保即使是空字符串也触发搜索
+    try {
+      const res = await getUsersByName(name);
+
+      if (res.code === 200) {
+        setPickerOptions(res.data);
+      }
+    } catch (error) {
+      console.error('搜索分拣人员失败:', error);
+    }
+  }, 300); // 减少延迟时间以提高响应速度
 
   // 搜索表单提交
   const handleSearch = () => {
@@ -429,43 +452,72 @@ export default function OrderManager() {
       return;
     }
 
-    Modal.confirm({
-      title: '确认批量拣货',
-      icon: <ShoppingOutlined />,
-      content: `确定为选中的 ${selectedRowKeys.length} 个订单创建拣货单吗？`,
-      okText: '确认',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          setOrderBatchLoading(true);
-          const result = await batchAddPickings(selectedRowKeys as string[]);
-          if (result.code === 200) {
-            message.success('拣货单创建成功');
-            // 清空选择
-            setSelectedRowKeys([]);
-            // 刷新列表
-            fetchOrders();
-          } else {
-            message.error(result.msg || '创建拣货单失败');
-          }
-        } catch (error) {
-          console.error('批量创建拣货单失败:', error);
-          message.error('创建拣货单失败，请稍后重试');
-        } finally {
-          setOrderBatchLoading(false);
-        }
-      },
-    });
+    // 重置选择的分拣人员
+    setSelectedPicker('');
+    setPickerOptions([]);
+
+    // 打开批量拣货Modal
+    setBatchPickingModalVisible(true);
   };
 
   // 处理单个订单拣货
-  const handleSinglePicking = async (orderId: string) => {
+  const handleSinglePicking = (orderId: string) => {
+    // 重置选择的分拣人员
+    setSelectedPicker('');
+    setPickerOptions([]);
+    setCurrentOrderId(orderId);
+
+    // 打开单个拣货Modal
+    setSinglePickingModalVisible(true);
+  };
+
+  // 提交批量拣货
+  const handleSubmitBatchPicking = async () => {
+    if (!selectedPicker) {
+      message.error('请选择分拣人员');
+      return;
+    }
+
     try {
-      setLoading(true);
-      const result = await batchAddPickings([orderId]);
+      setModalConfirmLoading(true);
+      const result = await batchAddPickings(
+        selectedRowKeys as string[],
+        selectedPicker
+      );
       if (result.code === 200) {
         message.success('拣货单创建成功');
-        // 刷新订单列表
+        // 清空选择
+        setSelectedRowKeys([]);
+        // 关闭Modal
+        setBatchPickingModalVisible(false);
+        // 刷新列表
+        fetchOrders();
+      } else {
+        message.error(result.msg || '创建拣货单失败');
+      }
+    } catch (error) {
+      console.error('批量创建拣货单失败:', error);
+      message.error('创建拣货单失败，请稍后重试');
+    } finally {
+      setModalConfirmLoading(false);
+    }
+  };
+
+  // 提交单个拣货
+  const handleSubmitSinglePicking = async () => {
+    if (!selectedPicker) {
+      message.error('请选择分拣人员');
+      return;
+    }
+
+    try {
+      setModalConfirmLoading(true);
+      const result = await batchAddPickings([currentOrderId], selectedPicker);
+      if (result.code === 200) {
+        message.success('拣货单创建成功');
+        // 关闭Modal
+        setSinglePickingModalVisible(false);
+        // 刷新列表
         fetchOrders();
       } else {
         message.error(result.msg || '创建拣货单失败');
@@ -474,7 +526,7 @@ export default function OrderManager() {
       console.error('创建拣货单失败:', error);
       message.error('创建拣货单失败，请稍后重试');
     } finally {
-      setLoading(false);
+      setModalConfirmLoading(false);
     }
   };
 
@@ -562,19 +614,13 @@ export default function OrderManager() {
           {record.status === 0 && (
             <a onClick={() => handleCancelOrder(record)}>取消订单</a>
           )}
-          {record.status === 1 && record.type === 1 && record.actualTime === null && (
-            <a onClick={() => handleReceiveGoods(record)}>收货</a>
-          )}
+          {record.status === 1 &&
+            record.type === 1 &&
+            record.actualTime === null && (
+              <a onClick={() => handleReceiveGoods(record)}>收货</a>
+            )}
           {record.status === 1 && record.type === 0 && (
-            <Popconfirm
-              title="确定为该订单创建拣货单吗？"
-              icon={<ShoppingOutlined style={{ color: '#1890ff' }} />}
-              onConfirm={() => handleSinglePicking(record.id)}
-              okText="确认"
-              cancelText="取消"
-            >
-              <a>拣货</a>
-            </Popconfirm>
+            <a onClick={() => handleSinglePicking(record.id)}>拣货</a>
           )}
         </Space>
       ),
@@ -697,7 +743,13 @@ export default function OrderManager() {
       </Card>
 
       <Card style={{ marginTop: 16 }}>
-        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+        <div
+          style={{
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
           <div>
             <Button
               type='primary'
@@ -711,7 +763,6 @@ export default function OrderManager() {
               icon={<ShoppingOutlined />}
               onClick={handleBatchPicking}
               disabled={selectedRowKeys.length === 0}
-              loading={orderBatchLoading}
               style={{ marginLeft: 8 }}
             >
               批量拣货
@@ -719,7 +770,9 @@ export default function OrderManager() {
           </div>
           <div>
             <span style={{ marginRight: 8 }}>
-              {selectedRowKeys.length > 0 ? `已选择 ${selectedRowKeys.length} 项` : ''}
+              {selectedRowKeys.length > 0
+                ? `已选择 ${selectedRowKeys.length} 项`
+                : ''}
             </span>
           </div>
         </div>
@@ -758,6 +811,72 @@ export default function OrderManager() {
           order={currentOrder}
         />
       )}
+
+      {/* 批量拣货Modal */}
+      <Modal
+        title='确认批量拣货'
+        open={batchPickingModalVisible}
+        onOk={handleSubmitBatchPicking}
+        onCancel={() => setBatchPickingModalVisible(false)}
+        confirmLoading={modalConfirmLoading}
+      >
+        <div>
+          <p>确定为选中的 {selectedRowKeys.length} 个订单创建拣货单吗？</p>
+          <div style={{ marginTop: 16 }}>
+            <Select
+              showSearch
+              placeholder='请选择分拣人员'
+              style={{ width: '100%' }}
+              filterOption={false}
+              defaultActiveFirstOption={false}
+              showArrow={false}
+              onSearch={handlePickerSearch}
+              onChange={(value) => setSelectedPicker(value)}
+              value={selectedPicker}
+              notFoundContent={null}
+            >
+              {pickerOptions.map((user) => (
+                <Option key={user.userId} value={user.userId}>
+                  {user.realName}
+                </Option>
+              ))}
+            </Select>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 单个拣货Modal */}
+      <Modal
+        title='确认创建拣货单'
+        open={singlePickingModalVisible}
+        onOk={handleSubmitSinglePicking}
+        onCancel={() => setSinglePickingModalVisible(false)}
+        confirmLoading={modalConfirmLoading}
+      >
+        <div>
+          <p>确定为该订单创建拣货单吗？</p>
+          <div style={{ marginTop: 16 }}>
+            <Select
+              showSearch
+              placeholder='请选择分拣人员'
+              style={{ width: '100%' }}
+              filterOption={false}
+              defaultActiveFirstOption={false}
+              showArrow={false}
+              onSearch={handlePickerSearch}
+              onChange={(value) => setSelectedPicker(value)}
+              value={selectedPicker}
+              notFoundContent={null}
+            >
+              {pickerOptions.map((user) => (
+                <Option key={user.userId} value={user.userId}>
+                  {user.realName}
+                </Option>
+              ))}
+            </Select>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

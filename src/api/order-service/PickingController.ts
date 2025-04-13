@@ -57,10 +57,13 @@ export function pickingPage(
  * @param ids 出库订单ID列表
  * @return 是否增加成功。
  */
-export function batchAddPickings(ids: string[]): Promise<Result<string>> {
+export function batchAddPickings(
+  ids: string[],
+  picker: string
+): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
-      .post('/order/picking/add', ids)
+      .post(`/order/picking/add/${picker}`, ids)
       .then((res) => {
         resolve(res.data);
       })

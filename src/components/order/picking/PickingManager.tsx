@@ -17,7 +17,10 @@ import moment from 'moment';
 import { pickingPage } from '../../../api/order-service/PickingController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import userStore from '../../../store/userStore';
-import { renderPickingStatus, PickingStatusSelect } from '../../order/components/StatusComponents';
+import {
+  renderPickingStatus,
+  PickingStatusSelect,
+} from '../../order/components/StatusComponents';
 
 // 创建store实例
 const userStoreInstance = new userStore();
@@ -105,10 +108,16 @@ export default function PickingManager() {
         pickingNo: values.pickingNo || '',
         picker: values.picker || '',
         status: values.status !== undefined ? values.status : null,
-        totalOrdersAsc: values.totalOrdersAsc !== undefined ? values.totalOrdersAsc : false,
-        totalItemsAsc: values.totalItemsAsc !== undefined ? values.totalItemsAsc : false,
-        totalQuantityAsc: values.totalQuantityAsc !== undefined ? values.totalQuantityAsc : false,
-        createTimeAsc: values.createTimeAsc !== undefined ? values.createTimeAsc : false,
+        totalOrdersAsc:
+          values.totalOrdersAsc !== undefined ? values.totalOrdersAsc : false,
+        totalItemsAsc:
+          values.totalItemsAsc !== undefined ? values.totalItemsAsc : false,
+        totalQuantityAsc:
+          values.totalQuantityAsc !== undefined
+            ? values.totalQuantityAsc
+            : false,
+        createTimeAsc:
+          values.createTimeAsc !== undefined ? values.createTimeAsc : false,
         _t: new Date().getTime(),
       };
 
@@ -291,7 +300,7 @@ export default function PickingManager() {
           <Row gutter={16}>
             <Col span={6}>
               <Form.Item name='pickingNo' label='拣货单号'>
-                <Input placeholder='请输入拣货单号' />
+                <Input placeholder='请输入拣货单号' allowClear />
               </Form.Item>
             </Col>
             <Col span={6}>
