@@ -266,7 +266,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       dataIndex: 'actualQuantity',
       key: 'actualQuantity',
       width: 120,
-      render: (record: PickingItemVo) => (
+      render: (_text: number, record: PickingItemVo) => (
         <InputNumber
           min={0}
           max={record.expectedQuantity * 2}
