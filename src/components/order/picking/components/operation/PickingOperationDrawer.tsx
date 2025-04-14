@@ -294,15 +294,18 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
 
   // 提交拣货数据
   const handleSubmit = async () => {
-    // 首先验证是否有选择库位
-    const hasSelectedLocations = Object.keys(editingItems).some(
-      (itemId) =>
-        editingItems[itemId].selectedLocations &&
-        editingItems[itemId].selectedLocations.length > 0
+    // 验证所有商品是否都选择了库位
+    const unselectedItems = pickingItems.filter(
+      (item) => 
+        !editingItems[item.id] || 
+        !editingItems[item.id].selectedLocations ||
+        editingItems[item.id].selectedLocations.length === 0
     );
 
-    if (!hasSelectedLocations) {
-      message.warning('请至少为一个商品选择货位');
+    if (unselectedItems.length > 0) {
+      // 获取未选择库位的商品名称列表
+      const itemNames = unselectedItems.map(item => item.productName).join('、');
+      message.warning(`请为所有商品选择货位，以下商品未选择货位：${itemNames}`);
       return;
     }
 
@@ -502,7 +505,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
 
       {/* 库位确认Modal */}
       <Modal
-        title='确认库位信息'
+        title='请选择需要移除的库位信息'
         open={confirmModalVisible}
         onCancel={() => {
           setConfirmModalVisible(false);
