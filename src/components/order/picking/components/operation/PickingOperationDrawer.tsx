@@ -81,27 +81,26 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
           // 转换为级联选择器需要的格式
           if (location.locations && location.locations.length > 0) {
             const options: CascaderOption[] = [];
-
+            const locations = location.locations;
             // 按货架分组
-            const shelfMap = new Map<string, any[]>();
-            location.locations.forEach((loc) => {
-              if (!shelfMap.has(loc.shelf.shelfName)) {
-                shelfMap.set(loc.shelf.shelfName, []);
+            const shelfMap = new Map<string, Storage[]>();
+            locations.forEach((loc) => {
+              if (!shelfMap.has(loc.shelf.id)) {
+                shelfMap.set(loc.shelf.id, loc.storages);
+              } else {
+                shelfMap.get(loc.shelf.id)?.push(...loc.storages);
               }
-              shelfMap.get(loc.shelf.shelfName)?.push(loc);
             });
-
             // 生成级联选择器选项
-            shelfMap.forEach((locs, shelfName) => {
+            shelfMap.forEach((storages, shelfId) => {
               const option: CascaderOption = {
-                value: shelfName,
-                label: shelfName,
-                children: locs.flatMap((loc) =>
-                  loc.storages.map((storage: any) => ({
-                    value: storage.id || '',
-                    label: storage.locationName || '',
-                  }))
-                ),
+                value: shelfId,
+                label: locations.filter((item) => item.shelf.id === shelfId)[0]
+                  .shelf.shelfName,
+                children: storages.map((storage: any) => ({
+                  value: storage.id || '',
+                  label: storage.locationName || '',
+                })),
               };
               options.push(option);
             });

@@ -60,6 +60,16 @@ export interface PickingItem {
   updateTime: string; // 更新时间
 }
 
+export interface PickingOneDto {
+  itemId: string; // 订单详情ID
+  location: LocationInfo[]; // 位置信息
+  /**
+   * 当前库位是否被取消 库位ID
+   * 存在代表需要讲当前库位从库存中移除
+   */
+  set: Set<string>;
+}
+
 export interface PickingOrderVo extends PickingOrder {
   pickingUser: User;
 }
@@ -157,6 +167,25 @@ export function getPickingLocation(
   return new Promise((resolve, reject) => {
     axios
       .get(`/order/picking/itemLocation/${orderId}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 分拣
+ *
+ * @param dto 分拣数据
+ * @return 是否分拣成功
+ */
+export function pickingOne(dto: PickingOneDto[]): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/order/picking/pickingOne', dto)
       .then((res) => {
         resolve(res.data);
       })
