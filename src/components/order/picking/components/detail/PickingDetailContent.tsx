@@ -8,8 +8,12 @@ import {
   Space,
   Descriptions,
   Tooltip,
+  Button,
 } from 'antd';
-import { PickingDetailVo } from '../../../../../api/order-service/PickingController';
+import {
+  PickingDetailVo,
+  PickingItemVo,
+} from '../../../../../api/order-service/PickingController';
 import {
   renderOrderStatus,
   renderPickingStatus,
@@ -130,26 +134,51 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
     );
   }
 
+  // 检查拣货状态，决定显示"开始拣货"还是"继续拣货"
+  const getPickingActionButton = (pickingItems: PickingItemVo[]) => {
+    if (!pickingItems || pickingItems.length === 0) {
+      return null;
+    }
+
+    // 检查是否所有项目都是未拣货状态(status === 0)
+    const allItemsNotPicked = pickingItems.every((item) => item.status === 0);
+
+    return (
+      <Button type='primary' size='small' style={{ marginRight: '20px' }}>
+        {allItemsNotPicked ? '开始拣货' : '继续拣货'}
+      </Button>
+    );
+  };
+
   return (
     <div>
       {detailData.map((detail, index) => (
         <Card
           key={index}
           title={
-            <Tooltip title={`订单信息: ${detail.order?.orderNo || ''}`}>
-              <span
-                className='card-title-text'
-                style={{
-                  maxWidth: 400,
-                  display: 'inline-block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                订单信息: {detail.order?.orderNo || ''}
-              </span>
-            </Tooltip>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Tooltip title={`订单信息: ${detail.order?.orderNo || ''}`}>
+                <span
+                  className='card-title-text'
+                  style={{
+                    maxWidth: 300,
+                    display: 'inline-block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  订单信息: {detail.order?.orderNo || ''}
+                </span>
+              </Tooltip>
+              {getPickingActionButton(detail.pickingItems)}
+            </div>
           }
           style={{ marginBottom: 16 }}
           extra={
