@@ -15,12 +15,14 @@ interface PickingDetailDrawerProps {
   visible: boolean;
   onClose: () => void;
   pickingOrder: PickingOrderVo | null;
+  activeTab?: string; // 初始显示的标签页
 }
 
 const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
   visible,
   onClose,
   pickingOrder,
+  activeTab = '1', // 默认显示基本信息标签页
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [detailData, setDetailData] = useState<PickingDetailVo[]>([]);
@@ -100,9 +102,7 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
     {
       key: '2',
       label: '详情信息',
-      children: (
-        <PickingDetailContent loading={loading} detailData={detailData} />
-      ),
+      children: <PickingDetailContent loading={loading} detailData={detailData} />,
     },
   ];
 
@@ -120,7 +120,7 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
       closable={true}
       destroyOnClose={true}
     >
-      <Tabs defaultActiveKey='1' items={items} />
+      <Tabs defaultActiveKey={activeTab} items={items} />
     </Drawer>
   );
 };

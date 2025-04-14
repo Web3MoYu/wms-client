@@ -32,7 +32,7 @@ const userStoreInstance = new userStore();
 
 const { Option } = Select;
 
-export default function PickingManager() {
+const PickingManager: React.FC = () => {
   // 状态定义
   const [loading, setLoading] = useState<boolean>(false);
   const [pickingData, setPickingData] = useState<PickingOrder[]>([]);
@@ -54,9 +54,9 @@ export default function PickingManager() {
 
   // 抽屉相关状态
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
-  const [currentPicking, setCurrentPicking] = useState<PickingOrderVo | null>(
-    null
-  );
+  const [selectedPickingOrder, setSelectedPickingOrder] =
+    useState<PickingOrderVo | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('1');
 
   // 初始化 - 获取当前登录用户信息
   useEffect(() => {
@@ -120,8 +120,15 @@ export default function PickingManager() {
       const result = await pickingPage(queryDto);
 
       if (result.code === 200) {
-        setPickingData(result.data.records);
-        setTotal(result.data.total);
+        const data = result.data || { records: [], total: 0 };
+        // 确保records数据中包含pickingUser字段
+        const records = data.records.map((item: any) => ({
+          ...item,
+          pickingUser: item.pickingUser || {},
+        })) as PickingOrderVo[];
+
+        setPickingData(records);
+        setTotal(data.total);
       } else {
         message.error(result.msg || '获取拣货列表失败');
       }
@@ -226,16 +233,18 @@ export default function PickingManager() {
     fetchPickingData();
   };
 
-  // 打开详情抽屉
-  const handleViewDetail = (record: any) => {
-    setCurrentPicking(record);
+  // 打开抽屉查看详情
+  const handleViewDetail = (record: PickingOrderVo, tabKey: string = '1') => {
+    setSelectedPickingOrder(record);
+    setActiveTab(tabKey);
     setDrawerVisible(true);
   };
 
-  // 关闭详情抽屉
+  // 处理关闭抽屉
   const handleCloseDrawer = () => {
     setDrawerVisible(false);
-    setCurrentPicking(null);
+    setSelectedPickingOrder(null);
+    setActiveTab('1'); // 重置为默认标签页
   };
 
   // 表格列定义
@@ -287,11 +296,16 @@ export default function PickingManager() {
     {
       title: '操作',
       key: 'action',
+      width: 200,
       render: (_: any, record: any) => (
         <Space size='middle'>
           <a onClick={() => handleViewDetail(record)}>查看详情</a>
-          {record.status === 0 && <a onClick={() => {}}>开始拣货</a>}
-          {record.status === 1 && <a onClick={() => {}}>继续拣货</a>}
+          {record.status === 0 && (
+            <a onClick={() => handleViewDetail(record, '2')}>开始拣货</a>
+          )}
+          {record.status === 1 && (
+            <a onClick={() => handleViewDetail(record, '2')}>继续拣货</a>
+          )}
         </Space>
       ),
     },
@@ -380,13 +394,14 @@ export default function PickingManager() {
       </Card>
 
       {/* 拣货详情抽屉 */}
-      {currentPicking && (
-        <PickingDetailDrawer
-          visible={drawerVisible}
-          onClose={handleCloseDrawer}
-          pickingOrder={currentPicking}
-        />
-      )}
+      <PickingDetailDrawer
+        visible={drawerVisible}
+        onClose={handleCloseDrawer}
+        pickingOrder={selectedPickingOrder}
+        activeTab={activeTab}
+      />
     </div>
   );
-}
+};
+
+export default PickingManager;
