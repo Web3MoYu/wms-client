@@ -137,7 +137,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
         <InputNumber
           min={0}
           max={record.expectedQuantity * 2}
-          defaultValue={text || 0}
+          defaultValue={record.expectedQuantity}
           onChange={(value) => handleQuantityChange(value, record)}
           style={{ width: '100%' }}
         />
@@ -169,7 +169,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
         <Space>
           <Button onClick={onClose}>取消</Button>
           <Button type='primary' onClick={handleSubmit} loading={submitting}>
-            保存
+            提交
           </Button>
         </Space>
       }

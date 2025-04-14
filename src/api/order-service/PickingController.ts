@@ -1,6 +1,6 @@
 import axios from '../../utils/mxAxios';
 import { Page, Result } from '../Model';
-import { LocationVo } from '../stock-service/StockController';
+import { Location, LocationVo } from '../stock-service/StockController';
 import { User } from '../sys-service/UserController';
 import { OrderDetailVo, OrderOut, OrderOutItem } from './OrderController';
 
