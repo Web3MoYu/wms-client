@@ -138,6 +138,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
 
   // 处理货位选择变更
   const handleLocationChange = (value: any[], record: PickingItemVo) => {
+    console.log('value', value);
     // 提取所选货架和库位信息
     const selectedLocations = value.map((item) => {
       const shelf = item[0];
@@ -243,6 +244,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
           <Cascader
             options={options}
             multiple
+            showCheckedStrategy='SHOW_CHILD'
             maxTagCount='responsive'
             placeholder='请选择货架和库位'
             displayRender={(labels) => labels.join(' / ')}
