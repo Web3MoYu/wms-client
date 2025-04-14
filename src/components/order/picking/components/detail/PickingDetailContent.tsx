@@ -37,6 +37,7 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
   const [operationDrawerVisible, setOperationDrawerVisible] = useState<boolean>(false);
   const [currentOrder, setCurrentOrder] = useState<{
     orderNo: string;
+    orderId: string;
     pickingItems: PickingItemVo[];
     isAllNotPicked: boolean;
   } | null>(null);
@@ -154,6 +155,7 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
     
     setCurrentOrder({
       orderNo: detail.order?.orderNo || '',
+      orderId: detail.order?.id || '',
       pickingItems: detail.pickingItems,
       isAllNotPicked: allItemsNotPicked
     });
@@ -280,6 +282,7 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
           visible={operationDrawerVisible}
           onClose={closePickingOperationDrawer}
           orderNo={currentOrder.orderNo}
+          orderId={currentOrder.orderId}
           pickingItems={currentOrder.pickingItems}
           isAllNotPicked={currentOrder.isAllNotPicked}
         />
