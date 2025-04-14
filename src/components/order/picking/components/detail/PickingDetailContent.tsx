@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Spin,
   Table,
@@ -19,6 +19,7 @@ import {
   renderPickingStatus,
 } from '../../../components/StatusComponents';
 import moment from 'moment';
+import PickingOperationDrawer from '../operation/PickingOperationDrawer';
 
 const { Panel } = Collapse;
 
@@ -32,6 +33,14 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
   loading,
   detailData,
 }) => {
+  // 新增抽屉相关状态
+  const [operationDrawerVisible, setOperationDrawerVisible] = useState<boolean>(false);
+  const [currentOrder, setCurrentOrder] = useState<{
+    orderNo: string;
+    pickingItems: PickingItemVo[];
+    isAllNotPicked: boolean;
+  } | null>(null);
+
   // 拣货项表格列定义
   const pickingItemColumns = [
     {
@@ -134,8 +143,33 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
     );
   }
 
+  // 打开拣货操作抽屉
+  const openPickingOperationDrawer = (detail: PickingDetailVo) => {
+    if (!detail.pickingItems || detail.pickingItems.length === 0) {
+      return;
+    }
+    
+    // 检查是否所有项目都是未拣货状态(status === 0)
+    const allItemsNotPicked = detail.pickingItems.every((item) => item.status === 0);
+    
+    setCurrentOrder({
+      orderNo: detail.order?.orderNo || '',
+      pickingItems: detail.pickingItems,
+      isAllNotPicked: allItemsNotPicked
+    });
+    
+    setOperationDrawerVisible(true);
+  };
+
+  // 关闭拣货操作抽屉
+  const closePickingOperationDrawer = () => {
+    setOperationDrawerVisible(false);
+    setCurrentOrder(null);
+  };
+
   // 检查拣货状态，决定显示"开始拣货"还是"继续拣货"
-  const getPickingActionButton = (pickingItems: PickingItemVo[]) => {
+  const getPickingActionButton = (detail: PickingDetailVo) => {
+    const pickingItems = detail.pickingItems;
     if (!pickingItems || pickingItems.length === 0) {
       return null;
     }
@@ -144,7 +178,12 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
     const allItemsNotPicked = pickingItems.every((item) => item.status === 0);
 
     return (
-      <Button type='primary' size='small' style={{ marginRight: '20px' }}>
+      <Button 
+        type='primary' 
+        size='small' 
+        style={{ marginRight: '20px' }}
+        onClick={() => openPickingOperationDrawer(detail)}
+      >
         {allItemsNotPicked ? '开始拣货' : '继续拣货'}
       </Button>
     );
@@ -177,7 +216,7 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
                   订单信息: {detail.order?.orderNo || ''}
                 </span>
               </Tooltip>
-              {getPickingActionButton(detail.pickingItems)}
+              {getPickingActionButton(detail)}
             </div>
           }
           style={{ marginBottom: 16 }}
@@ -234,6 +273,17 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
           </Collapse>
         </Card>
       ))}
+
+      {/* 拣货操作抽屉 */}
+      {currentOrder && (
+        <PickingOperationDrawer
+          visible={operationDrawerVisible}
+          onClose={closePickingOperationDrawer}
+          orderNo={currentOrder.orderNo}
+          pickingItems={currentOrder.pickingItems}
+          isAllNotPicked={currentOrder.isAllNotPicked}
+        />
+      )}
     </div>
   );
 };
