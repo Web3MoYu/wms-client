@@ -113,6 +113,7 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
           拣货单详情
         </Title>
       }
+      push={false}
       placement='right'
       width='calc(100vw - 256px)'
       onClose={onClose}

@@ -35,7 +35,10 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   // 处理拣货数量变更
-  const handleQuantityChange = (value: number | null, record: PickingItemVo) => {
+  const handleQuantityChange = (
+    value: number | null,
+    record: PickingItemVo
+  ) => {
     setEditingItems({
       ...editingItems,
       [record.id]: {
@@ -51,10 +54,10 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
     try {
       // 这里实际项目中需要调用API保存拣货数据
       // const result = await savePickingData(orderNo, editingItems);
-      
+
       // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       message.success('拣货数据已保存');
       onClose();
     } catch (error) {
@@ -101,7 +104,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       dataIndex: 'areaName',
       key: 'areaName',
       width: 120,
-      render: (text: string) => <Tag color="blue">{text || '-'}</Tag>,
+      render: (text: string) => <Tag color='blue'>{text || '-'}</Tag>,
     },
     {
       title: '货位',
@@ -111,7 +114,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       render: (locationName: any[]) => (
         <Space size={[0, 4]} wrap>
           {locationName?.map((loc, idx) => (
-            <Tag key={idx} color="cyan" style={{ marginBottom: 4 }}>
+            <Tag key={idx} color='cyan' style={{ marginBottom: 4 }}>
               {`${loc.shelfName}: ${loc.storageNames.join(', ')}`}
             </Tag>
           ))}
@@ -156,8 +159,8 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
           {isAllNotPicked ? '开始拣货' : '继续拣货'} - 订单 {orderNo}
         </Title>
       }
-      placement="right"
-      width="80%"
+      placement='right'
+      width='60%'
       onClose={onClose}
       open={visible}
       closable={true}
@@ -165,21 +168,17 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       extra={
         <Space>
           <Button onClick={onClose}>取消</Button>
-          <Button
-            type="primary"
-            onClick={handleSubmit}
-            loading={submitting}
-          >
+          <Button type='primary' onClick={handleSubmit} loading={submitting}>
             保存
           </Button>
         </Space>
       }
     >
-      <Form form={form} layout="vertical">
+      <Form form={form} layout='vertical'>
         <Table
           dataSource={pickingItems}
           columns={columns}
-          rowKey="id"
+          rowKey='id'
           pagination={false}
           scroll={{ x: 'max-content', y: 'calc(100vh - 250px)' }}
         />
@@ -188,4 +187,4 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
   );
 };
 
-export default PickingOperationDrawer; 
+export default PickingOperationDrawer;
