@@ -1,4 +1,5 @@
 import axios from '../../utils/mxAxios';
+import { Shelf } from '../location-service/ShelfController';
 import { Page, Result } from '../Model';
 
 export interface Stock {
@@ -43,6 +44,12 @@ export interface StockDto {
   ascSortByQuantity: boolean | null; // 是否按数量生序排序
   ascSortByAvailableQuantity: boolean | null; // 是否按可用数量生序排序
 }
+
+export interface LocationInfo {
+  shelf: Shelf; // 货架
+  storages: Storage[]; // 该货架所对应的库位信息
+}
+
 /**
  * 获取库存列表
  * @param stockDto 库存查询条件

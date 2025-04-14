@@ -1,6 +1,11 @@
 import axios from '../../utils/mxAxios';
+import { Area } from '../location-service/AreaController';
 import { Page, Result } from '../Model';
-import { Location, LocationVo } from '../stock-service/StockController';
+import {
+  Location,
+  LocationInfo,
+  LocationVo,
+} from '../stock-service/StockController';
 import { User } from '../sys-service/UserController';
 import { OrderDetailVo, OrderOut, OrderOutItem } from './OrderController';
 
@@ -70,6 +75,12 @@ export interface PickingItemVo extends PickingItem {
   locations: LocationVo[]; // 具体位置
 }
 
+export interface PickingLocation {
+  itemId: string; // 拣货详情ID
+  area: Area; // 区域信息
+  locations: LocationInfo[]; // 库位信息
+}
+
 /**
  * 分页查询拣货列表
  *
@@ -125,6 +136,27 @@ export function getPickingDetail(
   return new Promise((resolve, reject) => {
     axios
       .get(`/order/picking/pickingDetail/${pickingId}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 根据出库订单 ID 获取出库位置信息
+ *
+ * @param orderId 出库订单ID
+ * @return 位置信息
+ */
+export function getPickingLocation(
+  orderId: string
+): Promise<Result<PickingLocation[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/order/picking/itemLocation/${orderId}`)
       .then((res) => {
         resolve(res.data);
       })
