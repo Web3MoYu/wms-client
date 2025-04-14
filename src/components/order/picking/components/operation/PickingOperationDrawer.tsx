@@ -11,12 +11,20 @@ import {
   message,
   Cascader,
   Spin,
+  Modal,
+  Checkbox,
+  Card,
+  Row,
+  Col,
 } from 'antd';
 import {
   PickingItemVo,
   getPickingLocation,
   PickingLocation,
+  PickingOneDto,
+  pickingOne,
 } from '../../../../../api/order-service/PickingController';
+import { LocationInfo } from '../../../../../api/stock-service/StockController';
 import { renderPickingStatus } from '../../../components/StatusComponents';
 
 const { Title } = Typography;
@@ -55,7 +63,15 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
   const [locationOptions, setLocationOptions] = useState<
     Record<string, CascaderOption[]>
   >({});
-
+  const [confirmModalVisible, setConfirmModalVisible] =
+    useState<boolean>(false);
+  const [selectedStorages, setSelectedStorages] = useState<
+    Record<string, { locationInfo: LocationInfo[]; emptyIds: Set<string> }>
+  >({});
+  const [processingData, setProcessingData] = useState<PickingOneDto[]>([]);
+  const [deletedStorages, setDeletedStorages] = useState<
+    Map<string, Set<string>>
+  >(new Map());
   // 获取拣货位置信息
   useEffect(() => {
     if (visible && pickingItems.length > 0) {
@@ -138,7 +154,6 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
 
   // 处理货位选择变更
   const handleLocationChange = (value: any[], record: PickingItemVo) => {
-    console.log('value', value);
     // 提取所选货架和库位信息
     const selectedLocations = value.map((item) => {
       const shelf = item[0];
@@ -155,27 +170,181 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
     });
   };
 
+  // 打开确认Modal
+  const openConfirmModal = () => {
+    // 准备所需数据
+    const itemsWithLocations: Record<
+      string,
+      { locationInfo: LocationInfo[]; emptyIds: Set<string> }
+    > = {};
+    const dataToProcess: PickingOneDto[] = [];
+
+    // 处理每个商品的选择库位
+    Object.keys(editingItems).forEach((itemId) => {
+      const item = editingItems[itemId];
+      if (item.selectedLocations && item.selectedLocations.length > 0) {
+        // 按货架分组库位
+        const locationMap = new Map<string, any[]>();
+
+        item.selectedLocations.forEach((loc: any) => {
+          const shelfId = loc.shelf;
+          const storageId = loc.storage;
+
+          // 查找完整的货架和库位信息
+          const shelfInfo = locationOptions[itemId]?.find(
+            (opt) => opt.value === shelfId
+          );
+          const storageInfo = shelfInfo?.children?.find(
+            (child) => child.value === storageId
+          );
+
+          if (shelfInfo && storageInfo) {
+            if (!locationMap.has(shelfId)) {
+              locationMap.set(shelfId, []);
+            }
+
+            locationMap.get(shelfId)?.push({
+              id: storageId,
+              locationName: storageInfo.label,
+            });
+          }
+        });
+
+        // 转换为LocationInfo格式
+        const locationInfos: LocationInfo[] = [];
+
+        locationMap.forEach((storages, shelfId) => {
+          const shelfInfo = locationOptions[itemId]?.find(
+            (opt) => opt.value === shelfId
+          );
+          if (shelfInfo) {
+            locationInfos.push({
+              shelf: {
+                id: shelfId,
+                shelfName: shelfInfo.label as string,
+                areaId: '', // 补充必需字段
+                shelfCode: '', // 补充必需字段
+                status: 1, // 补充必需字段
+                createTime: '', // 补充必需字段
+                updateTime: '', // 补充必需字段
+              },
+              storages: storages,
+            });
+          }
+        });
+
+        // 为每个商品准备数据
+        itemsWithLocations[itemId] = {
+          locationInfo: locationInfos,
+          emptyIds: new Set<string>(),
+        };
+
+        // 准备提交数据
+        dataToProcess.push({
+          itemId: itemId,
+          location: locationInfos,
+          set: [] as string[],
+        });
+      }
+    });
+
+    // 设置数据并打开Modal
+    setSelectedStorages(itemsWithLocations);
+    setProcessingData(dataToProcess);
+    setConfirmModalVisible(true);
+  };
+
+  // 处理删除库位选择
+  const handleEmptyStorageChange = (
+    itemId: string,
+    storageId: string,
+    checked: boolean
+  ) => {
+    setDeletedStorages((prevState) => {
+      // 创建一个新的Map来更新状态
+      const newMap = new Map(prevState);
+
+      // 获取当前库位ID的集合，如果不存在则创建新的
+      const storageSet = newMap.has(itemId)
+        ? new Set<string>(newMap.get(itemId) as Set<string>)
+        : new Set<string>();
+
+      if (checked) {
+        // 添加到空位集合
+        console.log('添加库位', storageId);
+        storageSet.add(storageId);
+      } else {
+        // 从空位集合中移除
+        console.log('移除库位', storageId);
+        storageSet.delete(storageId);
+      }
+
+      // 无论如何都设置新的集合
+      newMap.set(itemId, storageSet);
+
+      return newMap;
+    });
+  };
+
+  // 检查库位是否被选中
+  const isStorageSelected = (itemId: string, storageId: string): boolean => {
+    const itemSet = deletedStorages.get(itemId);
+    return !!itemSet && itemSet.has(storageId);
+  };
+
   // 提交拣货数据
   const handleSubmit = async () => {
+    // 首先验证是否有选择库位
+    const hasSelectedLocations = Object.keys(editingItems).some(
+      (itemId) =>
+        editingItems[itemId].selectedLocations &&
+        editingItems[itemId].selectedLocations.length > 0
+    );
+
+    if (!hasSelectedLocations) {
+      message.warning('请至少为一个商品选择货位');
+      return;
+    }
+
+    // 打开确认Modal
+    openConfirmModal();
+  };
+
+  // 确认提交
+  const handleConfirmSubmit = async () => {
     setSubmitting(true);
     try {
-      // 这里实际项目中需要调用API保存拣货数据
-      // 构建提交数据
-      const submitData = Object.keys(editingItems).map((itemId) => ({
-        id: itemId,
-        actualQuantity:
-          editingItems[itemId].actualQuantity ||
-          pickingItems.find((item) => item.id === itemId)?.expectedQuantity ||
-          0,
-        selectedLocations: editingItems[itemId].selectedLocations || [],
-      }));
+      console.log('deletedStorages', deletedStorages); // 处理 processingData
+      // 调用API保存拣货数据
+      const result = await pickingOne(
+        processingData.map((item) => {
+          // 准备库位ID数组
+          const emptyStorageIds: string[] = [];
+          
+          // 如果此商品有选中的需要移除的库位，将其添加到数组中
+          const emptyStorages = deletedStorages.get(item.itemId);
+          if (emptyStorages && emptyStorages.size > 0) {
+            emptyStorages.forEach((storageId) => {
+              emptyStorageIds.push(storageId);
+            });
+          }
+          
+          // 返回符合接口的数据格式
+          return {
+            itemId: item.itemId,
+            location: [...item.location],
+            set: emptyStorageIds // 直接使用数组
+          };
+        })
+      );
 
-      // 模拟API调用
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('提交的拣货数据:', submitData);
-
-      message.success('拣货数据已保存');
-      onClose();
+      if (result.code === 200) {
+        message.success('拣货数据已保存');
+        setConfirmModalVisible(false);
+        onClose();
+      } else {
+        message.error(result.msg || '保存拣货数据失败');
+      }
     } catch (error) {
       console.error('保存拣货数据失败:', error);
       message.error('保存拣货数据失败，请重试');
@@ -287,48 +456,120 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
   ];
 
   return (
-    <Drawer
-      title={
-        <Title level={4} style={{ margin: 0 }}>
-          {isAllNotPicked ? '开始拣货' : '继续拣货'} - 订单 {orderNo}
-        </Title>
-      }
-      placement='right'
-      width='80%'
-      onClose={onClose}
-      open={visible}
-      closable={true}
-      destroyOnClose={true}
-      extra={
-        <Space>
-          <Button onClick={onClose}>取消</Button>
+    <>
+      <Drawer
+        title={
+          <Title level={4} style={{ margin: 0 }}>
+            {isAllNotPicked ? '开始拣货' : '继续拣货'} - 订单 {orderNo}
+          </Title>
+        }
+        placement='right'
+        width='80%'
+        onClose={onClose}
+        open={visible}
+        closable={true}
+        destroyOnClose={true}
+        extra={
+          <Space>
+            <Button onClick={onClose}>取消</Button>
+            <Button
+              type='primary'
+              onClick={handleSubmit}
+              loading={submitting || locationLoading}
+              disabled={locationLoading}
+            >
+              {locationLoading ? '加载位置信息中...' : '提交'}
+            </Button>
+          </Space>
+        }
+      >
+        {locationLoading ? (
+          <div style={{ textAlign: 'center', margin: '40px 0' }}>
+            <Spin tip='正在加载拣货位置信息...' />
+          </div>
+        ) : (
+          <Form form={form} layout='vertical'>
+            <Table
+              dataSource={pickingItems}
+              columns={columns}
+              rowKey='id'
+              pagination={false}
+              scroll={{ x: 'max-content', y: 'calc(100vh - 250px)' }}
+            />
+          </Form>
+        )}
+      </Drawer>
+
+      {/* 库位确认Modal */}
+      <Modal
+        title='确认库位信息'
+        open={confirmModalVisible}
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setDeletedStorages(new Map());
+        }}
+        width={800}
+        footer={[
+          <Button key='back' onClick={() => setConfirmModalVisible(false)}>
+            返回修改
+          </Button>,
           <Button
+            key='submit'
             type='primary'
-            onClick={handleSubmit}
-            loading={submitting || locationLoading}
-            disabled={locationLoading}
+            loading={submitting}
+            onClick={handleConfirmSubmit}
           >
-            {locationLoading ? '加载位置信息中...' : '提交'}
-          </Button>
-        </Space>
-      }
-    >
-      {locationLoading ? (
-        <div style={{ textAlign: 'center', margin: '40px 0' }}>
-          <Spin tip='正在加载拣货位置信息...' />
+            确认提交
+          </Button>,
+        ]}
+      >
+        <div style={{ maxHeight: 'calc(80vh - 200px)', overflow: 'auto' }}>
+          {Object.keys(selectedStorages).map((itemId) => {
+            const item = pickingItems.find((item) => item.id === itemId);
+            return (
+              <Card
+                key={itemId}
+                title={`${item?.productName || '商品'} (${
+                  item?.productCode || '编码'
+                })`}
+                style={{ marginBottom: 16 }}
+              >
+                {selectedStorages[itemId].locationInfo.map(
+                  (location, locIndex) => (
+                    <div
+                      key={`${itemId}-${locIndex}`}
+                      style={{ marginBottom: 16 }}
+                    >
+                      <Typography.Text strong>
+                        货架: {location.shelf.shelfName}
+                      </Typography.Text>
+                      <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
+                        {location.storages.map((storage: any) => (
+                          <Col span={8} key={storage.id}>
+                            <Checkbox
+                              onChange={(e) =>
+                                handleEmptyStorageChange(
+                                  itemId,
+                                  storage.id,
+                                  e.target.checked
+                                )
+                              }
+                              checked={isStorageSelected(itemId, storage.id)}
+                            >
+                              {storage.locationName}
+                            </Checkbox>
+                          </Col>
+                        ))}
+                      </Row>
+                    </div>
+                  )
+                )}
+              </Card>
+            );
+          })}
         </div>
-      ) : (
-        <Form form={form} layout='vertical'>
-          <Table
-            dataSource={pickingItems}
-            columns={columns}
-            rowKey='id'
-            pagination={false}
-            scroll={{ x: 'max-content', y: 'calc(100vh - 250px)' }}
-          />
-        </Form>
-      )}
-    </Drawer>
+      </Modal>
+    </>
   );
 };
 

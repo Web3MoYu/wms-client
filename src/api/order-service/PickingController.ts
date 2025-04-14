@@ -66,8 +66,9 @@ export interface PickingOneDto {
   /**
    * 当前库位是否被取消 库位ID
    * 存在代表需要讲当前库位从库存中移除
+   * 支持数组或Set类型
    */
-  set: Set<string>;
+  set: string[];
 }
 
 export interface PickingOrderVo extends PickingOrder {
