@@ -20,6 +20,7 @@ import {
 } from '../../../components/StatusComponents';
 import moment from 'moment';
 import PickingOperationDrawer from '../operation/PickingOperationDrawer';
+import { ReloadOutlined } from '@ant-design/icons';
 
 const { Panel } = Collapse;
 
@@ -28,12 +29,14 @@ interface PickingDetailContentProps {
   loading: boolean;
   detailData: PickingDetailVo[];
   onOperationComplete?: () => void;
+  onRefresh?: () => void;
 }
 
 const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
   loading,
   detailData,
   onOperationComplete,
+  onRefresh,
 }) => {
   // 新增抽屉相关状态
   const [operationDrawerVisible, setOperationDrawerVisible] =
@@ -44,6 +47,13 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
     pickingItems: PickingItemVo[];
     isAllNotPicked: boolean;
   } | null>(null);
+
+  // 手动刷新数据
+  const handleRefresh = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
 
   // 拣货项表格列定义
   const pickingItemColumns = [
@@ -208,7 +218,7 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
       <Button
         type='primary'
         size='small'
-        style={{ marginRight: '20px' }}
+        style={{ marginRight: '10px' }}
         onClick={() => openPickingOperationDrawer(detail)}
       >
         {allItemsNotPicked ? '开始拣货' : '继续拣货'}
@@ -218,6 +228,16 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
 
   return (
     <div>
+      <div style={{ marginBottom: 16, textAlign: 'right' }}>
+        <Button 
+          icon={<ReloadOutlined />} 
+          onClick={handleRefresh}
+          loading={loading}
+        >
+          刷新数据
+        </Button>
+      </div>
+      
       {detailData.map((detail, index) => (
         <Card
           key={index}
@@ -246,7 +266,17 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
                   </a>
                 </span>
               </Tooltip>
-              {getPickingActionButton(detail)}
+              <div>
+                {getPickingActionButton(detail)}
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  onClick={handleRefresh}
+                  loading={loading}
+                  title="刷新数据"
+                />
+              </div>
             </div>
           }
           style={{ marginBottom: 16 }}

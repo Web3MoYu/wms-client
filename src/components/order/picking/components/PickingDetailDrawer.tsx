@@ -31,28 +31,29 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
   const [dataChanged, setDataChanged] = useState<boolean>(false); // 添加数据变更标记
 
   // 获取拣货详情数据
+  const fetchDetailData = async () => {
+    if (!pickingOrder) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await getPickingDetail(pickingOrder.id);
+      if (result.code === 200) {
+        setDetailData(result.data);
+      } else {
+        message.error(result.msg || '获取拣货详情失败');
+      }
+    } catch (error) {
+      console.error('获取拣货详情失败:', error);
+      message.error('获取拣货详情失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 初始加载拣货详情
   useEffect(() => {
-    const fetchDetailData = async () => {
-      if (!visible || !pickingOrder) {
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const result = await getPickingDetail(pickingOrder.id);
-        if (result.code === 200) {
-          setDetailData(result.data);
-        } else {
-          message.error(result.msg || '获取拣货详情失败');
-        }
-      } catch (error) {
-        console.error('获取拣货详情失败:', error);
-        message.error('获取拣货详情失败，请稍后重试');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (visible && pickingOrder) {
       fetchDetailData();
     }
@@ -119,7 +120,14 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
     {
       key: '2',
       label: '详情信息',
-      children: <PickingDetailContent loading={loading} detailData={detailData} onOperationComplete={handleOperationComplete} />,
+      children: (
+        <PickingDetailContent 
+          loading={loading} 
+          detailData={detailData} 
+          onOperationComplete={handleOperationComplete}
+          onRefresh={() => fetchDetailData()} 
+        />
+      ),
     },
   ];
 
