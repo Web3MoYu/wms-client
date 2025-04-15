@@ -34,7 +34,8 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
   detailData,
 }) => {
   // 新增抽屉相关状态
-  const [operationDrawerVisible, setOperationDrawerVisible] = useState<boolean>(false);
+  const [operationDrawerVisible, setOperationDrawerVisible] =
+    useState<boolean>(false);
   const [currentOrder, setCurrentOrder] = useState<{
     orderNo: string;
     orderId: string;
@@ -91,16 +92,21 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
     },
     {
       title: '货位',
-      dataIndex: 'locationName',
-      key: 'locationName',
+      dataIndex: 'locations',
+      key: 'locations',
       width: 180,
       render: (locationName: any[]) => (
         <Space size={[0, 4]} wrap>
-          {locationName?.map((loc, idx) => (
-            <Tag key={idx} color='cyan' style={{ marginBottom: 4 }}>
-              {`${loc.shelfName}: ${loc.storageNames.join(', ')}`}
-            </Tag>
-          ))}
+          {locationName?.map(
+            (loc, idx) => (
+              console.log(loc),
+              (
+                <Tag key={idx} color='cyan' style={{ marginBottom: 4 }}>
+                  {`${loc.shelfName}: ${loc.storageNames.join(', ')}`}
+                </Tag>
+              )
+            )
+          )}
           {(!locationName || locationName.length === 0) && '-'}
         </Space>
       ),
@@ -149,17 +155,19 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
     if (!detail.pickingItems || detail.pickingItems.length === 0) {
       return;
     }
-    
+
     // 检查是否所有项目都是未拣货状态(status === 0)
-    const allItemsNotPicked = detail.pickingItems.every((item) => item.status === 0);
-    
+    const allItemsNotPicked = detail.pickingItems.every(
+      (item) => item.status === 0
+    );
+
     setCurrentOrder({
       orderNo: detail.order?.orderNo || '',
       orderId: detail.order?.id || '',
       pickingItems: detail.pickingItems,
-      isAllNotPicked: allItemsNotPicked
+      isAllNotPicked: allItemsNotPicked,
     });
-    
+
     setOperationDrawerVisible(true);
   };
 
@@ -176,13 +184,23 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
       return null;
     }
 
+    // 检查是否存在未拣货(status === 0)或拣货中(status === 1)的项目
+    const hasUncompletedItems = pickingItems.some(
+      (item) => item.status === 0 || item.status === 1
+    );
+
+    // 如果不存在未完成的拣货项，不显示按钮
+    if (!hasUncompletedItems) {
+      return null;
+    }
+
     // 检查是否所有项目都是未拣货状态(status === 0)
     const allItemsNotPicked = pickingItems.every((item) => item.status === 0);
 
     return (
-      <Button 
-        type='primary' 
-        size='small' 
+      <Button
+        type='primary'
+        size='small'
         style={{ marginRight: '20px' }}
         onClick={() => openPickingOperationDrawer(detail)}
       >
@@ -215,7 +233,10 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  订单信息: {detail.order?.orderNo || ''}
+                  订单信息:{' '}
+                  <a href={`/order/in-out?orderNo=${detail.order?.orderNo}`}>
+                    {detail.order?.orderNo || ''}
+                  </a>
                 </span>
               </Tooltip>
               {getPickingActionButton(detail)}

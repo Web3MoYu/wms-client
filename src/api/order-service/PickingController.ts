@@ -71,6 +71,7 @@ export interface PickingOneDto {
   set: string[];
   count: number; // 实际数量
   areaId: string; // 区域ID
+  remark: string; // 备注
 }
 
 export interface PickingOrderVo extends PickingOrder {

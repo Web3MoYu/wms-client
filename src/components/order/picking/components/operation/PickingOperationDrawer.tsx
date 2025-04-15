@@ -16,6 +16,7 @@ import {
   Card,
   Row,
   Col,
+  Input,
 } from 'antd';
 import {
   PickingItemVo,
@@ -28,6 +29,7 @@ import { LocationInfo } from '../../../../../api/stock-service/StockController';
 import { renderPickingStatus } from '../../../components/StatusComponents';
 
 const { Title } = Typography;
+const { TextArea } = Input;
 
 interface PickingOperationDrawerProps {
   visible: boolean;
@@ -72,6 +74,8 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
   const [deletedStorages, setDeletedStorages] = useState<
     Map<string, Set<string>>
   >(new Map());
+  const [itemRemarks, setItemRemarks] = useState<Record<string, string>>({});
+
   // 获取拣货位置信息
   useEffect(() => {
     if (visible && pickingItems.length > 0) {
@@ -188,6 +192,14 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
     });
   };
 
+  // 处理商品备注变更
+  const handleRemarkChange = (itemId: string, remark: string) => {
+    setItemRemarks(prev => ({
+      ...prev,
+      [itemId]: remark
+    }));
+  };
+
   // 打开确认Modal
   const openConfirmModal = () => {
     // 准备所需数据
@@ -196,6 +208,9 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       { locationInfo: LocationInfo[]; emptyIds: Set<string> }
     > = {};
     const dataToProcess: PickingOneDto[] = [];
+
+    // 初始化空备注状态
+    const initialRemarks: Record<string, string> = {};
 
     // 处理每个商品的选择库位
     Object.keys(editingItems).forEach((itemId) => {
@@ -260,6 +275,9 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
         // 获取实际数量和区域ID
         const actualQuantity = getItemActualQuantity(itemId);
         const areaId = getItemAreaId(itemId);
+        
+        // 初始化此商品的备注为空
+        initialRemarks[itemId] = '';
 
         // 准备提交数据
         dataToProcess.push({
@@ -268,6 +286,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
           set: [] as string[],
           count: actualQuantity,
           areaId: areaId,
+          remark: '', // 初始备注为空
         });
       }
     });
@@ -275,6 +294,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
     // 设置数据并打开Modal
     setSelectedStorages(itemsWithLocations);
     setProcessingData(dataToProcess);
+    setItemRemarks(initialRemarks); // 设置初始空备注
     setConfirmModalVisible(true);
   };
 
@@ -365,6 +385,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
             set: emptyStorageIds, // 直接使用数组
             count: item.count || getItemActualQuantity(item.itemId), // 确保有实际数量
             areaId: item.areaId || getItemAreaId(item.itemId), // 确保有区域ID
+            remark: itemRemarks[item.itemId] || '', // 使用对应商品的备注
           };
         })
       );
@@ -383,6 +404,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       setSubmitting(false);
       // 清理状态
       setDeletedStorages(new Map());
+      setItemRemarks({}); // 清空备注
     }
   };
 
@@ -537,10 +559,16 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       <Modal
         title='请选择需要移除的库位信息'
         open={confirmModalVisible}
-        onCancel={() => setConfirmModalVisible(false)}
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setItemRemarks({}); // 清空备注
+        }}
         width={800}
         footer={[
-          <Button key='back' onClick={() => setConfirmModalVisible(false)}>
+          <Button key='back' onClick={() => {
+            setConfirmModalVisible(false);
+            setItemRemarks({}); // 清空备注
+          }}>
             返回修改
           </Button>,
           <Button
@@ -603,6 +631,18 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
                     </div>
                   )
                 )}
+                
+                {/* 为每个商品添加备注输入框 */}
+                <div style={{ marginTop: 16 }}>
+                  <Typography.Text strong>商品备注：</Typography.Text>
+                  <TextArea
+                    rows={2}
+                    placeholder='请输入该商品的拣货备注（选填）'
+                    value={itemRemarks[itemId] || ''}
+                    onChange={(e) => handleRemarkChange(itemId, e.target.value)}
+                    style={{ marginTop: 8 }}
+                  />
+                </div>
               </Card>
             );
           })}
