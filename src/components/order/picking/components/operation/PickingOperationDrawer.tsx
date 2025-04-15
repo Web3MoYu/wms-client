@@ -152,6 +152,24 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
     });
   };
 
+  // 获取商品的实际数量，如果没有设置则使用预期数量
+  const getItemActualQuantity = (itemId: string): number => {
+    const item = editingItems[itemId];
+    // 如果用户手动设置了数量，使用设置的数量
+    if (item && item.actualQuantity !== undefined && item.actualQuantity !== null) {
+      return item.actualQuantity;
+    }
+    // 否则使用预期数量
+    const pickingItem = pickingItems.find(item => item.id === itemId);
+    return pickingItem?.expectedQuantity || 0;
+  };
+
+  // 获取商品对应的区域ID
+  const getItemAreaId = (itemId: string): string => {
+    const location = locationData[itemId];
+    return location?.area?.id || '';
+  };
+
   // 处理货位选择变更
   const handleLocationChange = (value: any[], record: PickingItemVo) => {
     // 提取所选货架和库位信息
@@ -239,11 +257,17 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
           emptyIds: new Set<string>(),
         };
 
+        // 获取实际数量和区域ID
+        const actualQuantity = getItemActualQuantity(itemId);
+        const areaId = getItemAreaId(itemId);
+
         // 准备提交数据
         dataToProcess.push({
           itemId: itemId,
           location: locationInfos,
           set: [] as string[],
+          count: actualQuantity,
+          areaId: areaId,
         });
       }
     });
@@ -296,15 +320,17 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
   const handleSubmit = async () => {
     // 验证所有商品是否都选择了库位
     const unselectedItems = pickingItems.filter(
-      (item) => 
-        !editingItems[item.id] || 
+      (item) =>
+        !editingItems[item.id] ||
         !editingItems[item.id].selectedLocations ||
         editingItems[item.id].selectedLocations.length === 0
     );
 
     if (unselectedItems.length > 0) {
       // 获取未选择库位的商品名称列表
-      const itemNames = unselectedItems.map(item => item.productName).join('、');
+      const itemNames = unselectedItems
+        .map((item) => item.productName)
+        .join('、');
       message.warning(`请为所有商品选择货位，以下商品未选择货位：${itemNames}`);
       return;
     }
@@ -323,7 +349,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
         processingData.map((item) => {
           // 准备库位ID数组
           const emptyStorageIds: string[] = [];
-          
+
           // 如果此商品有选中的需要移除的库位，将其添加到数组中
           const emptyStorages = deletedStorages.get(item.itemId);
           if (emptyStorages && emptyStorages.size > 0) {
@@ -331,12 +357,14 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
               emptyStorageIds.push(storageId);
             });
           }
-          
+
           // 返回符合接口的数据格式
           return {
             itemId: item.itemId,
             location: [...item.location],
-            set: emptyStorageIds // 直接使用数组
+            set: emptyStorageIds, // 直接使用数组
+            count: item.count || getItemActualQuantity(item.itemId), // 确保有实际数量
+            areaId: item.areaId || getItemAreaId(item.itemId), // 确保有区域ID
           };
         })
       );
@@ -353,6 +381,8 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       message.error('保存拣货数据失败，请重试');
     } finally {
       setSubmitting(false);
+      // 清理状态
+      setDeletedStorages(new Map());
     }
   };
 
@@ -507,10 +537,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       <Modal
         title='请选择需要移除的库位信息'
         open={confirmModalVisible}
-        onCancel={() => {
-          setConfirmModalVisible(false);
-          setDeletedStorages(new Map());
-        }}
+        onCancel={() => setConfirmModalVisible(false)}
         width={800}
         footer={[
           <Button key='back' onClick={() => setConfirmModalVisible(false)}>
@@ -529,12 +556,21 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
         <div style={{ maxHeight: 'calc(80vh - 200px)', overflow: 'auto' }}>
           {Object.keys(selectedStorages).map((itemId) => {
             const item = pickingItems.find((item) => item.id === itemId);
+            const actualQuantity = processingData.find(p => p.itemId === itemId)?.count || 0;
+            
             return (
               <Card
                 key={itemId}
-                title={`${item?.productName || '商品'} (${
-                  item?.productCode || '编码'
-                })`}
+                title={
+                  <div>
+                    <div>{`${item?.productName || '商品'} (${
+                      item?.productCode || '编码'
+                    })`}</div>
+                    <div style={{ fontSize: '14px', marginTop: '4px' }}>
+                      预期数量: {item?.expectedQuantity || 0} | 实际数量: {actualQuantity}
+                    </div>
+                  </div>
+                }
                 style={{ marginBottom: 16 }}
               >
                 {selectedStorages[itemId].locationInfo.map(
