@@ -32,7 +32,10 @@ import {
   cancel,
   receiveGoods,
 } from '../../../api/order-service/OrderController';
-import { batchAddPickings } from '../../../api/order-service/PickingController';
+import { 
+  batchAddPickings, 
+  BatchAddPickingDto 
+} from '../../../api/order-service/PickingController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import AddOrderDrawer from './AddOrderDrawer';
 import OrderDetailDrawer from './OrderDetailDrawer';
@@ -81,6 +84,7 @@ export default function OrderManager() {
   const [inspectorOptions, setInspectorOptions] = useState<User[]>([]);
   const [pickerOptions, setPickerOptions] = useState<User[]>([]);
   const [selectedPicker, setSelectedPicker] = useState<string>('');
+  const [pickingRemark, setPickingRemark] = useState<string>(''); // 新增备注状态
 
   // 新增订单抽屉状态
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
@@ -480,14 +484,21 @@ export default function OrderManager() {
 
     try {
       setModalConfirmLoading(true);
-      const result = await batchAddPickings(
-        selectedRowKeys as string[],
-        selectedPicker
-      );
+      
+      // 构建BatchAddPickingDto对象
+      const pickingDto: BatchAddPickingDto = {
+        ids: selectedRowKeys as string[],
+        picker: selectedPicker,
+        remark: pickingRemark // 添加备注
+      };
+      
+      const result = await batchAddPickings(pickingDto);
+      
       if (result.code === 200) {
         message.success('拣货单创建成功');
         // 清空选择
         setSelectedRowKeys([]);
+        setPickingRemark(''); // 清空备注
         // 关闭Modal
         setBatchPickingModalVisible(false);
         // 刷新列表
@@ -512,9 +523,20 @@ export default function OrderManager() {
 
     try {
       setModalConfirmLoading(true);
-      const result = await batchAddPickings([currentOrderId], selectedPicker);
+      
+      // 构建BatchAddPickingDto对象
+      const pickingDto: BatchAddPickingDto = {
+        ids: [currentOrderId],
+        picker: selectedPicker,
+        remark: pickingRemark // 添加备注
+      };
+      
+      const result = await batchAddPickings(pickingDto);
+      
       if (result.code === 200) {
         message.success('拣货单创建成功');
+        // 清空备注
+        setPickingRemark('');
         // 关闭Modal
         setSinglePickingModalVisible(false);
         // 刷新列表
@@ -817,7 +839,10 @@ export default function OrderManager() {
         title='确认批量拣货'
         open={batchPickingModalVisible}
         onOk={handleSubmitBatchPicking}
-        onCancel={() => setBatchPickingModalVisible(false)}
+        onCancel={() => {
+          setBatchPickingModalVisible(false);
+          setPickingRemark(''); // 清空备注
+        }}
         confirmLoading={modalConfirmLoading}
       >
         <div>
@@ -842,6 +867,16 @@ export default function OrderManager() {
               ))}
             </Select>
           </div>
+          
+          {/* 新增备注字段 */}
+          <div style={{ marginTop: 16 }}>
+            <TextArea
+              rows={3}
+              placeholder='请输入拣货备注（选填）'
+              value={pickingRemark}
+              onChange={(e) => setPickingRemark(e.target.value)}
+            />
+          </div>
         </div>
       </Modal>
 
@@ -850,7 +885,10 @@ export default function OrderManager() {
         title='确认创建拣货单'
         open={singlePickingModalVisible}
         onOk={handleSubmitSinglePicking}
-        onCancel={() => setSinglePickingModalVisible(false)}
+        onCancel={() => {
+          setSinglePickingModalVisible(false);
+          setPickingRemark(''); // 清空备注
+        }}
         confirmLoading={modalConfirmLoading}
       >
         <div>
@@ -874,6 +912,16 @@ export default function OrderManager() {
                 </Option>
               ))}
             </Select>
+          </div>
+          
+          {/* 新增备注字段 */}
+          <div style={{ marginTop: 16 }}>
+            <TextArea
+              rows={3}
+              placeholder='请输入拣货备注（选填）'
+              value={pickingRemark}
+              onChange={(e) => setPickingRemark(e.target.value)}
+            />
           </div>
         </div>
       </Modal>

@@ -69,6 +69,8 @@ export interface PickingOneDto {
    * 支持数组或Set类型
    */
   set: string[];
+  count: number; // 实际数量
+  areaId: string; // 区域ID
 }
 
 export interface PickingOrderVo extends PickingOrder {
@@ -92,6 +94,11 @@ export interface PickingLocation {
   locations: LocationInfo[]; // 库位信息
 }
 
+export interface BatchAddPickingDto {
+  ids: string[];
+  picker: string;
+  remark: string;
+}
 /**
  * 分页查询拣货列表
  *
@@ -120,12 +127,11 @@ export function pickingPage(
  * @return 是否增加成功。
  */
 export function batchAddPickings(
-  ids: string[],
-  picker: string
+  dto: BatchAddPickingDto
 ): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
-      .post(`/order/picking/add/${picker}`, ids)
+      .post(`/order/picking/add`, dto)
       .then((res) => {
         resolve(res.data);
       })
