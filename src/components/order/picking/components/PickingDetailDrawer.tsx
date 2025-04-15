@@ -16,6 +16,7 @@ interface PickingDetailDrawerProps {
   onClose: () => void;
   pickingOrder: PickingOrderVo | null;
   activeTab?: string; // 初始显示的标签页
+  onRefresh?: () => void; // 添加刷新回调函数
 }
 
 const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
@@ -23,9 +24,11 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
   onClose,
   pickingOrder,
   activeTab = '1', // 默认显示基本信息标签页
+  onRefresh, // 添加参数
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [detailData, setDetailData] = useState<PickingDetailVo[]>([]);
+  const [dataChanged, setDataChanged] = useState<boolean>(false); // 添加数据变更标记
 
   // 获取拣货详情数据
   useEffect(() => {
@@ -54,6 +57,20 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
       fetchDetailData();
     }
   }, [visible, pickingOrder]);
+
+  // 关闭抽屉时如果数据有变更则触发刷新
+  const handleClose = () => {
+    onClose();
+    // 如果有数据变更或者onRefresh回调存在，则调用刷新函数
+    if ((dataChanged || activeTab === '2') && onRefresh) {
+      onRefresh();
+    }
+  };
+
+  // 操作完成后触发数据更新标记
+  const handleOperationComplete = () => {
+    setDataChanged(true);
+  };
 
   if (!pickingOrder) {
     return null;
@@ -102,7 +119,7 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
     {
       key: '2',
       label: '详情信息',
-      children: <PickingDetailContent loading={loading} detailData={detailData} />,
+      children: <PickingDetailContent loading={loading} detailData={detailData} onOperationComplete={handleOperationComplete} />,
     },
   ];
 
@@ -116,7 +133,7 @@ const PickingDetailDrawer: React.FC<PickingDetailDrawerProps> = ({
       push={false}
       placement='right'
       width='calc(100vw - 256px)'
-      onClose={onClose}
+      onClose={handleClose}
       open={visible}
       closable={true}
       destroyOnClose={true}

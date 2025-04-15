@@ -27,11 +27,13 @@ const { Panel } = Collapse;
 interface PickingDetailContentProps {
   loading: boolean;
   detailData: PickingDetailVo[];
+  onOperationComplete?: () => void;
 }
 
 const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
   loading,
   detailData,
+  onOperationComplete,
 }) => {
   // 新增抽屉相关状态
   const [operationDrawerVisible, setOperationDrawerVisible] =
@@ -175,6 +177,11 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
   const closePickingOperationDrawer = () => {
     setOperationDrawerVisible(false);
     setCurrentOrder(null);
+    
+    // 拣货操作完成后通知父组件
+    if (onOperationComplete) {
+      onOperationComplete();
+    }
   };
 
   // 检查拣货状态，决定显示"开始拣货"还是"继续拣货"

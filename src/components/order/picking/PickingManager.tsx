@@ -247,6 +247,11 @@ const PickingManager: React.FC = () => {
     setActiveTab('1'); // 重置为默认标签页
   };
 
+  // 刷新拣货数据
+  const refreshData = () => {
+    fetchPickingData();
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -399,6 +404,7 @@ const PickingManager: React.FC = () => {
         onClose={handleCloseDrawer}
         pickingOrder={selectedPickingOrder}
         activeTab={activeTab}
+        onRefresh={refreshData}
       />
     </div>
   );
