@@ -305,3 +305,22 @@ export function outOrder(id: string): Promise<Result<OrderOut>> {
       });
   });
 }
+
+/**
+ * 出库订单id
+ *
+ * @param id 出库订单id
+ * @return 是否出库成功
+ */
+export function doneOutBound(id: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/order/doneOutBound/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

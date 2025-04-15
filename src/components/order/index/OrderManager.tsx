@@ -31,10 +31,11 @@ import {
   OrderVo,
   cancel,
   receiveGoods,
+  doneOutBound,
 } from '../../../api/order-service/OrderController';
-import { 
-  batchAddPickings, 
-  BatchAddPickingDto 
+import {
+  batchAddPickings,
+  BatchAddPickingDto,
 } from '../../../api/order-service/PickingController';
 import { getUsersByName, User } from '../../../api/sys-service/UserController';
 import AddOrderDrawer from './AddOrderDrawer';
@@ -484,16 +485,16 @@ export default function OrderManager() {
 
     try {
       setModalConfirmLoading(true);
-      
+
       // 构建BatchAddPickingDto对象
       const pickingDto: BatchAddPickingDto = {
         ids: selectedRowKeys as string[],
         picker: selectedPicker,
-        remark: pickingRemark // 添加备注
+        remark: pickingRemark, // 添加备注
       };
-      
+
       const result = await batchAddPickings(pickingDto);
-      
+
       if (result.code === 200) {
         message.success('拣货单创建成功');
         // 清空选择
@@ -523,16 +524,16 @@ export default function OrderManager() {
 
     try {
       setModalConfirmLoading(true);
-      
+
       // 构建BatchAddPickingDto对象
       const pickingDto: BatchAddPickingDto = {
         ids: [currentOrderId],
         picker: selectedPicker,
-        remark: pickingRemark // 添加备注
+        remark: pickingRemark, // 添加备注
       };
-      
+
       const result = await batchAddPickings(pickingDto);
-      
+
       if (result.code === 200) {
         message.success('拣货单创建成功');
         // 清空备注
@@ -561,6 +562,32 @@ export default function OrderManager() {
     getCheckboxProps: (record: OrderVo) => ({
       disabled: record.type !== 0 || record.status !== 1, // 只允许选择出库且状态为审批通过的订单
     }),
+  };
+
+  // 完成出库
+  const handleDoneOutBound = (id: string) => {
+    Modal.confirm({
+      title: '确定要完成出库吗？',
+      icon: <InboxOutlined />,
+      content: '完成出库后，订单将无法修改，请确认所有商品已出库。',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          const result = await doneOutBound(id);
+          if (result.code === 200) {
+            message.success('出库完成');
+            fetchOrders();
+          } else {
+            message.error(result.msg || '出库失败');
+          }
+        } catch (error) {
+          console.error('出库失败:', error);
+          message.error('出库失败，请稍后重试');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   };
 
   // 表格列定义
@@ -644,6 +671,11 @@ export default function OrderManager() {
           {record.status === 1 && record.type === 0 && (
             <a onClick={() => handleSinglePicking(record.id)}>拣货</a>
           )}
+          {record.status === 2 &&
+            record.type === 0 &&
+            (record.qualityStatus === 1 || record.qualityStatus === 3) && (
+              <a onClick={() => handleDoneOutBound(record.id)}>完成出库</a>
+            )}
         </Space>
       ),
     },
@@ -867,7 +899,7 @@ export default function OrderManager() {
               ))}
             </Select>
           </div>
-          
+
           {/* 新增备注字段 */}
           <div style={{ marginTop: 16 }}>
             <TextArea
@@ -913,7 +945,7 @@ export default function OrderManager() {
               ))}
             </Select>
           </div>
-          
+
           {/* 新增备注字段 */}
           <div style={{ marginTop: 16 }}>
             <TextArea
