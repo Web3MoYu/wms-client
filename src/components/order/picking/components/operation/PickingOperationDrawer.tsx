@@ -38,6 +38,7 @@ interface PickingOperationDrawerProps {
   orderId: string; // 订单ID
   pickingItems: PickingItemVo[];
   isAllNotPicked: boolean; // 是否所有商品都未拣货
+  onRefresh?: () => void; // 添加刷新数据的回调函数
 }
 
 // 级联选择器选项格式
@@ -54,6 +55,7 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
   orderId,
   pickingItems,
   isAllNotPicked,
+  onRefresh, // 添加刷新数据的回调函数
 }) => {
   const [form] = Form.useForm();
   const [editingItems, setEditingItems] = useState<Record<string, any>>({});
@@ -393,7 +395,8 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       if (result.code === 200) {
         message.success('拣货数据已保存');
         setConfirmModalVisible(false);
-        onClose();
+        // 关闭抽屉前调用刷新函数
+        handleCloseDrawer();
       } else {
         message.error(result.msg || '保存拣货数据失败');
       }
@@ -405,6 +408,15 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
       // 清理状态
       setDeletedStorages(new Map());
       setItemRemarks({}); // 清空备注
+    }
+  };
+
+  // 添加关闭抽屉并刷新数据的函数
+  const handleCloseDrawer = () => {
+    onClose();
+    // 如果有刷新回调函数，则调用它
+    if (onRefresh) {
+      onRefresh();
     }
   };
 
@@ -520,13 +532,13 @@ const PickingOperationDrawer: React.FC<PickingOperationDrawerProps> = ({
         }
         placement='right'
         width='80%'
-        onClose={onClose}
+        onClose={handleCloseDrawer}
         open={visible}
         closable={true}
         destroyOnClose={true}
         extra={
           <Space>
-            <Button onClick={onClose}>取消</Button>
+            <Button onClick={handleCloseDrawer}>取消</Button>
             <Button
               type='primary'
               onClick={handleSubmit}

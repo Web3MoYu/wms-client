@@ -343,6 +343,7 @@ const PickingDetailContent: React.FC<PickingDetailContentProps> = ({
           orderId={currentOrder.orderId}
           pickingItems={currentOrder.pickingItems}
           isAllNotPicked={currentOrder.isAllNotPicked}
+          onRefresh={handleRefresh}
         />
       )}
     </div>
