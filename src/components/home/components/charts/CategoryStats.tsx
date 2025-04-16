@@ -37,19 +37,21 @@ const CategoryStats: React.FC = () => {
     return (
       <Card 
         title='产品分类统计' 
-        style={{ marginBottom: '32px' }}
+        size="small"
+        style={{ marginBottom: '12px' }}
         extra={
           <Button 
             icon={<ReloadOutlined />} 
             onClick={handleRefresh} 
             loading={loading}
             disabled={loading}
+            size="small"
           >
             刷新
           </Button>
         }
       >
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <Spin size='small' tip='正在加载数据...' />
         </div>
       </Card>
@@ -59,20 +61,22 @@ const CategoryStats: React.FC = () => {
   return (
     <Card 
       title='产品分类统计' 
-      style={{ marginBottom: '32px' }}
+      size="small"
+      style={{ marginBottom: '12px' }}
       extra={
         <Button 
           icon={<ReloadOutlined />} 
           onClick={handleRefresh}
+          size="small"
         >
           刷新
         </Button>
       }
     >
       {categoryData.length > 0 ? (
-        <RoseChart data={categoryData} height={400} />
+        <RoseChart data={categoryData} height={300} />
       ) : (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
           暂无分类数据
         </div>
       )}

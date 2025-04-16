@@ -7,27 +7,23 @@ const { Title } = Typography;
 
 export default function Home() {
   return (
-    <div className='home-container' style={{ padding: '16px 12px' }}>
-      <Title level={3} style={{ marginBottom: '16px', fontSize: '20px' }}>
+    <div className='home-container' style={{ padding: '12px 8px' }}>
+      <Title level={4} style={{ marginBottom: '12px' }}>
         系统概览
       </Title>
 
-      <Row gutter={[16, 16]}>
-        {/* 左侧列 - 基础数据统计和产品分类统计 */}
+      {/* 基础数据统计 - 占据整行 */}
+      <BasicStats />
+
+      {/* 图表区域 */}
+      <Row gutter={[12, 12]}>
+        {/* 左侧列 - 产品分类统计 */}
         <Col xs={24} lg={12}>
-          {/* 基础数据统计 */}
-          <BasicStats />
-          
-          {/* 间隔 */}
-          <div style={{ marginBottom: '16px' }} />
-          
-          {/* 产品分类统计 */}
           <CategoryStats />
         </Col>
-        
+
         {/* 右侧列 - 产品库存批次统计 */}
         <Col xs={24} lg={12}>
-          {/* 产品库存批次统计 */}
           <StockStats />
         </Col>
       </Row>

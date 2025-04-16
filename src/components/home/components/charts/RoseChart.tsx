@@ -66,6 +66,9 @@ const RoseChart: React.FC<RoseChartProps> = ({
         title: {
           text: title,
           left: 'center',
+          textStyle: {
+            fontSize: 14
+          }
         },
         tooltip: {
           trigger: 'item',
@@ -74,6 +77,11 @@ const RoseChart: React.FC<RoseChartProps> = ({
         legend: {
           orient: 'vertical',
           left: 'left',
+          itemWidth: 10,
+          itemHeight: 10,
+          textStyle: {
+            fontSize: 10
+          },
           data: seriesData.map((item) => item.name),
         },
         series: [
@@ -84,14 +92,19 @@ const RoseChart: React.FC<RoseChartProps> = ({
             center: ['50%', '60%'],
             roseType: 'radius', // 设置为南丁格尔玫瑰图
             itemStyle: {
-              borderRadius: 8,
+              borderRadius: 4,
+            },
+            label: {
+              show: true,
+              formatter: '{b}: {c}',
+              fontSize: 10
             },
             data: seriesData,
             emphasis: {
               itemStyle: {
-                shadowBlur: 10,
+                shadowBlur: 5,
                 shadowOffsetX: 0,
-                shadowColor: 'rgba(0, 0, 0, 0.5)',
+                shadowColor: 'rgba(0, 0, 0, 0.3)',
               },
             },
           },
@@ -109,7 +122,7 @@ const RoseChart: React.FC<RoseChartProps> = ({
       style={{
         width: '100%',
         height: height,
-        marginBottom: '20px',
+        marginBottom: '0'
       }}
     />
   );

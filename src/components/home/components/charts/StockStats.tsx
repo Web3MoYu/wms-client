@@ -37,19 +37,21 @@ const StockStats: React.FC = () => {
     return (
       <Card 
         title='产品库存批次统计' 
-        style={{ marginBottom: '32px' }}
+        size="small"
+        style={{ marginBottom: '12px' }}
         extra={
           <Button 
             icon={<ReloadOutlined />} 
             onClick={handleRefresh} 
             loading={loading}
             disabled={loading}
+            size="small"
           >
             刷新
           </Button>
         }
       >
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <Spin size='small' tip='正在加载数据...' />
         </div>
       </Card>
@@ -58,11 +60,13 @@ const StockStats: React.FC = () => {
 
   return (
     <Card 
-      title='产品库存批次统计' 
-      style={{ marginBottom: '32px' }}
+      title='产品库存批次统计'
+      size="small" 
+      style={{ marginBottom: '12px' }}
       extra={
         <Button 
-          icon={<ReloadOutlined />} 
+          icon={<ReloadOutlined />}
+          size="small"
           onClick={handleRefresh}
         >
           刷新
@@ -70,9 +74,9 @@ const StockStats: React.FC = () => {
       }
     >
       {stockData.length > 0 ? (
-        <BarChart data={stockData} height={400} />
+        <BarChart data={stockData} />
       ) : (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
           暂无库存数据
         </div>
       )}

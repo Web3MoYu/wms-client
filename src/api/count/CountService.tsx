@@ -80,3 +80,18 @@ export function countStock(): Promise<Result<StockCountVo[]>> {
       });
   });
 }
+/**
+ * 统计库存种类数
+ */
+export function countStockCat(): Promise<Result<number>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/stock/countStockCat')
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
