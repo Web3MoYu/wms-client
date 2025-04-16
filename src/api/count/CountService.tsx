@@ -95,3 +95,21 @@ export function countStockCat(): Promise<Result<number>> {
       });
   });
 }
+
+/**
+ * 统计订单数量
+ *
+ * @return 只有两个大小的数组，第一个是入库订单数量，第二个是出库订单数量
+ */
+export function getOrderCount(): Promise<Result<number[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/order/getOrderCount')
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
