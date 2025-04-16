@@ -1,6 +1,7 @@
 import { Typography } from 'antd';
 import BasicStats from './components/BasicStats';
 import CategoryStats from './components/charts/CategoryStats';
+import StockStats from './components/charts/StockStats';
 
 const { Title } = Typography;
 
@@ -16,6 +17,9 @@ export default function Home() {
 
       {/* 产品分类统计 */}
       <CategoryStats />
+
+      {/* 产品库存批次统计 */}
+      <StockStats />
     </div>
   );
 }

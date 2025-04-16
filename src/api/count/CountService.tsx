@@ -6,6 +6,11 @@ export interface CountVo {
   count: number; // 数量
 }
 
+export interface StockCountVo {
+  name: string;
+  batchCount: CountVo[];
+}
+
 /**
  * 统计用户数量
  *
@@ -50,6 +55,23 @@ export function countCat(): Promise<Result<CountVo[]>> {
   return new Promise((resolve, reject) => {
     axios
       .get('/product/cat/countCat')
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+/**
+ * 统计库存数量
+ *
+ * @return 库存数量
+ */
+export function countStock(): Promise<Result<StockCountVo[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/stock/countStock')
       .then((res) => {
         resolve(res.data);
       })
