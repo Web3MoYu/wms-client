@@ -1,4 +1,4 @@
-import { Card, Row, Col, Statistic, Spin, Space } from 'antd';
+import { Card, Row, Col, Statistic, Spin, Progress, Tooltip } from 'antd';
 import {
   UserOutlined,
   InboxOutlined,
@@ -82,7 +82,7 @@ const BasicStats: React.FC = () => {
 
   if (loading) {
     return (
-      <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: '12px' }}>
         <Col span={24} style={{ textAlign: 'center', padding: '12px 0' }}>
           <Spin size='small' tip='正在加载数据...' />
         </Col>
@@ -95,87 +95,116 @@ const BasicStats: React.FC = () => {
     ? Math.round((storageData.occupiedCount / storageData.totalCount) * 100) 
     : 0;
 
+  // 确定使用率进度条的颜色
+  const getProgressColor = (rate: number) => {
+    if (rate >= 90) return '#f5222d'; // 红色
+    if (rate >= 70) return '#fa8c16'; // 橙色
+    return '#52c41a'; // 绿色
+  };
+
+  // 统一的卡片样式
+  const cardStyle = {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column' as const,
+  };
+
   return (
-    <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
-      <Col xs={24} sm={12} md={8} lg={8} xl={4}>
-        <Card size='small' bordered={true}>
-          <Statistic
-            title='用户数量'
-            value={userCount}
-            prefix={<UserOutlined />}
-            valueStyle={{ color: '#1890ff' }}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} md={8} lg={8} xl={4}>
-        <Card size='small' bordered={true}>
-          <Statistic
-            title='产品数量'
-            value={productCount}
-            prefix={<AppstoreOutlined />}
-            valueStyle={{ color: '#52c41a' }}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} md={8} lg={8} xl={4}>
-        <Card size='small' bordered={true}>
-          <Statistic
-            title='库存种类数'
-            value={stockCatCount}
-            prefix={<InboxOutlined />}
-            valueStyle={{ color: '#fa8c16' }}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} md={8} lg={8} xl={4}>
-        <Card size='small' bordered={true}>
-          <Statistic
-            title='入库订单数'
-            value={inOrderCount}
-            prefix={<ImportOutlined />}
-            valueStyle={{ color: '#722ed1' }}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} md={8} lg={8} xl={4}>
-        <Card size='small' bordered={true}>
-          <Statistic
-            title='出库订单数'
-            value={outOrderCount}
-            prefix={<ExportOutlined />}
-            valueStyle={{ color: '#eb2f96' }}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} md={8} lg={8} xl={4}>
-        <Card size='small' bordered={true} className="storage-stats-card">
-          <div style={{ textAlign: 'center' }}>
-            <DatabaseOutlined style={{ fontSize: '16px', color: '#2f54eb', marginBottom: '8px' }} />
-            <div style={{ fontSize: '14px', marginBottom: '8px' }}>库位统计</div>
-            <Space size="small" direction="vertical" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>总库位:</span>
-                <span style={{ fontWeight: 'bold' }}>{storageData.totalCount}</span>
+    <Row gutter={[12, 12]} style={{ marginBottom: '12px' }}>
+      {/* 第一行：常规统计 */}
+      <Col span={24}>
+        <Row gutter={[12, 12]}>
+          <Col xs={12} sm={12} md={4}>
+            <Card size='small' bordered={true} bodyStyle={{ padding: '12px 8px', height: '100px' }} style={cardStyle}>
+              <Statistic
+                title={<div style={{ fontSize: '13px' }}>用户数量</div>}
+                value={userCount}
+                valueStyle={{ color: '#1890ff', fontSize: '24px' }}
+                prefix={<UserOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={4}>
+            <Card size='small' bordered={true} bodyStyle={{ padding: '12px 8px', height: '100px' }} style={cardStyle}>
+              <Statistic
+                title={<div style={{ fontSize: '13px' }}>产品数量</div>}
+                value={productCount}
+                valueStyle={{ color: '#52c41a', fontSize: '24px' }}
+                prefix={<AppstoreOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={4}>
+            <Card size='small' bordered={true} bodyStyle={{ padding: '12px 8px', height: '100px' }} style={cardStyle}>
+              <Statistic
+                title={<div style={{ fontSize: '13px' }}>库存种类</div>}
+                value={stockCatCount}
+                valueStyle={{ color: '#fa8c16', fontSize: '24px' }}
+                prefix={<InboxOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={4}>
+            <Card size='small' bordered={true} bodyStyle={{ padding: '12px 8px', height: '100px' }} style={cardStyle}>
+              <Statistic
+                title={<div style={{ fontSize: '13px' }}>入库订单</div>}
+                value={inOrderCount}
+                valueStyle={{ color: '#722ed1', fontSize: '24px' }}
+                prefix={<ImportOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={4}>
+            <Card size='small' bordered={true} bodyStyle={{ padding: '12px 8px', height: '100px' }} style={cardStyle}>
+              <Statistic
+                title={<div style={{ fontSize: '13px' }}>出库订单</div>}
+                value={outOrderCount}
+                valueStyle={{ color: '#eb2f96', fontSize: '24px' }}
+                prefix={<ExportOutlined />}
+              />
+            </Card>
+          </Col>
+          
+          {/* 库位统计 */}
+          <Col xs={12} sm={12} md={4}>
+            <Card
+              size='small'
+              bordered={true}
+              bodyStyle={{ padding: '8px', height: '100px' }}
+              style={cardStyle}
+              title={
+                <div style={{ fontSize: '13px', textAlign: 'center', margin: 0, padding: 0, height: '22px', lineHeight: '22px' }}>
+                  <DatabaseOutlined style={{ marginRight: '4px' }} />
+                  库位统计
+                </div>
+              }
+              headStyle={{ padding: '4px 0', minHeight: '22px' }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                    <span>空闲:<b style={{ color: '#52c41a' }}>{storageData.freeCount}</b></span>
+                    <span>占用:<b style={{ color: '#fa8c16' }}>{storageData.occupiedCount}</b></span>
+                    <span>禁用:<b style={{ color: '#f5222d' }}>{storageData.disabledCount}</b></span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontSize: '12px' }}>
+                  <span>总库位:</span>
+                  <span style={{ fontWeight: 'bold' }}>{storageData.totalCount}</span>
+                </div>
+                <Tooltip title={`使用率: ${usageRate}%`}>
+                  <Progress 
+                    percent={usageRate} 
+                    size="small" 
+                    status={usageRate >= 90 ? 'exception' : 'normal'}
+                    strokeColor={getProgressColor(usageRate)}
+                    style={{ marginBottom: 0, marginTop: '4px' }}
+                  />
+                </Tooltip>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>空闲库位:</span>
-                <span style={{ fontWeight: 'bold', color: '#52c41a' }}>{storageData.freeCount}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>占用库位:</span>
-                <span style={{ fontWeight: 'bold', color: '#fa8c16' }}>{storageData.occupiedCount}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>禁用库位:</span>
-                <span style={{ fontWeight: 'bold', color: '#f5222d' }}>{storageData.disabledCount}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                <span>使用率:</span>
-                <span style={{ fontWeight: 'bold', color: usageRate > 80 ? '#f5222d' : '#1890ff' }}>{usageRate}%</span>
-              </div>
-            </Space>
-          </div>
-        </Card>
+            </Card>
+          </Col>
+        </Row>
       </Col>
     </Row>
   );
