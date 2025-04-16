@@ -1,4 +1,4 @@
-import { Row, Col, Card } from 'antd';
+import { Row, Col, Card, Tabs } from 'antd';
 import { useRef, useEffect } from 'react';
 import * as echarts from 'echarts/core';
 import { BarChart as EChartsBarChart } from 'echarts/charts';
@@ -76,7 +76,8 @@ const ProductChart = ({ product, height }: { product: StockData, height: number 
         grid: {
           left: '3%',
           right: '4%',
-          bottom: '3%',
+          bottom: '8%',
+          top: '8%',
           containLabel: true
         },
         xAxis: {
@@ -84,12 +85,19 @@ const ProductChart = ({ product, height }: { product: StockData, height: number 
           data: batchNames,
           axisLabel: {
             interval: 0,
-            rotate: 30
+            rotate: 30,
+            fontSize: 10
           }
         },
         yAxis: {
           type: 'value',
-          name: '数量'
+          name: '数量',
+          nameTextStyle: {
+            fontSize: 10
+          },
+          axisLabel: {
+            fontSize: 10
+          }
         },
         series: [
           {
@@ -101,7 +109,8 @@ const ProductChart = ({ product, height }: { product: StockData, height: number 
             },
             label: {
               show: true,
-              position: 'top'
+              position: 'top',
+              fontSize: 10
             }
           }
         ]
@@ -123,6 +132,15 @@ const ProductChart = ({ product, height }: { product: StockData, height: number 
   );
 };
 
+// 将产品分组，每4个一组
+const groupProducts = (products: StockData[], groupSize = 4) => {
+  const groups = [];
+  for (let i = 0; i < products.length; i += groupSize) {
+    groups.push(products.slice(i, i + groupSize));
+  }
+  return groups;
+};
+
 const BarChart: React.FC<BarChartProps> = ({
   data,
 }) => {
@@ -133,20 +151,55 @@ const BarChart: React.FC<BarChartProps> = ({
   // 过滤掉没有批次数据的产品
   const validProducts = data.filter(product => product.batchCount && product.batchCount.length > 0);
   
+  // 如果产品数量少于等于8个，使用普通布局
+  if (validProducts.length <= 8) {
+    return (
+      <Row gutter={[8, 8]}>
+        {validProducts.map((product, index) => (
+          <Col key={index} xs={24} sm={12} md={8} lg={6}>
+            <Card 
+              size="small"
+              title={<div style={{ fontSize: '14px' }}>{product.name}</div>}
+              bordered={true}
+              style={{ marginBottom: '8px' }}
+            >
+              <ProductChart product={product} height={150} />
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    );
+  }
+  
+  // 如果产品数量多于8个，使用标签页布局
+  const productGroups = groupProducts(validProducts);
+  
   return (
-    <Row gutter={[16, 16]}>
-      {validProducts.map((product, index) => (
-        <Col key={index} xs={24} sm={12} md={8}>
-          <Card 
-            title={product.name} 
-            bordered={true}
-            style={{ marginBottom: '16px', height: '100%' }}
-          >
-            <ProductChart product={product} height={200} />
-          </Card>
-        </Col>
-      ))}
-    </Row>
+    <Tabs
+      defaultActiveKey="0"
+      type="card"
+      size="small"
+      items={productGroups.map((group, groupIndex) => ({
+        label: `组 ${groupIndex + 1}`,
+        key: `${groupIndex}`,
+        children: (
+          <Row gutter={[8, 8]}>
+            {group.map((product, index) => (
+              <Col key={index} xs={24} sm={12} lg={6}>
+                <Card 
+                  size="small"
+                  title={<div style={{ fontSize: '14px' }}>{product.name}</div>}
+                  bordered={true}
+                  style={{ marginBottom: '8px' }}
+                >
+                  <ProductChart product={product} height={150} />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )
+      }))}
+    />
   );
 };
 
