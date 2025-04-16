@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Card, Spin, Button } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
-import { countCat, ProductCatCountVo } from '../../../../api/count/CountService';
+import { countCat, CountVo } from '../../../../api/count/CountService';
 import RoseChart from './RoseChart';
 
 const CategoryStats: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
-  const [categoryData, setCategoryData] = useState<ProductCatCountVo[]>([]);
+  const [categoryData, setCategoryData] = useState<CountVo[]>([]);
 
   const fetchData = async () => {
     setLoading(true);

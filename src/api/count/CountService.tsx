@@ -1,9 +1,9 @@
 import axios from '../../utils/mxAxios';
 import { Result } from '../Model';
 
-export interface ProductCatCountVo {
-  catName: string; // 分类名称
-  productCount: number; // 产品数量
+export interface CountVo {
+  name: string; // 名称
+  count: number; // 数量
 }
 
 /**
@@ -46,7 +46,7 @@ export function countProduct(): Promise<Result<number>> {
  *
  * @return 产品分类和数量
  */
-export function countCat(): Promise<Result<ProductCatCountVo[]>> {
+export function countCat(): Promise<Result<CountVo[]>> {
   return new Promise((resolve, reject) => {
     axios
       .get('/product/cat/countCat')

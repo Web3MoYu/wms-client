@@ -4,10 +4,10 @@ import { PieChart } from 'echarts/charts';
 import {
   TitleComponent,
   TooltipComponent,
-  LegendComponent
+  LegendComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import { ProductCatCountVo } from '../../../../api/count/CountService';
+import { CountVo } from '../../../../api/count/CountService';
 
 // 注册必要的组件
 echarts.use([
@@ -15,11 +15,11 @@ echarts.use([
   TooltipComponent,
   LegendComponent,
   PieChart,
-  CanvasRenderer
+  CanvasRenderer,
 ]);
 
 interface RoseChartProps {
-  data: ProductCatCountVo[];
+  data: CountVo[];
   height?: string | number;
   title?: string;
 }
@@ -27,7 +27,7 @@ interface RoseChartProps {
 const RoseChart: React.FC<RoseChartProps> = ({
   data,
   height = '400px',
-  title = '产品分类数量统计'
+  title = '产品分类数量统计',
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
@@ -55,9 +55,9 @@ const RoseChart: React.FC<RoseChartProps> = ({
     if (chartInstance.current && data?.length) {
       // 准备图表数据并按产品数量从大到小排序
       const seriesData = data
-        .map(item => ({
-          name: item.catName || '未分类',
-          value: item.productCount || 0
+        .map((item) => ({
+          name: item.name || '未分类',
+          value: item.count || 0,
         }))
         .sort((a, b) => b.value - a.value);
 
@@ -65,16 +65,16 @@ const RoseChart: React.FC<RoseChartProps> = ({
       const option = {
         title: {
           text: title,
-          left: 'center'
+          left: 'center',
         },
         tooltip: {
           trigger: 'item',
-          formatter: '{a} <br/>{b}: {c} ({d}%)'
+          formatter: '{a} <br/>{b}: {c} ({d}%)',
         },
         legend: {
           orient: 'vertical',
           left: 'left',
-          data: seriesData.map(item => item.name)
+          data: seriesData.map((item) => item.name),
         },
         series: [
           {
@@ -84,18 +84,18 @@ const RoseChart: React.FC<RoseChartProps> = ({
             center: ['50%', '60%'],
             roseType: 'radius', // 设置为南丁格尔玫瑰图
             itemStyle: {
-              borderRadius: 8
+              borderRadius: 8,
             },
             data: seriesData,
             emphasis: {
               itemStyle: {
                 shadowBlur: 10,
                 shadowOffsetX: 0,
-                shadowColor: 'rgba(0, 0, 0, 0.5)'
-              }
-            }
-          }
-        ]
+                shadowColor: 'rgba(0, 0, 0, 0.5)',
+              },
+            },
+          },
+        ],
       };
 
       // 设置图表选项
@@ -104,15 +104,15 @@ const RoseChart: React.FC<RoseChartProps> = ({
   }, [data, title]);
 
   return (
-    <div 
-      ref={chartRef} 
-      style={{ 
-        width: '100%', 
+    <div
+      ref={chartRef}
+      style={{
+        width: '100%',
         height: height,
-        marginBottom: '20px'
+        marginBottom: '20px',
       }}
     />
   );
 };
 
-export default RoseChart; 
+export default RoseChart;
