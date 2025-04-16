@@ -11,6 +11,13 @@ export interface StockCountVo {
   batchCount: CountVo[];
 }
 
+export interface StorageCountVo {
+  totalCount: number;
+  freeCount: number;
+  occupiedCount: number;
+  disabledCount: number;
+}
+
 /**
  * 统计用户数量
  *
@@ -105,6 +112,24 @@ export function getOrderCount(): Promise<Result<number[]>> {
   return new Promise((resolve, reject) => {
     axios
       .get('/order/getOrderCount')
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 统计库位信息占有情况
+ *
+ * @return 库位信息统计数据F
+ */
+export function countStorage(): Promise<Result<StorageCountVo>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/location/storage/countStorage')
       .then((res) => {
         resolve(res.data);
       })
