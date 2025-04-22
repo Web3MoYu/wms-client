@@ -200,6 +200,13 @@ export default function InspectDetailDrawer({
 
     if (!orderDetail) return;
 
+    // 查找当前商品的质检详情信息
+    const getInspectionItem = inspectionItems.find(
+      (item) =>
+        item.productId === selectedProduct.id &&
+        item.batchNumber === selectedProduct.batchNumber
+    );
+
     // 查看是否有已存在的质检数据
     const existingInspect = inspectedItems.get(
       selectedProduct.id + '_' + selectedProduct.batchNumber
@@ -214,9 +221,9 @@ export default function InspectDetailDrawer({
         itemRemark: existingInspect.remark,
       });
     } else {
-      // 否则加载默认值
+      // 否则加载默认值 - 使用inspectionQuantity作为实际数量
       form.setFieldsValue({
-        actualQuantity: orderDetail.orderItems.expectedQuantity || 0,
+        actualQuantity: getInspectionItem?.inspectionQuantity || 0,
         qualifiedQuantity: null,
         approval: 'true',
         itemRemark: '',
@@ -247,9 +254,6 @@ export default function InspectDetailDrawer({
     const orderDetail = selectedProduct
       ? detailData.find((item) => item.product?.id === selectedProduct.id)
       : null;
-
-    // 获取订单项
-    const orderItem = orderDetail?.orderItems;
 
     // 判断是否可以操作（未质检状态）
     const canOperate =
@@ -442,7 +446,7 @@ export default function InspectDetailDrawer({
                 '-'}
             </Descriptions.Item>
             <Descriptions.Item label='预期数量'>
-              {orderItem?.expectedQuantity || '请选择商品'}
+              {getInspectionItem?.inspectionQuantity || '请选择商品'}
             </Descriptions.Item>
             <Descriptions.Item label='实际数量'>
               {inspection.status !== 0
@@ -470,7 +474,7 @@ export default function InspectDetailDrawer({
                 form={form}
                 layout='vertical'
                 initialValues={{
-                  actualQuantity: orderItem?.expectedQuantity || 0,
+                  actualQuantity: getInspectionItem?.inspectionQuantity || 0,
                   approval: 'true',
                   itemRemark: '',
                 }}
@@ -484,7 +488,7 @@ export default function InspectDetailDrawer({
                     >
                       <InputNumber
                         min={0}
-                        max={orderItem?.expectedQuantity || 0}
+                        max={getInspectionItem?.inspectionQuantity || 0}
                         style={{ width: '100%' }}
                         onChange={(value) => {
                           // 当实际数量发生变化时，重置合格数量
