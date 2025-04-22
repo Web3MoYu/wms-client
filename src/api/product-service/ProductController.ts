@@ -10,8 +10,6 @@ export interface Product {
   model: string; // 型号
   spec: string; // 规格
   price: string; // 价格
-  minStock: number; // 最小库存
-  maxStock: number; // 最大库存
   imageUrl: string; // 图片URL
   description: string; // 描述
   createTime: string; // 创建时间

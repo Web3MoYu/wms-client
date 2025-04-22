@@ -916,8 +916,6 @@ const AddOrderDrawer: React.FC<OrderDrawerProps> = ({
               spec: item.spec || '', // 规格
               categoryId: categoryId, // 使用处理后的分类ID
               price: item.price || 0,
-              minStock: 0, // 最小库存
-              maxStock: 999, // 最大库存
               imageUrl: '', // 图片URL
               description: item.remark || '',
               createTime:
@@ -942,8 +940,6 @@ const AddOrderDrawer: React.FC<OrderDrawerProps> = ({
               spec: '',
               categoryId: '',
               price: item.price || 0,
-              minStock: 0,
-              maxStock: 0,
               imageUrl: '',
               description: '',
               createTime:

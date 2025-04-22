@@ -51,8 +51,6 @@ const StorageForm: React.FC<StorageFormProps> = ({
           model: '',
           spec: '',
           price: '',
-          minStock: 0,
-          maxStock: 0,
           imageUrl: '',
           description: '',
           createTime: '',
