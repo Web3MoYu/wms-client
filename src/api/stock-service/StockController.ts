@@ -12,6 +12,8 @@ export interface Stock {
   availableQuantity: number; // 可用数量
   alertStatus: number; // 预警状态：0-正常，1-低于最小库存，2-超过最大库存 null-显示所有
   batchNumber: string; // 批次号
+  minStock: number | null | undefined; // 最小库存
+  maxStock: number | null | undefined; // 最大库存
   productionDate: string; // 生产日期
   createTime: string; // 创建时间
   updateTime: string; // 更新时间
