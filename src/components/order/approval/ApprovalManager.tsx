@@ -397,7 +397,7 @@ export default function ApprovalManager() {
       title: '订单状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: number) => renderOrderStatus(status),
+      render: (status: number, type: number) => renderOrderStatus(status, type),
     },
     {
       title: '质检状态',
@@ -515,7 +515,7 @@ export default function ApprovalManager() {
 
       <Card style={{ marginTop: 16 }}>
         <Table
-          columns={columns}
+          columns={columns as any}
           dataSource={orders}
           rowKey='id'
           loading={loading}
