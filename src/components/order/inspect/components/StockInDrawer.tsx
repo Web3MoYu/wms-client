@@ -94,9 +94,9 @@ export default function StockInDrawer({
   const [submitModalVisible, setSubmitModalVisible] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [stockInItems, setStockInItems] = useState<Map<string, StockInDto>>(
-    new Map()
-  );
+  const [stockInItems, setStockInItems] = useState<
+    Map<string | null, StockInDto>
+  >(new Map());
   const [shelves, setShelves] = useState<any[]>([]);
   const [storagesByShelf, setStoragesByShelf] = useState<{
     [shelfId: string]: any[];
