@@ -11,18 +11,18 @@ import {
   Col,
   Select,
 } from 'antd';
-import {
-  SearchOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import locale from 'antd/es/date-picker/locale/zh_CN';
-import { alertPages, AlertQueryDto } from '../../../api/stock-service/AlertController';
+import {
+  alertPages,
+  AlertQueryDto,
+} from '../../../api/stock-service/AlertController';
 import { getUsersByName } from '../../../api/sys-service/UserController';
-import { 
-  renderAlertType, 
-  renderHandleStatus, 
-  AlertTypeSelect, 
+import {
+  renderAlertType,
+  renderHandleStatus,
+  AlertTypeSelect,
   HandleStatusSelect,
 } from '../components/StatusComponents';
 
@@ -35,7 +35,7 @@ export default function AlertManager() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [form] = Form.useForm();
-  
+
   // 分页配置
   const [pagination, setPagination] = useState({
     current: 1,
@@ -57,7 +57,7 @@ export default function AlertManager() {
 
       // 获取表单数据
       const values = form.getFieldsValue();
-      
+
       // 处理日期范围
       let startDate = null;
       let endDate = null;
@@ -182,30 +182,28 @@ export default function AlertManager() {
   ];
 
   return (
-    <div className="alert-manager">
-      <Card title="库存预警管理">
-        <Form form={form} layout="vertical">
+    <div className='alert-manager'>
+      <Card title='库存预警管理'>
+        <Form form={form} layout='vertical'>
           <Row gutter={24}>
             <Col span={6}>
-              <Form.Item label="预警类型" name="alertType">
+              <Form.Item label='预警类型' name='alertType'>
                 <AlertTypeSelect />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label="处理状态" name="isHandled">
+              <Form.Item label='处理状态' name='isHandled'>
                 <HandleStatusSelect />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label="处理人" name="handler">
+              <Form.Item label='处理人' name='handler'>
                 <Select
                   showSearch
-                  placeholder="请输入处理人姓名"
+                  placeholder='请输入处理人姓名'
                   filterOption={false}
                   defaultActiveFirstOption={false}
-                  showArrow={false}
                   onSearch={handleHandlerSearch}
-                  onChange={(value) => console.log('选中处理人:', value)}
                   notFoundContent={null}
                   style={{ width: '100%' }}
                   allowClear
@@ -219,12 +217,12 @@ export default function AlertManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label="日期范围" name="dateRange">
-                <RangePicker 
-                  style={{ width: '100%' }} 
+              <Form.Item label='日期范围' name='dateRange'>
+                <RangePicker
+                  style={{ width: '100%' }}
                   locale={locale}
                   showTime={{ format: 'HH:mm:ss' }}
-                  format="YYYY-MM-DD HH:mm:ss"
+                  format='YYYY-MM-DD HH:mm:ss'
                 />
               </Form.Item>
             </Col>
@@ -233,16 +231,13 @@ export default function AlertManager() {
             <Col span={24} style={{ textAlign: 'right' }}>
               <Space>
                 <Button
-                  type="primary"
+                  type='primary'
                   icon={<SearchOutlined />}
                   onClick={handleSearch}
                 >
                   搜索
                 </Button>
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={handleReset}
-                >
+                <Button icon={<ReloadOutlined />} onClick={handleReset}>
                   重置
                 </Button>
               </Space>
@@ -253,7 +248,7 @@ export default function AlertManager() {
         <Table
           dataSource={alerts}
           columns={columns}
-          rowKey="id"
+          rowKey='id'
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
