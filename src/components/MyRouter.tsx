@@ -1,6 +1,6 @@
 // 用与创建路由(可以根据数据，生成动态的路由)
 
-import { Navigate, useRoutes } from 'react-router-dom';
+import { useRoutes } from 'react-router-dom';
 import Login from '../pages/Login';
 import Index from '../pages/Index';
 // react动态加载组件 @loadable/component
@@ -9,6 +9,7 @@ import { observer } from 'mobx-react-lite';
 import userStore from '../store/userStore';
 import { JSX } from 'react/jsx-runtime';
 import PersonalInfo from '../components/personal/PersonalInfo';
+import NotFound from '../components/not-found/NotFound';
 
 function createRouter(list: any) {
   const arr: { path: any; children?: any[]; element?: JSX.Element }[] = [];
@@ -60,7 +61,14 @@ const PrivateRoute = observer(() => {
     {
       path: '/',
       element: <Index />,
-      children: [...myRouter()],
+      children: [
+        ...myRouter(),
+        // 在子路由中添加404路由，这样可以在导航布局中显示404页面
+        {
+          path: '*',
+          element: <NotFound />
+        }
+      ],
     },
     {
       path: '/personal',
@@ -68,7 +76,7 @@ const PrivateRoute = observer(() => {
     },
     {
       path: '/*',
-      element: <Navigate to={'/login'}></Navigate>,
+      element: <NotFound />,
     },
   ]);
 });
