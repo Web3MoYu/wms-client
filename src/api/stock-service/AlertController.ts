@@ -68,3 +68,20 @@ export function updateAlertConfig(stock: Stock): Promise<Result<string>> {
       });
   });
 }
+
+/**
+ * 处理预警信息
+ * @param id 预警ID
+ */
+export function handleAlert(id: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/stock/alert/handle/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

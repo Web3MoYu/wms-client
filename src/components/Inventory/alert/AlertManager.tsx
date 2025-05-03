@@ -11,6 +11,7 @@ import {
   Col,
   Select,
   Input,
+  Popconfirm,
 } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
@@ -19,6 +20,7 @@ import { useLocation } from 'react-router-dom';
 import {
   alertPages,
   AlertQueryDto,
+  handleAlert,
 } from '../../../api/stock-service/AlertController';
 import { getUsersByName } from '../../../api/sys-service/UserController';
 import {
@@ -215,7 +217,45 @@ export default function AlertManager() {
       key: 'alertTime',
       render: (text: string) => text || '-',
     },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: any) => {
+        // 只有未处理状态(isHandled=0)才显示处理按钮
+        return record.isHandled === 0 ? (
+          <Popconfirm
+            title="确认处理"
+            description="确定要将此预警标记为已处理吗？"
+            onConfirm={() => handleAlertAction(record.id)}
+            okText="确认"
+            cancelText="取消"
+          >
+            <Button type="link" size="small">处理</Button>
+          </Popconfirm>
+        ) : null;
+      },
+    },
   ];
+
+  // 处理预警操作
+  const handleAlertAction = async (id: string) => {
+    try {
+      setLoading(true);
+      const result = await handleAlert(id);
+      if (result.code === 200) {
+        message.success('预警处理成功');
+        // 刷新预警列表
+        fetchAlerts();
+      } else {
+        message.error(result.msg || '预警处理失败');
+      }
+    } catch (error) {
+      console.error('预警处理失败:', error);
+      message.error('预警处理失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className='alert-manager'>
