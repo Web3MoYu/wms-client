@@ -10,10 +10,12 @@ import {
   Row,
   Col,
   Select,
+  Input,
 } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import locale from 'antd/es/date-picker/locale/zh_CN';
+import { useLocation } from 'react-router-dom';
 import {
   alertPages,
   AlertQueryDto,
@@ -35,6 +37,11 @@ export default function AlertManager() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [form] = Form.useForm();
+  const location = useLocation();
+
+  // URL参数解析
+  const query = new URLSearchParams(location.search);
+  const alertNoFromQuery = query.get('alertNo');
 
   // 分页配置
   const [pagination, setPagination] = useState({
@@ -47,8 +54,21 @@ export default function AlertManager() {
 
   // 初始化
   useEffect(() => {
+    // 如果URL中有alertNo参数，则设置到表单中
+    if (alertNoFromQuery) {
+      form.setFieldsValue({
+        alertNo: alertNoFromQuery
+      });
+    }
+    
     fetchAlerts();
-  }, [pagination.current, pagination.pageSize]);
+    
+    // 如果是从消息点击进来的（有alertNo参数），则修改URL但不触发导航
+    if (alertNoFromQuery) {
+      const newUrl = window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [form, alertNoFromQuery]);
 
   // 查询预警数据
   const fetchAlerts = async () => {
@@ -75,6 +95,7 @@ export default function AlertManager() {
         endDate: endDate,
         isHandled: values.isHandled !== undefined ? values.isHandled : null,
         handler: values.handler || '',
+        alertNo: values.alertNo || '',
       };
 
       const result = await alertPages(queryDto);
@@ -134,6 +155,12 @@ export default function AlertManager() {
 
   // 表格列定义
   const columns = [
+    {
+      title: '预警编号',
+      dataIndex: 'alertNo',
+      key: 'alertNo',
+      render: (text: string) => text || '-',
+    },
     {
       title: '产品名称',
       dataIndex: ['stock', 'productName'],
@@ -196,6 +223,11 @@ export default function AlertManager() {
         <Form form={form} layout='vertical'>
           <Row gutter={24}>
             <Col span={6}>
+              <Form.Item label='预警编号' name='alertNo'>
+                <Input placeholder='请输入预警编号' />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
               <Form.Item label='预警类型' name='alertType'>
                 <AlertTypeSelect />
               </Form.Item>
@@ -225,6 +257,8 @@ export default function AlertManager() {
                 </Select>
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={24}>
             <Col span={6}>
               <Form.Item label='日期范围' name='dateRange'>
                 <RangePicker
@@ -235,9 +269,7 @@ export default function AlertManager() {
                 />
               </Form.Item>
             </Col>
-          </Row>
-          <Row>
-            <Col span={24} style={{ textAlign: 'right' }}>
+            <Col span={18} style={{ textAlign: 'right' }}>
               <Space>
                 <Button
                   type='primary'

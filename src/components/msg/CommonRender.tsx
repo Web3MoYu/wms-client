@@ -187,8 +187,9 @@ export const handleMessageNavigation = (msg: Msg, navigate: NavigateFunction) =>
       // 目前暂不处理，可以后续添加
       return false;
     case 5: // 库存预警
-      // 目前暂不处理，可以后续添加
-      return false;
+      // 跳转到库存预警页面，设置预警编号为业务ID
+      navigate(`/inventory/alert?alertNo=${msg.relatedBizId}`);
+      break;
     default:
       console.log('未知业务类型：', msg.relatedBizType);
       return false;

@@ -9,6 +9,7 @@ export interface AlertQueryDto {
   alertType: number; // 1-低于最小库存，2-超过最大库存
   startDate: string; // 开始时间
   endDate: string; // 结束时间
+  alertNo: string; // 预警编号
   isHandled: number; // 是否处理：0-否，1-是
   handler: string; // 处理人
 }
