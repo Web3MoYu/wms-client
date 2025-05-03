@@ -307,6 +307,18 @@ export default function StockManager() {
       },
     },
     {
+      title: '最小库存',
+      dataIndex: 'minStock',
+      key: 'minStock',
+      render: (minStock: number) => minStock || '-',
+    },
+    {
+      title: '最大库存',
+      dataIndex: 'maxStock',
+      key: 'maxStock',
+      render: (maxStock: number) => maxStock || '-',
+    },
+    {
       title: '生产日期',
       dataIndex: 'productionDate',
       key: 'productionDate',
