@@ -143,7 +143,7 @@ const StockSelectDrawer: React.FC<StockSelectDrawerProps> = ({
         productId: values.productId || '',
         areaId: values.areaId || '',
         batchNumber: values.batchNumber || '',
-        status: 0, // 使用0表示全部状态
+        status: null, // 使用0表示全部状态
         ascSortByProdDate:
           sortConfig.prodDate === undefined ? null : sortConfig.prodDate,
         ascSortByQuantity:

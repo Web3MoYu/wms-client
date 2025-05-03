@@ -603,7 +603,9 @@ export default function StockInDrawer({
       message.success(`${isProcessed ? '修改' : '上架'}成功`);
 
       // 检查是否所有合格商品都已处理
-      if (newStockInItems.size === filteredDetailData.length) {
+      const allProcessed = areAllProductsStocked();
+      if (allProcessed) {
+        message.success('所有商品已完成上架，可以点击确认上架按钮提交', 3);
         setSubmitModalVisible(true);
       } else if (!isProcessed) {
         // 如果是新完成的上架项且还有未处理商品，自动跳转到下一个未处理商品
@@ -1042,6 +1044,21 @@ export default function StockInDrawer({
         closable={true}
         destroyOnClose={true}
         bodyStyle={{ overflowY: 'auto', height: 'calc(100% - 55px)' }}
+        footer={
+          inspection?.orderStatus === 2 &&
+          filteredDetailData.length > 0 &&
+          areAllProductsStocked() ? (
+            <div style={{ textAlign: 'right' }}>
+              <Button
+                type='primary'
+                icon={<CheckCircleOutlined />}
+                onClick={showSubmitModal}
+              >
+                确认上架
+              </Button>
+            </div>
+          ) : null
+        }
       >
         <Spin spinning={loading} tip='加载中...'>
           <div className='inspect-detail-container'>
@@ -1422,12 +1439,15 @@ export default function StockInDrawer({
                           filteredDetailData.length > 0 &&
                           areAllProductsStocked() && (
                             <div style={{ marginTop: 16, textAlign: 'right' }}>
+                              <Text type="success" style={{ marginRight: 16 }}>
+                                所有商品已完成上架，请点击确认上架按钮提交
+                              </Text>
                               <Button
                                 type='primary'
                                 icon={<CheckCircleOutlined />}
                                 onClick={showSubmitModal}
                               >
-                                提交上架
+                                确认上架
                               </Button>
                             </div>
                           )}

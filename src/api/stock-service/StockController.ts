@@ -40,7 +40,7 @@ export interface StockDto {
   pageSize: number; // 每页条数
   productId: string; // 商品ID
   areaId: string; // 区域ID
-  status: number; // 状态
+  status: number | null; // 状态
   batchNumber: string; // 批次号
   ascSortByProdDate: boolean | null; // 是否按生产日期升序排序
   ascSortByQuantity: boolean | null; // 是否按数量生序排序
