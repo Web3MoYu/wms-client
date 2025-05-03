@@ -185,12 +185,14 @@ const MessageNotifier: React.FC = () => {
 
   // 处理消息点击，根据业务类型跳转到不同页面
   const handleMessageClick = (msg: Msg) => {
-    // 使用公共导航函数处理跳转
-    handleMessageNavigation(msg, navigate);
-    
     // 如果是未读消息，自动标记为已读（但不显示确认框）
     if (activeTab === 'unread') {
       markMessageAsReadDirectly(msg.id);
+    }
+    
+    // 使用公共导航函数处理跳转
+    if (msg.relatedBizId && [1, 2, 3, 5].includes(msg.relatedBizType || 0)) {
+      handleMessageNavigation(msg, navigate);
     }
   };
 
@@ -319,6 +321,7 @@ const MessageNotifier: React.FC = () => {
   const showNotification = (msg: Msg) => {
     const priorityText = getPriorityText(msg.priority);
     const priorityStyle = getPriorityStyle(msg.priority);
+    const canNavigate = msg.relatedBizId && [1, 2, 3, 5].includes(msg.relatedBizType || 0);
 
     notification.open({
       message: (
@@ -332,6 +335,24 @@ const MessageNotifier: React.FC = () => {
       description: (
         <div>
           <Paragraph style={styles.content}>{msg.content}</Paragraph>
+          {msg.relatedBizId && (
+            <div style={styles.bizInfo}>
+              <Text>业务ID: {canNavigate ? (
+                <a
+                  onClick={() => {
+                    handleMessageNavigation(msg, navigate);
+                    markMessageAsReadDirectly(msg.id);
+                  }}
+                  style={{ color: '#1890ff' }}
+                >
+                  {msg.relatedBizId}
+                </a>
+              ) : msg.relatedBizId}</Text>
+              {msg.relatedBizType && (
+                <Text style={{ marginLeft: 6 }}>业务类型: {getBizTypeText(msg.relatedBizType)}</Text>
+              )}
+            </div>
+          )}
           <Text style={styles.sender}>
             {msg.isSystem === 1 ? '系统消息' : `发送人: ${msg.senderName}`}
           </Text>
@@ -339,6 +360,13 @@ const MessageNotifier: React.FC = () => {
       ),
       duration: 5,
       placement: 'topRight',
+      onClick: () => {
+        if (canNavigate) {
+          handleMessageNavigation(msg, navigate);
+          markMessageAsReadDirectly(msg.id);
+        }
+      },
+      style: canNavigate ? { cursor: 'pointer' } : {},
     });
   };
 
@@ -447,7 +475,20 @@ const MessageNotifier: React.FC = () => {
           
           {item.relatedBizId && (
             <div style={styles.bizInfo}>
-              <Text>业务ID: {item.relatedBizId}</Text>
+              <Text>业务ID: {[1, 2, 3, 5].includes(item.relatedBizType || 0) ? (
+                <a 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMessageNavigation(item, navigate);
+                    if (isUnread) {
+                      markMessageAsReadDirectly(item.id);
+                    }
+                  }}
+                  style={{ color: '#1890ff' }}
+                >
+                  {item.relatedBizId}
+                </a>
+              ) : item.relatedBizId}</Text>
               {item.relatedBizType && (
                 <Text style={{ marginLeft: 6 }}>业务类型: {getBizTypeText(item.relatedBizType)}</Text>
               )}
