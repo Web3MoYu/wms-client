@@ -135,9 +135,15 @@ export default function AlertManager() {
   // 表格列定义
   const columns = [
     {
-      title: '物料',
-      dataIndex: 'materialName',
-      key: 'materialName',
+      title: '产品名称',
+      dataIndex: ['stock', 'productName'],
+      key: 'productName',
+    },
+    {
+      title: '批次号',
+      dataIndex: ['stock', 'batchNumber'],
+      key: 'batchNumber',
+      render: (text: string) => text || '-',
     },
     {
       title: '预警类型',
@@ -152,8 +158,11 @@ export default function AlertManager() {
     },
     {
       title: '预警阈值',
-      dataIndex: 'thresholdQuantity',
+      dataIndex: 'alertType',
       key: 'thresholdQuantity',
+      render: (type: number, record: any) => {
+        return type === 2 ? record.maxStock : record.minStock;
+      },
     },
     {
       title: '处理状态',
@@ -163,7 +172,7 @@ export default function AlertManager() {
     },
     {
       title: '处理人',
-      dataIndex: 'handlerName',
+      dataIndex: ['handlerUser', 'realName'],
       key: 'handlerName',
       render: (text: string) => text || '-',
     },

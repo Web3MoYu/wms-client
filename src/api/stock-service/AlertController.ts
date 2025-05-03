@@ -1,5 +1,6 @@
 import axios from '../../utils/mxAxios';
 import { Page, Result } from '../Model';
+import { User } from '../sys-service/UserController';
 import { Stock, StockVo } from './StockController';
 
 export interface AlertQueryDto {
@@ -30,6 +31,7 @@ export interface Alert {
 
 export interface AlertVo extends Alert {
   stock: StockVo;
+  handlerUser: User;
 }
 
 /**
