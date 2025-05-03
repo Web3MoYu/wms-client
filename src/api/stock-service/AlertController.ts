@@ -1,6 +1,6 @@
 import axios from '../../utils/mxAxios';
 import { Page, Result } from '../Model';
-import { StockVo } from './StockController';
+import { Stock, StockVo } from './StockController';
 
 export interface AlertQueryDto {
   page: number; // 当前页码
@@ -40,6 +40,23 @@ export function alertPages(dto: AlertQueryDto): Promise<Result<Page<AlertVo>>> {
   return new Promise((resolve, reject) => {
     axios
       .post('/stock/alert/pages', dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 更新预警配置
+ * @param stock 库存信息
+ */
+export function updateAlertConfig(stock: Stock): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put('/stock/alert/updateAlertConfig', stock)
       .then((res) => {
         resolve(res.data);
       })

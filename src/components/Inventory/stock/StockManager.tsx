@@ -11,12 +11,14 @@ import {
   message,
   Tag,
   ConfigProvider,
+  Modal,
+  Input,
+  InputNumber,
 } from 'antd';
 import {
   SearchOutlined,
   ClearOutlined,
   PlusOutlined,
-  FileSearchOutlined,
 } from '@ant-design/icons';
 import { SortOrder } from 'antd/es/table/interface';
 import debounce from 'lodash/debounce';
@@ -38,6 +40,7 @@ import {
 import StockDrawer from './StockDrawer';
 import StockDetail from './StockDetail';
 import zhCN from 'antd/es/locale/zh_CN';
+import { updateAlertConfig } from '../../../api/stock-service/AlertController';
 
 // 组件主体
 export default function StockManager() {
@@ -70,6 +73,12 @@ export default function StockManager() {
     quantity?: boolean;
     availableQuantity?: boolean;
   }>({});
+
+  // 预警配置Modal状态
+  const [alertModalVisible, setAlertModalVisible] = useState(false);
+  const [currentStock, setCurrentStock] = useState<StockVo | null>(null);
+  const [minStock, setMinStock] = useState<number | null>(null);
+  const [maxStock, setMaxStock] = useState<number | null>(null);
 
   // 初始化加载
   useEffect(() => {
@@ -260,6 +269,58 @@ export default function StockManager() {
     }
   };
 
+  // 打开预警配置Modal
+  const handleConfigAlert = (record: StockVo) => {
+    setCurrentStock(record);
+    setMinStock(record.minStock || null);
+    setMaxStock(record.maxStock || null);
+    setAlertModalVisible(true);
+  };
+
+  // 关闭预警配置Modal
+  const handleAlertModalCancel = () => {
+    setAlertModalVisible(false);
+    setCurrentStock(null);
+    setMinStock(null);
+    setMaxStock(null);
+  };
+
+  // 保存预警配置
+  const handleAlertConfigSave = async () => {
+    if (!currentStock) return;
+
+    try {
+      const stock = {
+        id: currentStock.id,
+        productId: currentStock.productId,
+        productCode: currentStock.productCode,
+        areaId: currentStock.areaId,
+        location: currentStock.location || [],
+        quantity: currentStock.quantity,
+        availableQuantity: currentStock.availableQuantity,
+        batchNumber: currentStock.batchNumber,
+        minStock,
+        maxStock,
+        alertStatus: currentStock.alertStatus,
+        productionDate: currentStock.productionDate,
+        createTime: currentStock.createTime,
+        updateTime: currentStock.updateTime,
+      };
+
+      const res = await updateAlertConfig(stock);
+      if (res.code === 200) {
+        message.success('预警配置更新成功');
+        setAlertModalVisible(false);
+        fetchStocks(); // 刷新列表
+      } else {
+        message.error(res.msg || '预警配置更新失败');
+      }
+    } catch (error) {
+      console.error('预警配置更新失败:', error);
+      message.error('预警配置更新失败，请稍后重试');
+    }
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -330,12 +391,11 @@ export default function StockManager() {
       key: 'action',
       render: (_: any, record: StockVo) => (
         <Space size='middle'>
-          <Button
-            type='link'
-            icon={<FileSearchOutlined />}
-            onClick={() => handleViewDetail(record)}
-          >
+          <Button type='link' onClick={() => handleViewDetail(record)}>
             详情
+          </Button>
+          <Button type='link' onClick={() => handleConfigAlert(record)}>
+            预警
           </Button>
         </Space>
       ),
@@ -521,6 +581,46 @@ export default function StockManager() {
           stock={detailStock}
           onRefresh={handleDetailRefresh}
         />
+
+        {/* 预警配置Modal */}
+        <Modal
+          title='库存预警配置'
+          open={alertModalVisible}
+          onCancel={handleAlertModalCancel}
+          onOk={handleAlertConfigSave}
+          destroyOnClose
+        >
+          <Form layout='vertical'>
+            <Form.Item label='商品名称'>
+              <Input value={currentStock?.productName} disabled />
+            </Form.Item>
+            <Form.Item label='批次号'>
+              <Input value={currentStock?.batchNumber} disabled />
+            </Form.Item>
+            <Form.Item label='最小库存'>
+              <InputNumber
+                style={{ width: '100%' }}
+                value={minStock}
+                onChange={(value) =>
+                  setMinStock(value === undefined ? null : value)
+                }
+                placeholder='请输入最小库存数量'
+                min={0}
+              />
+            </Form.Item>
+            <Form.Item label='最大库存'>
+              <InputNumber
+                style={{ width: '100%' }}
+                value={maxStock}
+                onChange={(value) =>
+                  setMaxStock(value === undefined ? null : value)
+                }
+                placeholder='请输入最大库存数量'
+                min={0}
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
       </div>
     </ConfigProvider>
   );
