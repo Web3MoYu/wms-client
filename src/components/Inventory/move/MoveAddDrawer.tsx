@@ -13,11 +13,13 @@ import {
   Col,
   Divider,
   Card,
-  List,
 } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { StockVo } from '../../../api/stock-service/StockController';
-import { Area, getAllAreas } from '../../../api/location-service/AreaController';
+import {
+  Area,
+  getAllAreas,
+} from '../../../api/location-service/AreaController';
 import { getShelfListByAreaId } from '../../../api/location-service/ShelfController';
 import { getStoragesByShelfId } from '../../../api/location-service/StorageController';
 import { addMovement } from '../../../api/stock-service/MoveController';
@@ -33,7 +35,11 @@ interface MoveAddDrawerProps {
   onSuccess: () => void;
 }
 
-const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSuccess }) => {
+const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({
+  visible,
+  onClose,
+  onSuccess,
+}) => {
   const [form] = Form.useForm();
   const [areas, setAreas] = useState<Area[]>([]);
   const [shelves, setShelves] = useState<any[]>([]);
@@ -81,7 +87,7 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
       if (res.code === 200) {
         setShelves(res.data);
         setAvailableShelves(new Set());
-        
+
         // 检查每个货架的可用性
         for (const shelf of res.data) {
           checkShelfAvailability(shelf.id);
@@ -187,45 +193,136 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
     if (!selectedStock) return null;
 
     return (
-      <Card style={{ marginBottom: 16 }}>
-        <Title level={5}>已选择库存</Title>
-        <Row gutter={[16, 8]}>
-          <Col span={8}>
-            <Text strong>商品名称：</Text> {selectedStock.productName}
-          </Col>
-          <Col span={8}>
-            <Text strong>批次号：</Text> {selectedStock.batchNumber}
-          </Col>
-          <Col span={8}>
-            <Text strong>可用数量：</Text> {selectedStock.availableQuantity}
-          </Col>
-          <Col span={8}>
-            <Text strong>所属区域：</Text> {selectedStock.areaName}
-          </Col>
-          <Col span={16}>
-            <Text strong>当前位置：</Text>
-            <div style={{ marginTop: 4 }}>
-              {selectedStock.locationVo && selectedStock.locationVo.length > 0 ? (
-                <List
-                  size="small"
-                  dataSource={selectedStock.locationVo}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <Text>{item.shelfName}：</Text>
-                      {item.storageNames.map((name, idx) => (
-                        <Tag key={idx} color="blue" style={{ margin: '0 4px' }}>
-                          {name}
-                        </Tag>
-                      ))}
-                    </List.Item>
-                  )}
-                />
-              ) : (
-                <Text type="secondary">无位置信息</Text>
-              )}
-            </div>
-          </Col>
-        </Row>
+      <Card
+        title={
+          <Title level={4} style={{ margin: 0 }}>
+            已选择库存
+          </Title>
+        }
+        style={{
+          marginBottom: 24,
+          borderRadius: 8,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        }}
+        headStyle={{
+          backgroundColor: '#f0f7ff',
+          borderBottom: '1px solid #d9e8ff',
+        }}
+      >
+        <div style={{ padding: '8px 0' }}>
+          <Row gutter={[24, 24]}>
+            <Col span={8}>
+              <div className='info-item'>
+                <Text
+                  type='secondary'
+                  style={{ display: 'block', marginBottom: 4 }}
+                >
+                  商品名称
+                </Text>
+                <Text strong style={{ fontSize: 16 }}>
+                  {selectedStock.productName}
+                </Text>
+              </div>
+            </Col>
+            <Col span={8}>
+              <div className='info-item'>
+                <Text
+                  type='secondary'
+                  style={{ display: 'block', marginBottom: 4 }}
+                >
+                  批次号
+                </Text>
+                <Text strong style={{ fontSize: 16 }}>
+                  {selectedStock.batchNumber}
+                </Text>
+              </div>
+            </Col>
+            <Col span={8}>
+              <div className='info-item'>
+                <Text
+                  type='secondary'
+                  style={{ display: 'block', marginBottom: 4 }}
+                >
+                  可用数量
+                </Text>
+                <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                  {selectedStock.availableQuantity}
+                </Text>
+              </div>
+            </Col>
+          </Row>
+
+          <Row gutter={[24, 24]} style={{ marginTop: 16 }}>
+            <Col span={8}>
+              <div className='info-item'>
+                <Text
+                  type='secondary'
+                  style={{ display: 'block', marginBottom: 4 }}
+                >
+                  所属区域
+                </Text>
+                <Text strong style={{ fontSize: 16 }}>
+                  {selectedStock.areaName}
+                </Text>
+              </div>
+            </Col>
+            <Col span={16}>
+              <div className='info-item'>
+                <Text
+                  type='secondary'
+                  style={{ display: 'block', marginBottom: 8 }}
+                >
+                  当前位置
+                </Text>
+                {selectedStock.locationVo &&
+                selectedStock.locationVo.length > 0 ? (
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      borderRadius: 6,
+                      border: '1px dashed #d9d9d9',
+                    }}
+                  >
+                    {selectedStock.locationVo.map((item, locationIndex) => (
+                      <div
+                        key={locationIndex}
+                        style={{
+                          marginBottom:
+                            locationIndex < selectedStock.locationVo.length - 1
+                              ? 12
+                              : 0,
+                        }}
+                      >
+                        <div style={{ marginBottom: 8 }}>
+                          <Tag color='cyan' style={{ marginRight: 8 }}>
+                            位置 {locationIndex + 1}
+                          </Tag>
+                          <Text strong>{item.shelfName}</Text>
+                        </div>
+                        <div style={{ paddingLeft: 16 }}>
+                          {item.storageNames.map((name, idx) => (
+                            <Tag
+                              key={idx}
+                              color='blue'
+                              style={{ margin: '0 4px 4px 0' }}
+                            >
+                              {name}
+                            </Tag>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Text type='secondary' style={{ fontStyle: 'italic' }}>
+                    无位置信息
+                  </Text>
+                )}
+              </div>
+            </Col>
+          </Row>
+        </div>
       </Card>
     );
   };
@@ -269,7 +366,7 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
   return (
     <>
       <Drawer
-        title="新增库存变动"
+        title='新增库存变动'
         width={1300}
         onClose={onClose}
         open={visible}
@@ -277,11 +374,7 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
         extra={
           <Space>
             <Button onClick={onClose}>取消</Button>
-            <Button
-              onClick={handleSubmit}
-              type="primary"
-              loading={loading}
-            >
+            <Button onClick={handleSubmit} type='primary' loading={loading}>
               提交
             </Button>
           </Space>
@@ -289,24 +382,13 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
       >
         <Form
           form={form}
-          layout="vertical"
+          layout='vertical'
           initialValues={{
             locations: [{ shelfId: undefined, storageIds: [] }],
           }}
         >
-          <Form.Item
-            name="stockId"
-            label="选择库存"
-            rules={[{ required: true, message: '请选择需要变更的库存' }]}
-          >
-            <Input
-              hidden
-              style={{ display: 'none' }}
-            />
-          </Form.Item>
-
           <div style={{ marginBottom: 16 }}>
-            <Button type="primary" onClick={handleOpenStockSelect}>
+            <Button type='primary' onClick={handleOpenStockSelect}>
               选择库存
             </Button>
           </div>
@@ -316,12 +398,12 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
           <Divider />
 
           <Form.Item
-            name="areaId"
-            label="变更后区域"
+            name='areaId'
+            label='变更后区域'
             rules={[{ required: true, message: '请选择变更后的区域' }]}
           >
             <Select
-              placeholder="请选择变更后的区域"
+              placeholder='请选择变更后的区域'
               onChange={handleAreaChange}
             >
               {areas.map((area) => (
@@ -344,12 +426,12 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
                 borderRadius: 4,
               }}
             >
-              <Text type="secondary">
+              <Text type='secondary'>
                 请先选择变更后区域，然后才能添加货架和库位信息
               </Text>
             </div>
           )}
-          <Form.List name="locations">
+          <Form.List name='locations'>
             {(fields, { add, remove }) => (
               <>
                 {fields.map(({ key, name, ...restField }, index) => (
@@ -367,17 +449,22 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
                         <Form.Item
                           {...restField}
                           name={[name, 'shelfId']}
-                          label="货架"
+                          label='货架'
                           rules={[{ required: true, message: '请选择货架' }]}
                         >
                           <Select
-                            placeholder="请选择货架"
-                            onChange={(value) => handleShelfChange(value, index)}
+                            placeholder='请选择货架'
+                            onChange={(value) =>
+                              handleShelfChange(value, index)
+                            }
                             disabled={!form.getFieldValue('areaId')}
                           >
                             {shelves.map((shelf) => {
-                              const isAvailable = availableShelves.has(shelf.id);
-                              const selectedShelfIds = getAllSelectedShelfIds(index);
+                              const isAvailable = availableShelves.has(
+                                shelf.id
+                              );
+                              const selectedShelfIds =
+                                getAllSelectedShelfIds(index);
                               const isUsed = selectedShelfIds.has(shelf.id);
 
                               if (isAvailable && !isUsed) {
@@ -396,24 +483,36 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
                         <Form.Item
                           {...restField}
                           name={[name, 'storageIds']}
-                          label="库位"
+                          label='库位'
                           rules={[
                             { required: true, message: '请选择至少一个库位' },
                           ]}
                         >
                           <Select
-                            mode="multiple"
+                            mode='multiple'
                             disabled={
-                              !form.getFieldValue(['locations', index, 'shelfId'])
+                              !form.getFieldValue([
+                                'locations',
+                                index,
+                                'shelfId',
+                              ])
                             }
                             style={{ width: '100%' }}
                             onChange={(value) => {
                               handleStorageChange(value, index);
                             }}
                           >
-                            {form.getFieldValue(['locations', index, 'shelfId']) &&
+                            {form.getFieldValue([
+                              'locations',
+                              index,
+                              'shelfId',
+                            ]) &&
                             storagesByShelf[
-                              form.getFieldValue(['locations', index, 'shelfId'])
+                              form.getFieldValue([
+                                'locations',
+                                index,
+                                'shelfId',
+                              ])
                             ]
                               ? storagesByShelf[
                                   form.getFieldValue([
@@ -422,17 +521,19 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
                                     'shelfId',
                                   ])
                                 ]
-                                .filter(storage => storage.status === 1) // 只显示可用库位
-                                .map((storage) => (
-                                  <Option
-                                    key={storage.id}
-                                    value={storage.id}
-                                    label={storage.locationName || storage.id}
-                                    title={`ID: ${storage.id}, 名称: ${storage.locationName || storage.id}`}
-                                  >
-                                    {storage.locationName || storage.id}
-                                  </Option>
-                                ))
+                                  .filter((storage) => storage.status === 1) // 只显示可用库位
+                                  .map((storage) => (
+                                    <Option
+                                      key={storage.id}
+                                      value={storage.id}
+                                      label={storage.locationName || storage.id}
+                                      title={`ID: ${storage.id}, 名称: ${
+                                        storage.locationName || storage.id
+                                      }`}
+                                    >
+                                      {storage.locationName || storage.id}
+                                    </Option>
+                                  ))
                               : []}
                           </Select>
                         </Form.Item>
@@ -455,7 +556,7 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
 
                 <Form.Item>
                   <Button
-                    type="dashed"
+                    type='dashed'
                     onClick={() => add()}
                     block
                     icon={<PlusOutlined />}
@@ -468,14 +569,8 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
             )}
           </Form.List>
 
-          <Form.Item
-            name="remark"
-            label="备注"
-          >
-            <TextArea 
-              rows={4} 
-              placeholder="请输入变更备注信息"
-            />
+          <Form.Item name='remark' label='备注'>
+            <TextArea rows={4} placeholder='请输入变更备注信息' />
           </Form.Item>
         </Form>
       </Drawer>
@@ -490,4 +585,4 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
   );
 };
 
-export default MoveAddDrawer; 
+export default MoveAddDrawer;

@@ -33,7 +33,7 @@ const MoveStockDetail: React.FC<StockDetailProps> = ({ visible, onClose, stock }
   return (
     <Drawer
       title="库存详情"
-      width={700}
+      width={900}
       onClose={onClose}
       open={visible}
     >
