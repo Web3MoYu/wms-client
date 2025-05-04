@@ -387,6 +387,15 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({
             locations: [{ shelfId: undefined, storageIds: [] }],
           }}
         >
+          <Form.Item
+            name='stockId'
+            label='选择库存'
+            rules={[{ required: true, message: '请选择需要变更的库存' }]}
+            hidden
+          >
+            <Input />
+          </Form.Item>
+
           <div style={{ marginBottom: 16 }}>
             <Button type='primary' onClick={handleOpenStockSelect}>
               选择库存
