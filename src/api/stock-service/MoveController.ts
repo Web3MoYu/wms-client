@@ -86,3 +86,41 @@ export function addMovement(dto: AddMovementDto): Promise<Result<string>> {
       });
   });
 }
+
+/**
+ * 审批变动记录
+ * @param id 变动记录ID
+ */
+export function approveMovement(id: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/stock/move/approve/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 拒绝变动记录
+ * @param id 变动记录ID
+ * @param reason 拒绝原因
+ */
+export function rejectMovement(
+  id: string,
+  reason: string
+): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/stock/move/reject/${id}`, { params: { reason } })
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

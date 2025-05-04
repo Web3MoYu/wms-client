@@ -11,12 +11,19 @@ import {
   Col,
   Select,
   Input,
+  Popconfirm,
+  Modal,
+  Tooltip,
+  Dropdown,
 } from 'antd';
 import {
   SearchOutlined,
   ReloadOutlined,
   PlusOutlined,
   EyeOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import locale from 'antd/es/date-picker/locale/zh_CN';
@@ -24,6 +31,8 @@ import { useLocation } from 'react-router-dom';
 import {
   pageMovement,
   MovementDto,
+  approveMovement,
+  rejectMovement,
 } from '../../../api/stock-service/MoveController';
 import { getUsersByName } from '../../../api/sys-service/UserController';
 import {
@@ -39,6 +48,7 @@ import MoveDetail from './MoveDetail';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+const { TextArea } = Input;
 
 export default function MoveManager() {
   // 状态定义
@@ -53,6 +63,12 @@ export default function MoveManager() {
   // 详情抽屉状态
   const [detailVisible, setDetailVisible] = useState<boolean>(false);
   const [currentMovement, setCurrentMovement] = useState<any>(null);
+  // 拒绝弹窗状态
+  const [rejectModalVisible, setRejectModalVisible] = useState<boolean>(false);
+  const [rejectForm] = Form.useForm();
+  const [rejectingId, setRejectingId] = useState<string>('');
+  // 操作加载状态
+  const [rejecting, setRejecting] = useState<boolean>(false);
   const location = useLocation();
   
   // URL参数解析
@@ -77,21 +93,22 @@ export default function MoveManager() {
         movementNo: moveNoFromQuery
       });
       
-      // 自动执行搜索
+      // 重置分页，确保在第一页查询
       setPagination({
-        current: 1, // 重置为第一页
+        current: 1,
         pageSize: 10,
       });
       
-      // 如果是从消息点击进来的（有moveNo参数），则修改URL但不触发导航
-      const newUrl = window.location.pathname;
-      window.history.replaceState(null, '', newUrl);
+      // 立即查询数据
+      fetchMovements();
     }
   }, [moveNoFromQuery, form]);
 
   // 初始化
   useEffect(() => {
-    fetchMovements();
+    if (!moveNoFromQuery) {
+      fetchMovements();
+    }
     fetchAreas(); // 加载所有区域
   }, [pagination.current, pagination.pageSize]);
 
@@ -136,11 +153,6 @@ export default function MoveManager() {
         endDate: endDate,
         status: values.status !== undefined ? values.status : null,
       };
-
-      // 如果是初始加载且有moveNo参数，优先使用该参数
-      if (moveNoFromQuery && !values.movementNo) {
-        queryDto.movementNo = moveNoFromQuery;
-      }
 
       const result = await pageMovement(queryDto);
 
@@ -238,6 +250,125 @@ export default function MoveManager() {
     setCurrentMovement(null);
   };
 
+  // 处理审批
+  const handleApprove = async (id: string) => {
+    try {
+      setLoading(true);
+      const res = await approveMovement(id);
+      if (res.code === 200) {
+        message.success('审批成功');
+        fetchMovements(); // 刷新列表
+      } else {
+        message.error(res.msg || '审批失败');
+      }
+    } catch (error) {
+      console.error('审批失败:', error);
+      message.error('审批失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 打开拒绝弹窗
+  const showRejectModal = (id: string) => {
+    setRejectingId(id);
+    rejectForm.resetFields();
+    setRejectModalVisible(true);
+  };
+  
+  // 关闭拒绝弹窗
+  const handleRejectCancel = () => {
+    setRejectModalVisible(false);
+    setRejectingId('');
+  };
+  
+  // 提交拒绝
+  const handleRejectSubmit = async () => {
+    try {
+      const values = await rejectForm.validateFields();
+      setRejecting(true);
+      
+      const res = await rejectMovement(rejectingId, values.reason);
+      if (res.code === 200) {
+        message.success('已拒绝该变更申请');
+        setRejectModalVisible(false);
+        fetchMovements(); // 刷新列表
+      } else {
+        message.error(res.msg || '操作失败');
+      }
+    } catch (error) {
+      console.error('拒绝失败:', error);
+      message.error('操作失败，请稍后重试');
+    } finally {
+      setRejecting(false);
+    }
+  };
+  
+  // 渲染操作栏
+  const renderOperationColumn = (record: any) => {
+    // 判断是否为待审批状态
+    const isPending = record.status === 0;
+    
+    // 详情按钮始终显示
+    const viewDetailButton = (
+      <Button 
+        type="link" 
+        icon={<EyeOutlined />} 
+        onClick={() => handleViewDetail(record)}
+      >
+        详情
+      </Button>
+    );
+    
+    // 如果不是待审批状态，只显示详情按钮
+    if (!isPending) {
+      return viewDetailButton;
+    }
+    
+    // 审批操作下拉菜单项
+    const items = [
+      {
+        key: 'approve',
+        label: (
+          <Popconfirm
+            title="确认审批"
+            description="确定要同意这个变更申请吗？"
+            onConfirm={() => handleApprove(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Space>
+              <CheckCircleOutlined style={{ color: '#52c41a' }} />
+              <span>同意</span>
+            </Space>
+          </Popconfirm>
+        ),
+      },
+      {
+        key: 'reject',
+        label: (
+          <div onClick={() => showRejectModal(record.id)}>
+            <Space>
+              <CloseCircleOutlined style={{ color: '#f5222d' }} />
+              <span>拒绝</span>
+            </Space>
+          </div>
+        ),
+      },
+    ];
+    
+    return (
+      <Space>
+        {viewDetailButton}
+        <Dropdown menu={{ items }} placement="bottomRight" trigger={['click']}>
+          <Tooltip title="审批操作">
+            <Button type="text" icon={<MoreOutlined />} />
+          </Tooltip>
+        </Dropdown>
+      </Space>
+    );
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -293,16 +424,8 @@ export default function MoveManager() {
     {
       title: '操作',
       key: 'action',
-      width: 100,
-      render: (_: any, record: any) => (
-        <Button 
-          type="link" 
-          icon={<EyeOutlined />} 
-          onClick={() => handleViewDetail(record)}
-        >
-          详情
-        </Button>
-      ),
+      width: 150,
+      render: renderOperationColumn,
     },
   ];
 
@@ -457,6 +580,32 @@ export default function MoveManager() {
           movement={currentMovement}
         />
       )}
+      
+      {/* 拒绝原因弹窗 */}
+      <Modal
+        title="拒绝申请"
+        open={rejectModalVisible}
+        onOk={handleRejectSubmit}
+        onCancel={handleRejectCancel}
+        confirmLoading={rejecting}
+        okText="确认拒绝"
+        cancelText="取消"
+      >
+        <Form form={rejectForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="拒绝原因"
+            rules={[{ required: true, message: '请输入拒绝原因' }]}
+          >
+            <TextArea
+              rows={4}
+              placeholder="请输入拒绝原因"
+              maxLength={200}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

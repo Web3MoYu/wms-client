@@ -149,11 +149,11 @@ const MoveDetail: React.FC<MoveDetailProps> = ({
           <Descriptions.Item label='审批人' span={1}>
             {movement.approverUser?.realName || '-'}
           </Descriptions.Item>
-          <Descriptions.Item label='备注' span={1}>
+          <Descriptions.Item label='备注' span={2}>
             {movement.remark || '-'}
           </Descriptions.Item>
-          {movement.status === 2 && (
-            <Descriptions.Item label='拒绝原因' span={1}>
+          {movement.status === -1 && (
+            <Descriptions.Item label='拒绝原因' span={2}>
               {movement.reason || '-'}
             </Descriptions.Item>
           )}
