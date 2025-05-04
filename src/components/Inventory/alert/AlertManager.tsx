@@ -28,7 +28,7 @@ import {
   renderHandleStatus,
   AlertTypeSelect,
   HandleStatusSelect,
-} from '../components/StatusComponents';
+} from '../components/AlertStatusComponents';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
