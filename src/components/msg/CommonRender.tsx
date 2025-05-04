@@ -51,9 +51,11 @@ export const getBizTypeText = (bizType: number) => {
     case 3:
       return '质检单';
     case 4:
-      return '异常标记';
+      return '库位变更';
     case 5:
       return '库存预警';
+    case 6:
+      return '库存盘点';
     default:
       return '未知类型';
   }
@@ -69,9 +71,11 @@ export const renderBizType = (type: number) => {
     case 3:
       return <Tag color='cyan'>质检单</Tag>;
     case 4:
-      return <Tag color='red'>异常标记</Tag>;
+      return <Tag color='blue'>库位变更</Tag>;
     case 5:
       return <Tag color='orange'>库存预警</Tag>;
+    case 6:
+      return <Tag color='green'>库存盘点</Tag>;
     default:
       return <Tag color='default'>未知类型</Tag>;
   }
@@ -81,17 +85,17 @@ export const renderBizType = (type: number) => {
 export const renderMsgType = (type: number) => {
   switch (type) {
     case 1:
-      return <Tag color='blue'>库存预警</Tag>;
+      return <Tag color='orange'>库存预警</Tag>;
     case 2:
       return <Tag color='cyan'>质检通知</Tag>;
     case 3:
-      return <Tag color='green'>订单通知</Tag>;
+      return <Tag color='purple'>订单状态</Tag>;
     case 4:
-      return <Tag color='red'>异常通知</Tag>;
+      return <Tag color='blue'>库位变更</Tag>;
     case 5:
-      return <Tag color='orange'>补货通知</Tag>;
+      return <Tag color='green'>库存盘点</Tag>;
     case 6:
-      return <Tag color='purple'>其他</Tag>;
+      return <Tag color='default'>其他</Tag>;
     default:
       return <Tag color='default'>未知类型</Tag>;
   }
@@ -139,8 +143,8 @@ export const MsgTypeSelect: React.FC<{value?: number; onChange?: (value: number)
     <Option value={1}>库存预警</Option>
     <Option value={2}>质检通知</Option>
     <Option value={3}>订单状态</Option>
-    <Option value={4}>异常通知</Option>
-    <Option value={5}>补货通知</Option>
+    <Option value={4}>库位变更</Option>
+    <Option value={5}>库存盘点</Option>
     <Option value={6}>其他</Option>
   </Select>
 );
@@ -183,12 +187,14 @@ export const handleMessageNavigation = (msg: Msg, navigate: NavigateFunction) =>
       // 跳转到质检页面，设置质检编号为业务ID
       navigate(`/order/inspect?inspectionNo=${msg.relatedBizId}`);
       break;
-    case 4: // 异常标记
-      // 目前暂不处理，可以后续添加
-      return false;
+    case 4: // 库位变更
+      // 跳转到库位变更页面，设置库位编号为业务ID
+      break;
     case 5: // 库存预警
       // 跳转到库存预警页面，设置预警编号为业务ID
       navigate(`/inventory/alert?alertNo=${msg.relatedBizId}`);
+      break;
+    case 6: // 库存盘点
       break;
     default:
       console.log('未知业务类型：', msg.relatedBizType);

@@ -13,7 +13,7 @@ export interface WSModel<T> {
 
 export interface Msg {
   id: string; // 通知ID
-  type: number; // 通知类型：1-库存预警，2-质检通知，3-订单通知，4-异常通知，5-补货通知，6-其他
+  type: number; // 通知类型：1-库存预警，2-质检通知，3-订单状态，4-库位变更，5-库存盘点，6-其他
   title: string; // 通知标题
   content: string; // 通知内容
   recipientId: string; // 接收人ID
@@ -24,7 +24,7 @@ export interface Msg {
   priority: number; // 优先级：0-普通，1-重要，2-紧急
   relatedBizId: string; // 关联业务ID
   /**
-   * 关联业务类型：1-入库单，2-出库单，3-质检单，4-异常标记，5-库存预警
+   * 关联业务类型：1-入库单，2-出库单，3-质检单，4-库位变更，5-库存预警，6-库存盘点
    */
   relatedBizType: number;
   sendTime: string; // 发送时间

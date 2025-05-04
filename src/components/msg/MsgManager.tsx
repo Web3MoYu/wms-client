@@ -238,7 +238,7 @@ export default function MsgManager() {
         if (!text) return '-';
         
         // 判断是否可导航的业务类型
-        const canNavigate = [1, 2, 3, 5].includes(record.relatedBizType || 0);
+        const canNavigate = [1, 2, 3, 4, 5, 6].includes(record.relatedBizType || 0);
         
         return canNavigate ? (
           <a onClick={() => handleMessageNavigation(record, navigate)}>{text}</a>
@@ -378,7 +378,7 @@ export default function MsgManager() {
           }}
           onChange={handleTableChange}
           onRow={(record) => {
-            const canNavigate = record.relatedBizId && [1, 2, 3, 5].includes(record.relatedBizType || 0);
+            const canNavigate = record.relatedBizId && [1, 2, 3, 4, 5, 6].includes(record.relatedBizType || 0);
             return {
               style: canNavigate ? { cursor: 'pointer' } : {},
               onClick: () => {

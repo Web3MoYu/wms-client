@@ -191,7 +191,7 @@ const MessageNotifier: React.FC = () => {
     }
     
     // 使用公共导航函数处理跳转
-    if (msg.relatedBizId && [1, 2, 3, 5].includes(msg.relatedBizType || 0)) {
+    if (msg.relatedBizId && [1, 2, 3, 4, 5, 6].includes(msg.relatedBizType || 0)) {
       handleMessageNavigation(msg, navigate);
     }
   };
@@ -321,7 +321,7 @@ const MessageNotifier: React.FC = () => {
   const showNotification = (msg: Msg) => {
     const priorityText = getPriorityText(msg.priority);
     const priorityStyle = getPriorityStyle(msg.priority);
-    const canNavigate = msg.relatedBizId && [1, 2, 3, 5].includes(msg.relatedBizType || 0);
+    const canNavigate = msg.relatedBizId && [1, 2, 3, 4, 5, 6].includes(msg.relatedBizType || 0);
 
     notification.open({
       message: (
@@ -475,7 +475,7 @@ const MessageNotifier: React.FC = () => {
           
           {item.relatedBizId && (
             <div style={styles.bizInfo}>
-              <Text>业务ID: {[1, 2, 3, 5].includes(item.relatedBizType || 0) ? (
+              <Text>业务ID: {[1, 2, 3, 4, 5, 6].includes(item.relatedBizType || 0) ? (
                 <a 
                   onClick={(e) => {
                     e.stopPropagation();
