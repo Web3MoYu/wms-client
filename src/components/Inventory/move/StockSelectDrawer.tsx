@@ -28,7 +28,7 @@ import {
   Product,
 } from '../../../api/product-service/ProductController';
 import { getBatchNumber } from '../../../api/stock-service/StockController';
-import StockDetail from './StockDetail';
+import StockDetail from './MoveStockDetail';
 import { renderAlertStatus, AlertStatusSelect } from '../components/StockStatusComponents';
 
 interface StockSelectDrawerProps {
@@ -291,7 +291,8 @@ export default function StockSelectDrawer({
       title='选择要变更的库存'
       open={visible}
       onClose={onClose}
-      width={900}
+      push={false}
+      width={1200}
       destroyOnClose
     >
       <Card>

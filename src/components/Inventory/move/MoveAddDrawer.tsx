@@ -270,7 +270,7 @@ const MoveAddDrawer: React.FC<MoveAddDrawerProps> = ({ visible, onClose, onSucce
     <>
       <Drawer
         title="新增库存变动"
-        width={720}
+        width={1300}
         onClose={onClose}
         open={visible}
         bodyStyle={{ paddingBottom: 80 }}

@@ -13,7 +13,7 @@ interface StockDetailProps {
   onRefresh?: () => void; 
 }
 
-const StockDetail: React.FC<StockDetailProps> = ({ visible, onClose, stock }) => {
+const MoveStockDetail: React.FC<StockDetailProps> = ({ visible, onClose, stock }) => {
   // 如果没有库存数据，不渲染内容
   if (!stock) {
     return (
@@ -89,4 +89,4 @@ const StockDetail: React.FC<StockDetailProps> = ({ visible, onClose, stock }) =>
   );
 };
 
-export default StockDetail; 
+export default MoveStockDetail; 
