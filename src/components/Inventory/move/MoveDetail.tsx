@@ -1,5 +1,14 @@
 import React from 'react';
-import { Drawer, Typography, Descriptions, Tag, Card, Space, Divider, Row, Col } from 'antd';
+import {
+  Drawer,
+  Typography,
+  Descriptions,
+  Tag,
+  Card,
+  Space,
+  Row,
+  Col,
+} from 'antd';
 import { renderMoveStatus } from '../components/MoveStatusComponents';
 import { MovementVo } from '../../../api/stock-service/MoveController';
 
@@ -11,25 +20,56 @@ interface MoveDetailProps {
   movement: MovementVo;
 }
 
-const MoveDetail: React.FC<MoveDetailProps> = ({ visible, onClose, movement }) => {
+const MoveDetail: React.FC<MoveDetailProps> = ({
+  visible,
+  onClose,
+  movement,
+}) => {
   // 渲染库位位置
   const renderLocations = (locations: any[]) => {
     if (!locations || locations.length === 0) {
-      return <Text type="secondary">无位置信息</Text>;
+      return (
+        <Text type='secondary' italic>
+          无位置信息
+        </Text>
+      );
     }
 
     return (
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space direction='vertical' style={{ width: '100%' }}>
         {locations.map((loc, idx) => (
-          <Card 
-            key={idx} 
-            size="small" 
-            title={`位置 ${idx + 1}: ${loc.shelfName}`}
-            style={{ marginBottom: 8 }}
+          <Card
+            key={idx}
+            size='small'
+            title={
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <Tag color='cyan' style={{ marginRight: 8, fontSize: '12px' }}>
+                  位置 {idx + 1}
+                </Tag>
+                <Text strong>{loc.shelfName}</Text>
+              </div>
+            }
+            style={{
+              marginBottom: 8,
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            }}
+            headStyle={{
+              backgroundColor: '#f0f5ff',
+              borderBottom: '1px solid #d6e4ff',
+            }}
           >
-            <div style={{ paddingLeft: 8 }}>
+            <div style={{ padding: '4px 8px' }}>
               {loc.storageNames.map((name: string, i: number) => (
-                <Tag key={i} color="blue" style={{ margin: '0 4px 4px 0' }}>
+                <Tag
+                  key={i}
+                  color='blue'
+                  style={{
+                    margin: '0 4px 4px 0',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                  }}
+                >
                   {name}
                 </Tag>
               ))}
@@ -44,68 +84,191 @@ const MoveDetail: React.FC<MoveDetailProps> = ({ visible, onClose, movement }) =
 
   return (
     <Drawer
-      title="库存移动详情"
-      placement="right"
+      title={
+        <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+          库存移动详情
+          <Text
+            type='secondary'
+            style={{
+              fontSize: '14px',
+              marginLeft: '12px',
+              fontWeight: 'normal',
+            }}
+          >
+            {movement.movementNo}
+          </Text>
+        </div>
+      }
+      placement='right'
       width={1200}
       onClose={onClose}
       open={visible}
+      bodyStyle={{ padding: '24px', backgroundColor: '#f8f9fa' }}
     >
-      <div style={{ marginBottom: 24 }}>
-        <Title level={4} style={{ marginBottom: 16 }}>基本信息</Title>
-        <Descriptions bordered column={2}>
-          <Descriptions.Item label="变动编号" span={2}>{movement.movementNo}</Descriptions.Item>
-          <Descriptions.Item label="商品名称">{movement.stock?.productName || '-'}</Descriptions.Item>
-          <Descriptions.Item label="批次号">{movement.stock?.batchNumber || '-'}</Descriptions.Item>
-          <Descriptions.Item label="状态">{renderMoveStatus(movement.status)}</Descriptions.Item>
-          <Descriptions.Item label="操作人">{movement.operatorUser?.realName || '-'}</Descriptions.Item>
-          <Descriptions.Item label="审批人">{movement.approverUser?.realName || '-'}</Descriptions.Item>
-          <Descriptions.Item label="操作时间">{movement.movementTime || '-'}</Descriptions.Item>
+      <div
+        style={{
+          marginBottom: 32,
+          backgroundColor: '#fff',
+          padding: '24px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        }}
+      >
+        <Title
+          level={4}
+          style={{
+            marginBottom: 20,
+            fontSize: '16px',
+            borderLeft: '4px solid #1890ff',
+            paddingLeft: '12px',
+          }}
+        >
+          基本信息
+        </Title>
+        <Descriptions
+          bordered
+          column={2}
+          labelStyle={{ backgroundColor: '#fafafa', width: '120px' }}
+          contentStyle={{ backgroundColor: '#fff' }}
+        >
+          <Descriptions.Item label='商品名称' span={1}>
+            <Text strong>{movement.stock?.productName || '-'}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label='批次号' span={1}>
+            {movement.stock?.batchNumber || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='状态' span={1}>
+            {renderMoveStatus(movement.status)}
+          </Descriptions.Item>
+          <Descriptions.Item label='操作时间' span={1}>
+            {movement.movementTime || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='操作人' span={1}>
+            {movement.operatorUser?.realName || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='审批人' span={1}>
+            {movement.approverUser?.realName || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label='备注' span={1}>
+            {movement.remark || '-'}
+          </Descriptions.Item>
+          {movement.status === 2 && (
+            <Descriptions.Item label='拒绝原因' span={1}>
+              {movement.reason || '-'}
+            </Descriptions.Item>
+          )}
         </Descriptions>
       </div>
 
-      <Divider />
-
-      <Title level={4} style={{ marginBottom: 16 }}>位置变更信息</Title>
-      <Row gutter={24}>
-        <Col span={12}>
-          <Card title="变更前" bordered={false} style={{ background: '#f5f5f5' }}>
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="区域" span={1}>
-                {movement.beforeArea?.areaName || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="位置" span={1}>
-                {renderLocations(movement.beforeLocationVo || [])}
-              </Descriptions.Item>
-            </Descriptions>
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title="变更后" bordered={false} style={{ background: '#f5f5f5' }}>
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="区域" span={1}>
-                {movement.afterArea?.areaName || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="位置" span={1}>
-                {renderLocations(movement.afterLocationVo || [])}
-              </Descriptions.Item>
-            </Descriptions>
-          </Card>
-        </Col>
-      </Row>
+      <div
+        style={{
+          marginBottom: 32,
+          backgroundColor: '#fff',
+          padding: '24px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        }}
+      >
+        <Title
+          level={4}
+          style={{
+            marginBottom: 20,
+            fontSize: '16px',
+            borderLeft: '4px solid #1890ff',
+            paddingLeft: '12px',
+          }}
+        >
+          位置变更信息
+        </Title>
+        <Row gutter={24}>
+          <Col span={12}>
+            <Card
+              title={
+                <Text strong style={{ fontSize: '15px', color: '#666' }}>
+                  变更前
+                </Text>
+              }
+              bordered
+              style={{ borderRadius: '8px', height: '100%' }}
+              headStyle={{ backgroundColor: '#f5f7fa' }}
+            >
+              <Descriptions
+                column={1}
+                bordered
+                size='small'
+                labelStyle={{ width: '80px', backgroundColor: '#fafafa' }}
+              >
+                <Descriptions.Item label='区域' span={1}>
+                  <Text strong>{movement.beforeArea?.areaName || '-'}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label='位置' span={1}>
+                  {renderLocations(movement.beforeLocationVo || [])}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          </Col>
+          <Col span={12}>
+            <Card
+              title={
+                <Text strong style={{ fontSize: '15px', color: '#666' }}>
+                  变更后
+                </Text>
+              }
+              bordered
+              style={{ borderRadius: '8px', height: '100%' }}
+              headStyle={{ backgroundColor: '#f5f7fa' }}
+            >
+              <Descriptions
+                column={1}
+                bordered
+                size='small'
+                labelStyle={{ width: '80px', backgroundColor: '#fafafa' }}
+              >
+                <Descriptions.Item label='区域' span={1}>
+                  <Text strong>{movement.afterArea?.areaName || '-'}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label='位置' span={1}>
+                  {renderLocations(movement.afterLocationVo || [])}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          </Col>
+        </Row>
+      </div>
 
       {movement.remark && (
-        <>
-          <Divider />
-          <div style={{ marginBottom: 16 }}>
-            <Title level={4} style={{ marginBottom: 8 }}>备注</Title>
-            <Card>
-              <Text>{movement.remark}</Text>
-            </Card>
-          </div>
-        </>
+        <div
+          style={{
+            backgroundColor: '#fff',
+            padding: '24px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          }}
+        >
+          <Title
+            level={4}
+            style={{
+              marginBottom: 16,
+              fontSize: '16px',
+              borderLeft: '4px solid #1890ff',
+              paddingLeft: '12px',
+            }}
+          >
+            备注
+          </Title>
+          <Card
+            style={{
+              borderRadius: '8px',
+              backgroundColor: '#fafafa',
+              border: '1px dashed #d9d9d9',
+            }}
+          >
+            <Text>{movement.remark}</Text>
+          </Card>
+        </div>
       )}
     </Drawer>
   );
 };
 
-export default MoveDetail; 
+export default MoveDetail;
