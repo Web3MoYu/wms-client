@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import locale from 'antd/es/date-picker/locale/zh_CN';
+import { useLocation } from 'react-router-dom';
 import {
   pageMovement,
   MovementDto,
@@ -48,6 +49,11 @@ export default function MoveManager() {
   const [areas, setAreas] = useState<Area[]>([]);
   // 新增抽屉状态
   const [addDrawerVisible, setAddDrawerVisible] = useState<boolean>(false);
+  const location = useLocation();
+  
+  // URL参数解析
+  const query = new URLSearchParams(location.search);
+  const moveNoFromQuery = query.get('moveNo');
 
   // 分页配置
   const [pagination, setPagination] = useState({
@@ -58,6 +64,26 @@ export default function MoveManager() {
   // 操作人和审批人选项
   const [operatorOptions, setOperatorOptions] = useState<any[]>([]);
   const [approverOptions, setApproverOptions] = useState<any[]>([]);
+
+  // 处理URL参数
+  useEffect(() => {
+    // 如果URL中有moveNo参数，则设置到表单中
+    if (moveNoFromQuery) {
+      form.setFieldsValue({
+        movementNo: moveNoFromQuery
+      });
+      
+      // 自动执行搜索
+      setPagination({
+        current: 1, // 重置为第一页
+        pageSize: 10,
+      });
+      
+      // 如果是从消息点击进来的（有moveNo参数），则修改URL但不触发导航
+      const newUrl = window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [moveNoFromQuery, form]);
 
   // 初始化
   useEffect(() => {
@@ -106,6 +132,11 @@ export default function MoveManager() {
         endDate: endDate,
         status: values.status !== undefined ? values.status : null,
       };
+
+      // 如果是初始加载且有moveNo参数，优先使用该参数
+      if (moveNoFromQuery && !values.movementNo) {
+        queryDto.movementNo = moveNoFromQuery;
+      }
 
       const result = await pageMovement(queryDto);
 

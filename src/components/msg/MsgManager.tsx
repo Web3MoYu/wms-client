@@ -216,18 +216,21 @@ export default function MsgManager() {
       title: '类型',
       dataIndex: 'type',
       key: 'type',
+      width: 90,
       render: renderMsgType,
     },
     {
       title: '优先级',
       dataIndex: 'priority',
       key: 'priority',
+      width: 90,
       render: renderPriority,
     },
     {
       title: '状态',
       dataIndex: 'readStatus',
       key: 'readStatus',
+      width: 90,
       render: renderReadStatus,
     },
     {
@@ -249,6 +252,7 @@ export default function MsgManager() {
       title: '业务类型',
       dataIndex: 'relatedBizType',
       key: 'relatedBizType',
+      width: 90,
       render: renderBizType,
     },
     {
@@ -377,17 +381,6 @@ export default function MsgManager() {
             showTotal: (total) => `共 ${total} 条记录`,
           }}
           onChange={handleTableChange}
-          onRow={(record) => {
-            const canNavigate = record.relatedBizId && [1, 2, 3, 4, 5, 6].includes(record.relatedBizType || 0);
-            return {
-              style: canNavigate ? { cursor: 'pointer' } : {},
-              onClick: () => {
-                if (canNavigate) {
-                  handleMessageNavigation(record, navigate);
-                }
-              }
-            };
-          }}
         />
       </Card>
     </div>

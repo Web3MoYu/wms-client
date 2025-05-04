@@ -111,15 +111,15 @@ export const renderReadStatus = (status: number) => {
 };
 
 // 优先级选择器
-export const PrioritySelect: React.FC<{value?: number; onChange?: (value: number) => void; placeholder?: string}> = ({
-  value,
-  onChange,
-  placeholder = '请选择优先级'
-}) => (
-  <Select 
-    value={value} 
-    onChange={onChange} 
-    placeholder={placeholder} 
+export const PrioritySelect: React.FC<{
+  value?: number;
+  onChange?: (value: number) => void;
+  placeholder?: string;
+}> = ({ value, onChange, placeholder = '请选择优先级' }) => (
+  <Select
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
     allowClear
   >
     <Option value={0}>普通</Option>
@@ -129,15 +129,15 @@ export const PrioritySelect: React.FC<{value?: number; onChange?: (value: number
 );
 
 // 消息类型选择器
-export const MsgTypeSelect: React.FC<{value?: number; onChange?: (value: number) => void; placeholder?: string}> = ({
-  value,
-  onChange,
-  placeholder = '请选择消息类型'
-}) => (
-  <Select 
-    value={value} 
-    onChange={onChange} 
-    placeholder={placeholder} 
+export const MsgTypeSelect: React.FC<{
+  value?: number;
+  onChange?: (value: number) => void;
+  placeholder?: string;
+}> = ({ value, onChange, placeholder = '请选择消息类型' }) => (
+  <Select
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
     allowClear
   >
     <Option value={1}>库存预警</Option>
@@ -150,15 +150,15 @@ export const MsgTypeSelect: React.FC<{value?: number; onChange?: (value: number)
 );
 
 // 读取状态选择器
-export const ReadStatusSelect: React.FC<{value?: number; onChange?: (value: number) => void; placeholder?: string}> = ({
-  value,
-  onChange,
-  placeholder = '请选择读取状态'
-}) => (
-  <Select 
-    value={value} 
-    onChange={onChange} 
-    placeholder={placeholder} 
+export const ReadStatusSelect: React.FC<{
+  value?: number;
+  onChange?: (value: number) => void;
+  placeholder?: string;
+}> = ({ value, onChange, placeholder = '请选择读取状态' }) => (
+  <Select
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
     allowClear
   >
     <Option value={0}>未读</Option>
@@ -167,7 +167,10 @@ export const ReadStatusSelect: React.FC<{value?: number; onChange?: (value: numb
 );
 
 // 处理消息导航/跳转函数
-export const handleMessageNavigation = (msg: Msg, navigate: NavigateFunction) => {
+export const handleMessageNavigation = (
+  msg: Msg,
+  navigate: NavigateFunction
+) => {
   // 如果没有关联的业务ID，则不跳转
   if (!msg.relatedBizId) {
     return false;
@@ -189,6 +192,7 @@ export const handleMessageNavigation = (msg: Msg, navigate: NavigateFunction) =>
       break;
     case 4: // 库位变更
       // 跳转到库位变更页面，设置库位编号为业务ID
+      navigate(`/inventory/move?moveNo=${msg.relatedBizId}`);
       break;
     case 5: // 库存预警
       // 跳转到库存预警页面，设置预警编号为业务ID
@@ -200,6 +204,6 @@ export const handleMessageNavigation = (msg: Msg, navigate: NavigateFunction) =>
       console.log('未知业务类型：', msg.relatedBizType);
       return false;
   }
-  
+
   return true; // 返回true表示已处理导航
 };
