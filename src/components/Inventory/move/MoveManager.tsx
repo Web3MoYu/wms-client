@@ -11,12 +11,12 @@ import {
   Col,
   Select,
   Input,
-  Tag,
 } from 'antd';
 import {
   SearchOutlined,
   ReloadOutlined,
   PlusOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import locale from 'antd/es/date-picker/locale/zh_CN';
@@ -35,6 +35,7 @@ import {
   Area,
 } from '../../../api/location-service/AreaController';
 import MoveAddDrawer from './MoveAddDrawer';
+import MoveDetail from './MoveDetail';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -49,6 +50,9 @@ export default function MoveManager() {
   const [areas, setAreas] = useState<Area[]>([]);
   // 新增抽屉状态
   const [addDrawerVisible, setAddDrawerVisible] = useState<boolean>(false);
+  // 详情抽屉状态
+  const [detailVisible, setDetailVisible] = useState<boolean>(false);
+  const [currentMovement, setCurrentMovement] = useState<any>(null);
   const location = useLocation();
   
   // URL参数解析
@@ -222,21 +226,16 @@ export default function MoveManager() {
     message.success('新增库存移动成功');
   };
 
-  // 渲染库位位置
-  const renderLocations = (locations: any[]) => {
-    if (!locations || locations.length === 0) {
-      return '-';
-    }
+  // 查看详情
+  const handleViewDetail = (record: any) => {
+    setCurrentMovement(record);
+    setDetailVisible(true);
+  };
 
-    return (
-      <Space size={[0, 4]} wrap>
-        {locations.map((loc, idx) => (
-          <Tag key={idx} color='cyan' style={{ marginBottom: 4 }}>
-            {`${loc.shelfName}: ${loc.storageNames.join(', ')}`}
-          </Tag>
-        ))}
-      </Space>
-    );
+  // 关闭详情抽屉
+  const handleDetailClose = () => {
+    setDetailVisible(false);
+    setCurrentMovement(null);
   };
 
   // 表格列定义
@@ -263,21 +262,9 @@ export default function MoveManager() {
       key: 'beforeAreaName',
     },
     {
-      title: '变更前位置',
-      dataIndex: 'beforeLocationVo',
-      key: 'beforeLocations',
-      render: renderLocations,
-    },
-    {
       title: '变更后区域',
       dataIndex: ['afterArea', 'areaName'],
       key: 'afterAreaName',
-    },
-    {
-      title: '变更后位置',
-      dataIndex: 'afterLocationVo',
-      key: 'afterLocations',
-      render: renderLocations,
     },
     {
       title: '状态',
@@ -302,6 +289,20 @@ export default function MoveManager() {
       dataIndex: 'operateTime',
       key: 'operateTime',
       render: (text: string) => text || '-',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      render: (_: any, record: any) => (
+        <Button 
+          type="link" 
+          icon={<EyeOutlined />} 
+          onClick={() => handleViewDetail(record)}
+        >
+          详情
+        </Button>
+      ),
     },
   ];
 
@@ -447,6 +448,15 @@ export default function MoveManager() {
         onClose={handleAddDrawerClose}
         onSuccess={handleAddSuccess}
       />
+
+      {/* 详情抽屉组件 */}
+      {currentMovement && (
+        <MoveDetail
+          visible={detailVisible}
+          onClose={handleDetailClose}
+          movement={currentMovement}
+        />
+      )}
     </div>
   );
 }
