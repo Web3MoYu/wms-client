@@ -33,6 +33,7 @@ import {
   MovementDto,
   approveMovement,
   rejectMovement,
+  doneMovement,
 } from '../../../api/stock-service/MoveController';
 import { getUsersByName } from '../../../api/sys-service/UserController';
 import {
@@ -304,10 +305,31 @@ export default function MoveManager() {
     }
   };
   
+  // 完成变更操作
+  const handleDoneMovement = async (id: string) => {
+    try {
+      setLoading(true);
+      const res = await doneMovement(id);
+      if (res.code === 200) {
+        message.success('变更完成');
+        fetchMovements(); // 刷新列表
+      } else {
+        message.error(res.msg || '操作失败');
+      }
+    } catch (error) {
+      console.error('变更操作失败:', error);
+      message.error('操作失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 渲染操作栏
   const renderOperationColumn = (record: any) => {
     // 判断是否为待审批状态
     const isPending = record.status === 0;
+    // 判断是否为待变更状态
+    const isReadyToMove = record.status === 1;
     
     // 详情按钮始终显示
     const viewDetailButton = (
@@ -320,8 +342,28 @@ export default function MoveManager() {
       </Button>
     );
     
-    // 如果不是待审批状态，只显示详情按钮
-    if (!isPending) {
+    // 待变更状态显示变更按钮
+    if (isReadyToMove) {
+      return (
+        <Space>
+          {viewDetailButton}
+          <Popconfirm
+            title="确认变更"
+            description="确定要完成此次库存变更吗？"
+            onConfirm={() => handleDoneMovement(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button type="link" size="small">
+              变更
+            </Button>
+          </Popconfirm>
+        </Space>
+      );
+    }
+    
+    // 如果不是待审批和待变更状态，只显示详情按钮
+    if (!isPending && !isReadyToMove) {
       return viewDetailButton;
     }
     
