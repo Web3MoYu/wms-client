@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Drawer, Descriptions, Typography, Card, List, Space, Tag, Button } from 'antd';
 import { StockVo } from '../../../api/stock-service/StockController';
 import StockQuantityEdit from './StockQuantityEdit';
+import { renderAlertStatus } from '../components/StockStatusComponents';
 
 const { Item } = Descriptions;
 const { Text, Title } = Typography;
@@ -16,18 +17,6 @@ interface StockDetailProps {
 const StockDetail: React.FC<StockDetailProps> = ({ visible, onClose, stock, onRefresh }) => {
   // 添加编辑数量的状态
   const [quantityEditVisible, setQuantityEditVisible] = useState(false);
-
-  // 渲染预警状态标签
-  const renderAlertStatusTag = (status: number) => {
-    if (status === 0) {
-      return <Tag color="green">正常</Tag>;
-    } else if (status === 1) {
-      return <Tag color="orange">低于最小库存</Tag>;
-    } else if (status === 2) {
-      return <Tag color="red">超过最大库存</Tag>;
-    }
-    return <Tag color="default">未知</Tag>;
-  };
 
   // 编辑数量成功后刷新
   const handleEditSuccess = () => {
@@ -73,7 +62,7 @@ const StockDetail: React.FC<StockDetailProps> = ({ visible, onClose, stock, onRe
           <Item label="生产日期">{stock.productionDate}</Item>
           <Item label="数量">{stock.quantity}</Item>
           <Item label="可用数量">{stock.availableQuantity}</Item>
-          <Item label="预警状态">{renderAlertStatusTag(stock.alertStatus)}</Item>
+          <Item label="预警状态">{renderAlertStatus(stock.alertStatus)}</Item>
           <Item label="区域">{stock.areaName}</Item>
           <Item label="创建时间">{stock.createTime}</Item>
           <Item label="更新时间">{stock.updateTime}</Item>

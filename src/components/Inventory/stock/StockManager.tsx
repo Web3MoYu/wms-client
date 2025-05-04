@@ -9,7 +9,6 @@ import {
   Col,
   Space,
   message,
-  Tag,
   ConfigProvider,
   Modal,
   Input,
@@ -41,6 +40,7 @@ import StockDrawer from './StockDrawer';
 import StockDetail from './StockDetail';
 import zhCN from 'antd/es/locale/zh_CN';
 import { updateAlertConfig } from '../../../api/stock-service/AlertController';
+import { renderAlertStatus, AlertStatusSelect } from '../components/StockStatusComponents';
 
 // 组件主体
 export default function StockManager() {
@@ -356,16 +356,7 @@ export default function StockManager() {
       title: '预警状态',
       dataIndex: 'alertStatus',
       key: 'alertStatus',
-      render: (status: number) => {
-        if (status === 0) {
-          return <Tag color='green'>正常</Tag>;
-        } else if (status === 1) {
-          return <Tag color='orange'>低于最小库存</Tag>;
-        } else if (status === 2) {
-          return <Tag color='red'>超过最大库存</Tag>;
-        }
-        return <Tag color='default'>未知</Tag>;
-      },
+      render: renderAlertStatus,
     },
     {
       title: '最小库存',
@@ -476,12 +467,7 @@ export default function StockManager() {
                   labelCol={{ span: 8 }}
                   wrapperCol={{ span: 16 }}
                 >
-                  <Select placeholder='请选择预警状态'>
-                    <Select.Option value={null}>全部</Select.Option>
-                    <Select.Option value={0}>正常</Select.Option>
-                    <Select.Option value={1}>低于最小库存</Select.Option>
-                    <Select.Option value={2}>超过最大库存</Select.Option>
-                  </Select>
+                  <AlertStatusSelect />
                 </Form.Item>
               </Col>
               <Col xs={0} sm={0} md={0} lg={12}></Col>

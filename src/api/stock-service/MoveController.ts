@@ -44,6 +44,13 @@ export interface MovementVo extends Movement {
   approverUser: User;
 }
 
+export interface AddMovementDto {
+  stockId: string; // 变更的库存ID
+  areaId: string; // 变更后的区域ID
+  locations: Location[]; // 变更的位置信息
+  remark: string; // 备注
+}
+
 /**
  * 分页查询变动记录
  * @param dto 变动记录查询条件
@@ -54,6 +61,23 @@ export function pageMovement(
   return new Promise((resolve, reject) => {
     axios
       .post('/stock/move/page', dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 新增变动记录
+ * @param dto 变动记录新增条件
+ */
+export function addMovement(dto: AddMovementDto): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/stock/move/add', dto)
       .then((res) => {
         resolve(res.data);
       })

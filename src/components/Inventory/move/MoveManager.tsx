@@ -13,7 +13,11 @@ import {
   Input,
   Tag,
 } from 'antd';
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  SearchOutlined,
+  ReloadOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import {
@@ -21,8 +25,15 @@ import {
   MovementDto,
 } from '../../../api/stock-service/MoveController';
 import { getUsersByName } from '../../../api/sys-service/UserController';
-import { renderMoveStatus, MoveStatusSelect } from '../components/MoveStatusComponents';
-import { getAllAreas, Area } from '../../../api/location-service/AreaController';
+import {
+  renderMoveStatus,
+  MoveStatusSelect,
+} from '../components/MoveStatusComponents';
+import {
+  getAllAreas,
+  Area,
+} from '../../../api/location-service/AreaController';
+import MoveAddDrawer from './MoveAddDrawer';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -35,6 +46,8 @@ export default function MoveManager() {
   const [form] = Form.useForm();
   // 新增区域数据状态
   const [areas, setAreas] = useState<Area[]>([]);
+  // 新增抽屉状态
+  const [addDrawerVisible, setAddDrawerVisible] = useState<boolean>(false);
 
   // 分页配置
   const [pagination, setPagination] = useState({
@@ -161,6 +174,23 @@ export default function MoveManager() {
     fetchMovements();
   };
 
+  // 新增库存移动
+  const handleAdd = () => {
+    setAddDrawerVisible(true);
+  };
+
+  // 新增抽屉关闭
+  const handleAddDrawerClose = () => {
+    setAddDrawerVisible(false);
+  };
+
+  // 新增成功回调
+  const handleAddSuccess = () => {
+    setAddDrawerVisible(false);
+    fetchMovements(); // 刷新数据
+    message.success('新增库存移动成功');
+  };
+
   // 渲染库位位置
   const renderLocations = (locations: any[]) => {
     if (!locations || locations.length === 0) {
@@ -170,7 +200,7 @@ export default function MoveManager() {
     return (
       <Space size={[0, 4]} wrap>
         {locations.map((loc, idx) => (
-          <Tag key={idx} color="cyan" style={{ marginBottom: 4 }}>
+          <Tag key={idx} color='cyan' style={{ marginBottom: 4 }}>
             {`${loc.shelfName}: ${loc.storageNames.join(', ')}`}
           </Tag>
         ))}
@@ -245,21 +275,18 @@ export default function MoveManager() {
   ];
 
   return (
-    <div className="move-manager">
-      <Card title="库存移动管理">
-        <Form form={form} layout="vertical">
+    <div className='move-manager'>
+      <Card title='库存移动管理'>
+        <Form form={form} layout='vertical'>
           <Row gutter={24}>
             <Col span={6}>
-              <Form.Item label="变动编号" name="movementNo">
-                <Input placeholder="请输入变动编号" />
+              <Form.Item label='变动编号' name='movementNo'>
+                <Input placeholder='请输入变动编号' />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label="变更前区域" name="beforeAreaId">
-                <Select
-                  placeholder="请选择变更前区域"
-                  allowClear
-                >
+              <Form.Item label='变更前区域' name='beforeAreaId'>
+                <Select placeholder='请选择变更前区域' allowClear>
                   {areas.map((area) => (
                     <Option key={area.id} value={area.id}>
                       {area.areaName}
@@ -269,11 +296,8 @@ export default function MoveManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label="变更后区域" name="afterAreaId">
-                <Select
-                  placeholder="请选择变更后区域"
-                  allowClear
-                >
+              <Form.Item label='变更后区域' name='afterAreaId'>
+                <Select placeholder='请选择变更后区域' allowClear>
                   {areas.map((area) => (
                     <Option key={area.id} value={area.id}>
                       {area.areaName}
@@ -283,17 +307,17 @@ export default function MoveManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label="状态" name="status">
+              <Form.Item label='状态' name='status'>
                 <MoveStatusSelect />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={24}>
             <Col span={6}>
-              <Form.Item label="操作人" name="operator">
+              <Form.Item label='操作人' name='operator'>
                 <Select
                   showSearch
-                  placeholder="请输入操作人姓名"
+                  placeholder='请输入操作人姓名'
                   filterOption={false}
                   defaultActiveFirstOption={false}
                   onSearch={handleOperatorSearch}
@@ -310,10 +334,10 @@ export default function MoveManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label="审批人" name="approver">
+              <Form.Item label='审批人' name='approver'>
                 <Select
                   showSearch
-                  placeholder="请输入审批人姓名"
+                  placeholder='请输入审批人姓名'
                   filterOption={false}
                   defaultActiveFirstOption={false}
                   onSearch={handleApproverSearch}
@@ -330,19 +354,19 @@ export default function MoveManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label="日期范围" name="dateRange">
+              <Form.Item label='日期范围' name='dateRange'>
                 <RangePicker
                   style={{ width: '100%' }}
                   locale={locale}
                   showTime={{ format: 'HH:mm:ss' }}
-                  format="YYYY-MM-DD HH:mm:ss"
+                  format='YYYY-MM-DD HH:mm:ss'
                 />
               </Form.Item>
             </Col>
             <Col span={6} style={{ textAlign: 'right' }}>
               <Space>
                 <Button
-                  type="primary"
+                  type='primary'
                   icon={<SearchOutlined />}
                   onClick={handleSearch}
                 >
@@ -356,10 +380,22 @@ export default function MoveManager() {
           </Row>
         </Form>
 
+        <div
+          style={{
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <Button type='primary' icon={<PlusOutlined />} onClick={handleAdd}>
+            新增变动
+          </Button>
+        </div>
+
         <Table
           dataSource={movements}
           columns={columns}
-          rowKey="id"
+          rowKey='id'
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -373,6 +409,13 @@ export default function MoveManager() {
           style={{ marginTop: 16 }}
         />
       </Card>
+
+      {/* 新增变动抽屉组件 */}
+      <MoveAddDrawer
+        visible={addDrawerVisible}
+        onClose={handleAddDrawerClose}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 }
