@@ -459,8 +459,8 @@ export default function MoveManager() {
     },
     {
       title: '操作时间',
-      dataIndex: 'operateTime',
-      key: 'operateTime',
+      dataIndex: 'movementTime',
+      key: 'movementTime',
       render: (text: string) => text || '-',
     },
     {
