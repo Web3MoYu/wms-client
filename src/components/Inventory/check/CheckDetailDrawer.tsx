@@ -14,8 +14,18 @@ import {
   Modal,
 } from 'antd';
 import moment from 'moment';
-import { CheckVo, CheckItemVo, detailCheck, startCheck, StockCheckDto } from '../../../api/stock-service/CheckController';
-import { renderCheckStatus, renderCheckItemStatus, renderDifferenceStatus } from '../components/CheckStatusComponents';
+import {
+  CheckVo,
+  CheckItemVo,
+  detailCheck,
+  startCheck,
+  StockCheckDto,
+} from '../../../api/stock-service/CheckController';
+import {
+  renderCheckStatus,
+  renderCheckItemStatus,
+  renderDifferenceStatus,
+} from '../components/CheckStatusComponents';
 import { renderAlertStatus } from '../components/StockStatusComponents';
 
 const { Text } = Typography;
@@ -55,9 +65,9 @@ export default function CheckDetailDrawer({
       if (result.code === 200) {
         setDetailData(result.data);
         // 初始化可编辑数据，默认实际数量等于系统数量
-        const editData = result.data.map(item => ({
+        const editData = result.data.map((item) => ({
           ...item,
-          actualQuantity: item.systemQuantity
+          actualQuantity: item.systemQuantity,
         }));
         setEditableData(editData);
       } else {
@@ -82,16 +92,16 @@ export default function CheckDetailDrawer({
 
   // 处理输入框变化
   const handleQuantityChange = (value: number, record: CheckItemVo) => {
-    const newData = editableData.map(item => {
+    const newData = editableData.map((item) => {
       if (item.id === record.id) {
         const actualQuantity = value || 0;
         const differenceQuantity = actualQuantity - item.systemQuantity;
-        return { 
-          ...item, 
+        return {
+          ...item,
           actualQuantity,
           differenceQuantity,
           status: 1, // 已盘点
-          isDifference: differenceQuantity !== 0 ? 1 : 0 // 有差异为1，无差异为0
+          isDifference: differenceQuantity !== 0 ? 1 : 0, // 有差异为1，无差异为0
         };
       }
       return item;
@@ -101,12 +111,23 @@ export default function CheckDetailDrawer({
 
   // 提交盘点数据
   const handleSubmitCheck = async () => {
-    // 检查是否所有数据都已填写
-    const isAllChecked = editableData.every(item => item.status === 1);
-    if (!isAllChecked) {
-      message.warning('请完成所有物品的盘点');
-      return;
-    }
+    // 准备提交数据，将所有未盘点的项设置为已盘点且数量等于系统数量
+    const finalData = editableData.map((item) => {
+      if (item.status === 0) {
+        // 如果项目未盘点，则设置为已盘点且实际数量等于系统数量
+        return {
+          ...item,
+          actualQuantity: item.systemQuantity,
+          differenceQuantity: 0,
+          status: 1, // 已盘点
+          isDifference: 0, // 无差异
+        };
+      }
+      return item;
+    });
+
+    // 更新可编辑数据
+    setEditableData(finalData);
 
     // 二次确认
     Modal.confirm({
@@ -116,11 +137,11 @@ export default function CheckDetailDrawer({
         try {
           setSubmitting(true);
           // 准备提交的数据
-          const submitData: StockCheckDto[] = editableData.map(item => ({
-            stockId: item.stockId,
-            actualQuantity: String(item.actualQuantity) // 转换为字符串类型
+          const submitData: StockCheckDto[] = finalData.map((item) => ({
+            checkItemId: item.id,
+            actualQuantity: item.actualQuantity,
           }));
-          
+
           const result = await startCheck(submitData);
           if (result.code === 200) {
             message.success('盘点提交成功');
@@ -134,7 +155,10 @@ export default function CheckDetailDrawer({
         } finally {
           setSubmitting(false);
         }
-      }
+      },
+      onCancel: () => {
+        setSubmitting(false);
+      },
     });
   };
 
@@ -155,16 +179,24 @@ export default function CheckDetailDrawer({
             {check.area?.areaName || '-'}
           </Descriptions.Item>
           <Descriptions.Item label='计划开始时间' span={1}>
-            {check.planStartTime ? moment(check.planStartTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
+            {check.planStartTime
+              ? moment(check.planStartTime).format('YYYY-MM-DD HH:mm:ss')
+              : '-'}
           </Descriptions.Item>
           <Descriptions.Item label='计划结束时间' span={1}>
-            {check.planEndTime ? moment(check.planEndTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
+            {check.planEndTime
+              ? moment(check.planEndTime).format('YYYY-MM-DD HH:mm:ss')
+              : '-'}
           </Descriptions.Item>
           <Descriptions.Item label='实际开始时间' span={1}>
-            {check.actualStartTime ? moment(check.actualStartTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
+            {check.actualStartTime
+              ? moment(check.actualStartTime).format('YYYY-MM-DD HH:mm:ss')
+              : '-'}
           </Descriptions.Item>
           <Descriptions.Item label='实际结束时间' span={1}>
-            {check.actualEndTime ? moment(check.actualEndTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
+            {check.actualEndTime
+              ? moment(check.actualEndTime).format('YYYY-MM-DD HH:mm:ss')
+              : '-'}
           </Descriptions.Item>
           <Descriptions.Item label='创建人' span={1}>
             {check.creatorUser?.realName || '-'}
@@ -173,7 +205,9 @@ export default function CheckDetailDrawer({
             {check.checkerUser?.realName || '-'}
           </Descriptions.Item>
           <Descriptions.Item label='创建时间' span={2}>
-            {check.createTime ? moment(check.createTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
+            {check.createTime
+              ? moment(check.createTime).format('YYYY-MM-DD HH:mm:ss')
+              : '-'}
           </Descriptions.Item>
           <Descriptions.Item label='备注' span={3}>
             {check.remark || '-'}
@@ -188,7 +222,7 @@ export default function CheckDetailDrawer({
     // 根据盘点单状态和编辑模式决定是否可编辑
     const isEditable = check?.status === 0 && isEditMode; // 只有在待盘点状态且是编辑模式下才能编辑
     const dataSource = isEditable ? editableData : detailData;
-    
+
     const columns = [
       {
         title: '产品名称',
@@ -214,18 +248,21 @@ export default function CheckDetailDrawer({
           return (
             <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
               {locationVo.map((item, index) => {
-                const storageName = item.storageNames && item.storageNames.length > 0 
-                  ? item.storageNames.join('、') 
-                  : '';
+                const storageName =
+                  item.storageNames && item.storageNames.length > 0
+                    ? item.storageNames.join('、')
+                    : '';
                 return (
                   <div key={index}>
-                    {`${item.shelfName}${storageName ? `(${storageName})` : ''}`}
+                    {`${item.shelfName}${
+                      storageName ? `(${storageName})` : ''
+                    }`}
                   </div>
                 );
               })}
             </div>
           );
-        }
+        },
       },
       {
         title: '系统数量',
@@ -238,32 +275,34 @@ export default function CheckDetailDrawer({
         dataIndex: 'actualQuantity',
         key: 'actualQuantity',
         width: 100,
-        render: (text: number, record: CheckItemVo) => (
+        render: (text: number, record: CheckItemVo) =>
           isEditable ? (
             <Input
-              type="number"
+              type='number'
               defaultValue={record.systemQuantity}
-              onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 0, record)}
+              onChange={(e) =>
+                handleQuantityChange(parseInt(e.target.value) || 0, record)
+              }
               min={0}
               style={{ width: '100%' }}
             />
+          ) : record.status === 2 ? (
+            text
           ) : (
-            record.status === 1 ? text : '-'
-          )
-        ),
+            '-'
+          ),
       },
       {
         title: '差异数量',
         dataIndex: 'differenceQuantity',
         key: 'differenceQuantity',
         width: 100,
-        render: (text: number, record: CheckItemVo) => (
-          record.status === 1 ? (
-            <Text type={text !== 0 ? 'danger' : 'success'}>
-              {text}
-            </Text>
-          ) : '-'
-        ),
+        render: (text: number, record: CheckItemVo) =>
+          record.status === 2 ? (
+            <Text type={text !== 0 ? 'danger' : 'success'}>{text}</Text>
+          ) : (
+            '-'
+          ),
       },
       {
         title: '预警状态',
@@ -284,9 +323,8 @@ export default function CheckDetailDrawer({
         dataIndex: 'isDifference',
         key: 'isDifference',
         width: 100,
-        render: (text: number, record: CheckItemVo) => (
-          record.status === 0 ? '-' : renderDifferenceStatus(text)
-        ),
+        render: (text: number, record: CheckItemVo) =>
+          record.status === 0 ? '-' : renderDifferenceStatus(text),
       },
       {
         title: '备注',
@@ -299,13 +337,13 @@ export default function CheckDetailDrawer({
     ];
 
     return (
-      <Card 
-        title='盘点明细' 
+      <Card
+        title='盘点明细'
         size='small'
         extra={
           isEditable && (
-            <Button 
-              type="primary" 
+            <Button
+              type='primary'
               onClick={handleSubmitCheck}
               loading={submitting}
               disabled={!editableData.length}
@@ -366,4 +404,4 @@ export default function CheckDetailDrawer({
       </Spin>
     </Drawer>
   );
-} 
+}

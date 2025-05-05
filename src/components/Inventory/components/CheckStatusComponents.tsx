@@ -9,10 +9,8 @@ export const renderCheckStatus = (status: number) => {
     case 0:
       return <Tag color='orange'>待盘点</Tag>;
     case 1:
-      return <Tag color='blue'>盘点中</Tag>;
-    case 2:
       return <Tag color='cyan'>待确认</Tag>;
-    case 3:
+    case 2:
       return <Tag color='green'>已完成</Tag>;
     default:
       return <Tag color='default'>未知状态</Tag>;
@@ -32,9 +30,8 @@ export const CheckStatusSelect: React.FC<{
     style={{ width: '100%' }}
   >
     <Option value={0}>待盘点</Option>
-    <Option value={1}>盘点中</Option>
-    <Option value={2}>待确认</Option>
-    <Option value={3}>已完成</Option>
+    <Option value={1}>待确认</Option>
+    <Option value={2}>已完成</Option>
   </Select>
 );
 
@@ -43,7 +40,7 @@ export const renderCheckItemStatus = (status: number) => {
   switch (status) {
     case 0:
       return <Tag color='orange'>待盘点</Tag>;
-    case 1:
+    case 2:
       return <Tag color='green'>已盘点</Tag>;
     default:
       return <Tag color='default'>未知状态</Tag>;

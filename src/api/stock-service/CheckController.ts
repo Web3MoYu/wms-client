@@ -41,7 +41,7 @@ export interface CheckItem {
   systemQuantity: number; // 系统数量
   actualQuantity: number; // 实际数量
   differenceQuantity: number; // 差异数量
-  status: number; // 状态：0-待盘点，1-已盘点
+  status: number; // 状态：0-待盘点，2-已盘点
   isDifference: number; // 是否有差异：0-无，1-有
   remark: string; // 备注
   createTime: string; // 创建时间
@@ -66,8 +66,8 @@ export interface AddCheckDto {
 }
 
 export interface StockCheckDto {
-  stockId: string; // 库存ID
-  actualQuantity: string; // 实际数量
+  checkItemId: string; // 盘点单明细ID
+  actualQuantity: number; // 实际数量
 }
 
 /**
