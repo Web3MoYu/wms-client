@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, message, Tooltip } from 'antd';
+import { Table, Button, message, Tooltip, Empty } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import {
   getStockList,
@@ -10,7 +10,15 @@ import { renderAlertStatus } from '../components/StockStatusComponents';
 import StockDetail from '../stock/StockDetail';
 import moment from 'moment';
 
-export default function AreaStocksTable({ areaId }: { areaId: string }) {
+interface AreaStocksTableProps {
+  areaId: string;
+  onStocksLoaded?: (hasStocks: boolean) => void;
+}
+
+export default function AreaStocksTable({ 
+  areaId, 
+  onStocksLoaded 
+}: AreaStocksTableProps) {
   const [stocks, setStocks] = useState<StockVo[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [total, setTotal] = useState<number>(0);
@@ -47,14 +55,28 @@ export default function AreaStocksTable({ areaId }: { areaId: string }) {
 
       const res = await getStockList(params);
       if (res.code === 200) {
-        setStocks(res.data.records || []);
+        const stockRecords = res.data.records || [];
+        setStocks(stockRecords);
         setTotal(res.data.total || 0);
+        
+        // 通知父组件是否有库存
+        if (onStocksLoaded) {
+          onStocksLoaded(stockRecords.length > 0);
+        }
       } else {
         message.error(res.msg || '获取库存数据失败');
+        // 通知父组件没有库存（出错时默认为没有）
+        if (onStocksLoaded) {
+          onStocksLoaded(false);
+        }
       }
     } catch (error) {
       console.error('获取库存数据出错:', error);
       message.error('获取库存数据出错');
+      // 通知父组件没有库存（出错时默认为没有）
+      if (onStocksLoaded) {
+        onStocksLoaded(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -156,6 +178,9 @@ export default function AreaStocksTable({ areaId }: { areaId: string }) {
         onChange={handleTableChange}
         size='middle'
         scroll={{ x: 'max-content' }}
+        locale={{
+          emptyText: <Empty description="该区域暂无库存数据" />
+        }}
       />
 
       {currentStock && (

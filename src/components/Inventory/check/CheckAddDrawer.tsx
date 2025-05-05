@@ -13,6 +13,7 @@ import {
   Card,
   Typography,
   Divider,
+  Alert,
 } from 'antd';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import {
@@ -45,6 +46,8 @@ export default function CheckAddDrawer({
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedAreaId, setSelectedAreaId] = useState<string>('');
+  const [hasStocks, setHasStocks] = useState<boolean>(false);
+  const [stocksLoaded, setStocksLoaded] = useState<boolean>(false);
 
   // 在抽屉打开时初始化
   useEffect(() => {
@@ -52,6 +55,8 @@ export default function CheckAddDrawer({
       fetchAreas();
       form.resetFields();
       setSelectedAreaId('');
+      setHasStocks(false);
+      setStocksLoaded(false);
     }
   }, [visible, form]);
 
@@ -70,6 +75,14 @@ export default function CheckAddDrawer({
   // 处理区域变更
   const handleAreaChange = (areaId: string) => {
     setSelectedAreaId(areaId);
+    setStocksLoaded(false);
+    setHasStocks(false);
+  };
+
+  // 处理库存加载完成的回调
+  const handleStocksLoaded = (hasStocks: boolean) => {
+    setHasStocks(hasStocks);
+    setStocksLoaded(true);
   };
 
   // 表单提交
@@ -115,7 +128,13 @@ export default function CheckAddDrawer({
       extra={
         <Space>
           <Button onClick={onClose}>取消</Button>
-          <Button onClick={handleSubmit} type='primary' loading={loading}>
+          <Button 
+            onClick={handleSubmit} 
+            type='primary' 
+            loading={loading}
+            disabled={!hasStocks && stocksLoaded && !!selectedAreaId}
+            title={!hasStocks && stocksLoaded && !!selectedAreaId ? '当前区域无库存，无法创建盘点单' : ''}
+          >
             提交
           </Button>
         </Space>
@@ -169,10 +188,23 @@ export default function CheckAddDrawer({
         </Title>
       </Divider>
 
+      {selectedAreaId && stocksLoaded && !hasStocks && (
+        <Alert
+          message="当前区域无库存"
+          description="该区域没有任何库存记录，无法创建盘点单。请选择其他区域或先添加库存后再进行盘点。"
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       <div style={{ marginTop: 16 }}>
         {selectedAreaId ? (
           <Card bordered={false}>
-            <AreaStocksTable areaId={selectedAreaId} />
+            <AreaStocksTable 
+              areaId={selectedAreaId} 
+              onStocksLoaded={handleStocksLoaded}
+            />
           </Card>
         ) : (
           <div
