@@ -139,3 +139,21 @@ export function startCheck(dto: StockCheckDto[]): Promise<Result<string>> {
       });
   });
 }
+
+/**
+ * 废弃盘点单
+ * @param id 盘点单ID
+ * @returns
+ */
+export function cancelCheck(id: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/stock/check/cancel/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}

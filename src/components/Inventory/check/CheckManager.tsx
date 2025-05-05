@@ -11,11 +11,15 @@ import {
   Col,
   Select,
   Input,
+  Dropdown,
+  Menu,
+  Modal,
 } from 'antd';
 import {
   SearchOutlined,
   ReloadOutlined,
   PlusOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import locale from 'antd/es/date-picker/locale/zh_CN';
@@ -24,6 +28,7 @@ import {
   pageCheck,
   CheckQueryDto,
   CheckVo,
+  cancelCheck,
 } from '../../../api/stock-service/CheckController';
 import { getUsersByName } from '../../../api/sys-service/UserController';
 import {
@@ -49,7 +54,7 @@ export default function CheckManager() {
   // 新增区域数据状态
   const [areas, setAreas] = useState<Area[]>([]);
   const location = useLocation();
-  
+
   // URL参数解析
   const query = new URLSearchParams(location.search);
   const checkNoFromQuery = query.get('checkNo');
@@ -64,7 +69,8 @@ export default function CheckManager() {
   const [creatorOptions, setCreatorOptions] = useState<any[]>([]);
   const [checkerOptions, setCheckerOptions] = useState<any[]>([]);
   const [addDrawerVisible, setAddDrawerVisible] = useState<boolean>(false);
-  const [detailDrawerVisible, setDetailDrawerVisible] = useState<boolean>(false);
+  const [detailDrawerVisible, setDetailDrawerVisible] =
+    useState<boolean>(false);
   const [currentCheck, setCurrentCheck] = useState<CheckVo | null>(null);
   const [drawerMode, setDrawerMode] = useState<'view' | 'edit'>('view');
   const [defaultKey, setDefaultKey] = useState<string>('basic');
@@ -74,15 +80,15 @@ export default function CheckManager() {
     // 如果URL中有checkNo参数，则设置到表单中
     if (checkNoFromQuery) {
       form.setFieldsValue({
-        checkNo: checkNoFromQuery
+        checkNo: checkNoFromQuery,
       });
-      
+
       // 重置分页，确保在第一页查询
       setPagination({
         current: 1,
         pageSize: 10,
       });
-      
+
       // 立即查询数据
       fetchChecks();
     }
@@ -128,7 +134,9 @@ export default function CheckManager() {
       let actualStartTime = null;
       let actualEndTime = null;
       if (values.actualDateRange && values.actualDateRange.length === 2) {
-        actualStartTime = values.actualDateRange[0].format('YYYY-MM-DD HH:mm:ss');
+        actualStartTime = values.actualDateRange[0].format(
+          'YYYY-MM-DD HH:mm:ss'
+        );
         actualEndTime = values.actualDateRange[1].format('YYYY-MM-DD HH:mm:ss');
       }
 
@@ -251,6 +259,25 @@ export default function CheckManager() {
     setDefaultKey('details');
   };
 
+  // 新增处理废弃功能
+  const handleCancelCheck = async (record: CheckVo) => {
+    try {
+      setLoading(true);
+      const result = await cancelCheck(record.id);
+      if (result.code === 200) {
+        message.success('盘点单废弃成功');
+        fetchChecks(); // 刷新列表
+      } else {
+        message.error(result.msg || '废弃盘点单失败');
+      }
+    } catch (error) {
+      console.error('废弃盘点单失败:', error);
+      message.error('废弃盘点单失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -308,23 +335,44 @@ export default function CheckManager() {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 160,
       render: (_: any, record: CheckVo) => {
+        const menu = (
+          <Menu
+            items={[
+              {
+                key: 'check',
+                label: '盘点',
+                onClick: () => showCheckDrawer(record),
+              },
+              {
+                key: 'cancel',
+                label: <span style={{ color: '#ff4d4f' }}>废弃</span>,
+                onClick: () => {
+                  Modal.confirm({
+                    title: '确认废弃',
+                    content: '确定要废弃该盘点单吗？废弃后将无法恢复。',
+                    okText: '确定',
+                    cancelText: '取消',
+                    onOk: () => handleCancelCheck(record),
+                  });
+                },
+              },
+            ]}
+          />
+        );
+
         return (
           <Space>
-            <Button 
-              type='link' 
-              onClick={() => showDetailDrawer(record)}
-            >
+            <Button type='link' onClick={() => showDetailDrawer(record)}>
               详情
             </Button>
             {record.status === 0 && (
-              <Button
-                type='link'
-                onClick={() => showCheckDrawer(record)}
-              >
-                盘点
-              </Button>
+              <Dropdown overlay={menu} trigger={['hover']}>
+                <Button type='link'>
+                  操作 <MoreOutlined />
+                </Button>
+              </Dropdown>
             )}
           </Space>
         );
@@ -445,7 +493,7 @@ export default function CheckManager() {
           }}
         >
           <Button
-            type="primary"
+            type='primary'
             icon={<PlusOutlined />}
             onClick={showAddDrawer}
             style={{ marginBottom: 16 }}
