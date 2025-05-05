@@ -35,6 +35,7 @@ import {
   Area,
 } from '../../../api/location-service/AreaController';
 import CheckAddDrawer from './CheckAddDrawer';
+import CheckDetailDrawer from './CheckDetailDrawer';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -63,6 +64,8 @@ export default function CheckManager() {
   const [creatorOptions, setCreatorOptions] = useState<any[]>([]);
   const [checkerOptions, setCheckerOptions] = useState<any[]>([]);
   const [addDrawerVisible, setAddDrawerVisible] = useState<boolean>(false);
+  const [detailDrawerVisible, setDetailDrawerVisible] = useState<boolean>(false);
+  const [currentCheck, setCurrentCheck] = useState<CheckVo | null>(null);
 
   // 处理URL参数
   useEffect(() => {
@@ -224,6 +227,18 @@ export default function CheckManager() {
     fetchChecks();
   };
 
+  // 打开详情抽屉
+  const showDetailDrawer = (record: CheckVo) => {
+    setCurrentCheck(record);
+    setDetailDrawerVisible(true);
+  };
+
+  // 关闭详情抽屉
+  const hideDetailDrawer = () => {
+    setDetailDrawerVisible(false);
+    setCurrentCheck(null);
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -282,12 +297,11 @@ export default function CheckManager() {
       title: '操作',
       key: 'action',
       width: 150,
-      render: () => {
-        // 根据不同状态显示不同操作按钮
+      render: (_: any, record: CheckVo) => {
         return (
           <Button 
-            type="link" 
-            onClick={() => message.info('详情功能待实现')}
+            type='link' 
+            onClick={() => showDetailDrawer(record)}
           >
             详情
           </Button>
@@ -440,6 +454,11 @@ export default function CheckManager() {
         visible={addDrawerVisible}
         onClose={hideAddDrawer}
         onSuccess={handleAddSuccess}
+      />
+      <CheckDetailDrawer
+        visible={detailDrawerVisible}
+        onClose={hideDetailDrawer}
+        check={currentCheck}
       />
     </div>
   );

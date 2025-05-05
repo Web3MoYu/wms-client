@@ -37,3 +37,27 @@ export const CheckStatusSelect: React.FC<{
     <Option value={3}>已完成</Option>
   </Select>
 );
+
+// 渲染盘点项状态标签
+export const renderCheckItemStatus = (status: number) => {
+  switch (status) {
+    case 0:
+      return <Tag color='orange'>待盘点</Tag>;
+    case 1:
+      return <Tag color='green'>已盘点</Tag>;
+    default:
+      return <Tag color='default'>未知状态</Tag>;
+  }
+};
+
+// 渲染盘点差异状态标签
+export const renderDifferenceStatus = (isDifference: number) => {
+  switch (isDifference) {
+    case 0:
+      return <Tag color='green'>无差异</Tag>;
+    case 1:
+      return <Tag color='red'>有差异</Tag>;
+    default:
+      return <Tag color='default'>未知状态</Tag>;
+  }
+};

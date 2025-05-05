@@ -2,6 +2,7 @@ import axios from '../../utils/mxAxios';
 import { Area } from '../location-service/AreaController';
 import { Page, Result } from '../Model';
 import { User } from '../sys-service/UserController';
+import { StockVo } from './StockController';
 
 export interface CheckQueryDto {
   page: number; // 当前页码
@@ -31,6 +32,24 @@ export interface Check {
   remark: string; // 备注
   createTime: string; // 创建时间
   updateTime: string; // 更新时间
+}
+
+export interface CheckItem {
+  id: string; // 明细ID
+  checkId: string; // 盘点单ID
+  stockId: string; // 库存ID
+  systemQuantity: number; // 系统数量
+  actualQuantity: number; // 实际数量
+  differenceQuantity: number; // 差异数量
+  status: number; // 状态：0-待盘点，1-已盘点
+  isDifference: number; // 是否有差异：0-无，1-有
+  remark: string; // 备注
+  createTime: string; // 创建时间
+  updateTime: string; // 更新时间
+}
+
+export interface CheckItemVo extends CheckItem {
+  stock: StockVo;
 }
 
 export interface CheckVo extends Check {
@@ -71,6 +90,24 @@ export function addCheck(dto: AddCheckDto): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .post('/stock/check/add', dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 查询盘点单明细
+ * @param id 盘点单ID
+ * @returns 盘点单明细列表
+ */
+export function detailCheck(id: string): Promise<Result<CheckItemVo[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/stock/check/detail/${id}`)
       .then((res) => {
         resolve(res.data);
       })
