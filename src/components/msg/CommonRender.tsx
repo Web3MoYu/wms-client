@@ -199,6 +199,8 @@ export const handleMessageNavigation = (
       navigate(`/inventory/alert?alertNo=${msg.relatedBizId}`);
       break;
     case 6: // 库存盘点
+      // 跳转到库存盘点页面，设置盘点单号为业务ID
+      navigate(`/inventory/check?checkNo=${msg.relatedBizId}`);
       break;
     default:
       console.log('未知业务类型：', msg.relatedBizType);

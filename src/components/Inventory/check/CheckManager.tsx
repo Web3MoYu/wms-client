@@ -243,14 +243,6 @@ export default function CheckManager() {
       render: (status: number) => renderCheckStatus(status),
     },
     {
-      title: '盘点方式',
-      dataIndex: 'checkType',
-      key: 'checkType',
-      render: (type: number) => {
-        return type === 0 ? '全盘' : '抽盘';
-      },
-    },
-    {
       title: '计划开始时间',
       dataIndex: 'planStartTime',
       key: 'planStartTime',
