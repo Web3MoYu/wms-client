@@ -29,6 +29,7 @@ import {
   CheckQueryDto,
   CheckVo,
   cancelCheck,
+  confirmCheck,
 } from '../../../api/stock-service/CheckController';
 import { getUsersByName } from '../../../api/sys-service/UserController';
 import {
@@ -279,6 +280,25 @@ export default function CheckManager() {
     }
   };
 
+  // 新增处理确认功能
+  const handleConfirmCheck = async (record: CheckVo) => {
+    try {
+      setLoading(true);
+      const result = await confirmCheck(record.id);
+      if (result.code === 200) {
+        message.success('盘点单确认成功');
+        fetchChecks(); // 刷新列表
+      } else {
+        message.error(result.msg || '确认盘点单失败');
+      }
+    } catch (error) {
+      console.error('确认盘点单失败:', error);
+      message.error('确认盘点单失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 表格列定义
   const columns = [
     {
@@ -374,6 +394,22 @@ export default function CheckManager() {
                   操作 <MoreOutlined />
                 </Button>
               </Dropdown>
+            )}
+            {record.status === 1 && (
+              <Button
+                type='link'
+                onClick={() => {
+                  Modal.confirm({
+                    title: '确认盘点',
+                    content: '确定要确认当前盘点单吗？确认后状态将变更为已完成。',
+                    okText: '确定',
+                    cancelText: '取消',
+                    onOk: () => handleConfirmCheck(record),
+                  });
+                }}
+              >
+                确认
+              </Button>
             )}
           </Space>
         );

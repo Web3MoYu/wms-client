@@ -157,3 +157,21 @@ export function cancelCheck(id: string): Promise<Result<string>> {
       });
   });
 }
+
+/**
+ * 确认盘点
+ * @param id 盘点单ID
+ * @returns
+ */
+export function confirmCheck(id: string): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .put(`/stock/check/confirm/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
