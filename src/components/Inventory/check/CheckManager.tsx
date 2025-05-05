@@ -483,6 +483,7 @@ export default function CheckManager() {
         check={currentCheck}
         mode={drawerMode}
         defaultActiveKey={defaultKey}
+        onSuccess={fetchChecks}
       />
     </div>
   );

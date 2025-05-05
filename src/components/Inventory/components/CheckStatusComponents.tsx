@@ -6,6 +6,8 @@ const { Option } = Select;
 // 渲染盘点状态标签
 export const renderCheckStatus = (status: number) => {
   switch (status) {
+    case -1:
+      return <Tag color='default'>已废弃</Tag>;
     case 0:
       return <Tag color='orange'>待盘点</Tag>;
     case 1:
@@ -29,6 +31,7 @@ export const CheckStatusSelect: React.FC<{
     allowClear
     style={{ width: '100%' }}
   >
+    <Option value={-1}>已废弃</Option>
     <Option value={0}>待盘点</Option>
     <Option value={1}>待确认</Option>
     <Option value={2}>已完成</Option>
@@ -38,6 +41,8 @@ export const CheckStatusSelect: React.FC<{
 // 渲染盘点项状态标签
 export const renderCheckItemStatus = (status: number) => {
   switch (status) {
+    case -1:
+      return <Tag color='default'>已废弃</Tag>;
     case 0:
       return <Tag color='orange'>待盘点</Tag>;
     case 2:

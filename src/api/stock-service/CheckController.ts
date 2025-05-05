@@ -15,7 +15,7 @@ export interface CheckQueryDto {
   planEndTime: string; // 计划结束时间
   actualStartTime: string; // 实际开始时间
   actualEndTime: string; // 实际结束时间
-  status: number; // 状态：0-待盘点，1-盘点中，2-待确认，3-已完成
+  status: number; // 状态：-1: 已废弃，0-待盘点，1-待确认，2-已完成
 }
 
 export interface Check {
@@ -28,7 +28,7 @@ export interface Check {
   planEndTime: string; // 计划结束时间
   actualStartTime: string; // 实际开始时间
   actualEndTime: string; // 实际结束时间
-  status: number; // 状态：0-待盘点，1-盘点中，2-待确认，3-已完成
+  status: number; // 状态：-1: 已废弃，0-待盘点，1-待确认，2-已完成
   remark: string; // 备注
   createTime: string; // 创建时间
   updateTime: string; // 更新时间
@@ -41,7 +41,7 @@ export interface CheckItem {
   systemQuantity: number; // 系统数量
   actualQuantity: number; // 实际数量
   differenceQuantity: number; // 差异数量
-  status: number; // 状态：0-待盘点，2-已盘点
+  status: number; // 状态：-1: 已废弃，0-待盘点，2-已盘点
   isDifference: number; // 是否有差异：0-无，1-有
   remark: string; // 备注
   createTime: string; // 创建时间

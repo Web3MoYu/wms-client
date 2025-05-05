@@ -39,6 +39,7 @@ interface CheckDetailDrawerProps {
   check: CheckVo | null;
   mode?: DrawerMode; // 模式：view-查看，edit-编辑
   defaultActiveKey?: string; // 默认激活的标签页
+  onSuccess?: () => void; // 成功回调函数
 }
 
 export default function CheckDetailDrawer({
@@ -47,6 +48,7 @@ export default function CheckDetailDrawer({
   check,
   mode = 'view',
   defaultActiveKey = 'basic',
+  onSuccess,
 }: CheckDetailDrawerProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -100,7 +102,7 @@ export default function CheckDetailDrawer({
           ...item,
           actualQuantity,
           differenceQuantity,
-          status: 1, // 已盘点
+          status: 2, // 已盘点
           isDifference: differenceQuantity !== 0 ? 1 : 0, // 有差异为1，无差异为0
         };
       }
@@ -119,7 +121,7 @@ export default function CheckDetailDrawer({
           ...item,
           actualQuantity: item.systemQuantity,
           differenceQuantity: 0,
-          status: 1, // 已盘点
+          status: 2, // 已盘点
           isDifference: 0, // 无差异
         };
       }
@@ -141,10 +143,14 @@ export default function CheckDetailDrawer({
             checkItemId: item.id,
             actualQuantity: item.actualQuantity,
           }));
-
+          
           const result = await startCheck(submitData);
           if (result.code === 200) {
             message.success('盘点提交成功');
+            // 调用成功回调，刷新表格数据
+            if (onSuccess) {
+              onSuccess();
+            }
             onClose(); // 关闭抽屉
           } else {
             message.error(result.msg || '盘点提交失败');
