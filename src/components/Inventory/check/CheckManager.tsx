@@ -66,6 +66,8 @@ export default function CheckManager() {
   const [addDrawerVisible, setAddDrawerVisible] = useState<boolean>(false);
   const [detailDrawerVisible, setDetailDrawerVisible] = useState<boolean>(false);
   const [currentCheck, setCurrentCheck] = useState<CheckVo | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'view' | 'edit'>('view');
+  const [defaultKey, setDefaultKey] = useState<string>('basic');
 
   // 处理URL参数
   useEffect(() => {
@@ -231,12 +233,22 @@ export default function CheckManager() {
   const showDetailDrawer = (record: CheckVo) => {
     setCurrentCheck(record);
     setDetailDrawerVisible(true);
+    setDrawerMode('view');
+    setDefaultKey('basic');
   };
 
   // 关闭详情抽屉
   const hideDetailDrawer = () => {
     setDetailDrawerVisible(false);
     setCurrentCheck(null);
+  };
+
+  // 打开盘点抽屉（带默认选中第二个标签页）
+  const showCheckDrawer = (record: CheckVo) => {
+    setCurrentCheck(record);
+    setDetailDrawerVisible(true);
+    setDrawerMode('edit');
+    setDefaultKey('details');
   };
 
   // 表格列定义
@@ -299,12 +311,22 @@ export default function CheckManager() {
       width: 150,
       render: (_: any, record: CheckVo) => {
         return (
-          <Button 
-            type='link' 
-            onClick={() => showDetailDrawer(record)}
-          >
-            详情
-          </Button>
+          <Space>
+            <Button 
+              type='link' 
+              onClick={() => showDetailDrawer(record)}
+            >
+              详情
+            </Button>
+            {record.status === 0 && (
+              <Button
+                type='link'
+                onClick={() => showCheckDrawer(record)}
+              >
+                盘点
+              </Button>
+            )}
+          </Space>
         );
       },
     },
@@ -459,6 +481,8 @@ export default function CheckManager() {
         visible={detailDrawerVisible}
         onClose={hideDetailDrawer}
         check={currentCheck}
+        mode={drawerMode}
+        defaultActiveKey={defaultKey}
       />
     </div>
   );

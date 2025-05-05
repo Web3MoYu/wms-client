@@ -65,6 +65,11 @@ export interface AddCheckDto {
   remark: string; // 备注
 }
 
+export interface StockCheckDto {
+  stockId: string; // 库存ID
+  actualQuantity: string; // 实际数量
+}
+
 /**
  * 分页查询盘点单
  * @param dto 盘点单查询条件
@@ -108,6 +113,24 @@ export function detailCheck(id: string): Promise<Result<CheckItemVo[]>> {
   return new Promise((resolve, reject) => {
     axios
       .get(`/stock/check/detail/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 开始盘点
+ * @param dto 盘点单明细列表
+ * @returns 盘点单ID
+ */
+export function startCheck(dto: StockCheckDto[]): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/stock/check/startCheck', dto)
       .then((res) => {
         resolve(res.data);
       })

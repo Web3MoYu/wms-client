@@ -9,27 +9,41 @@ import {
   Badge,
   Table,
   Typography,
+  Input,
+  Button,
+  Modal,
 } from 'antd';
 import moment from 'moment';
-import { CheckVo, CheckItemVo, detailCheck } from '../../../api/stock-service/CheckController';
+import { CheckVo, CheckItemVo, detailCheck, startCheck, StockCheckDto } from '../../../api/stock-service/CheckController';
 import { renderCheckStatus, renderCheckItemStatus, renderDifferenceStatus } from '../components/CheckStatusComponents';
 import { renderAlertStatus } from '../components/StockStatusComponents';
 
 const { Text } = Typography;
 
+// 抽屉打开模式
+type DrawerMode = 'view' | 'edit';
+
 interface CheckDetailDrawerProps {
   visible: boolean;
   onClose: () => void;
   check: CheckVo | null;
+  mode?: DrawerMode; // 模式：view-查看，edit-编辑
+  defaultActiveKey?: string; // 默认激活的标签页
 }
 
 export default function CheckDetailDrawer({
   visible,
   onClose,
   check,
+  mode = 'view',
+  defaultActiveKey = 'basic',
 }: CheckDetailDrawerProps) {
   const [loading, setLoading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [detailData, setDetailData] = useState<CheckItemVo[]>([]);
+  const [editableData, setEditableData] = useState<CheckItemVo[]>([]);
+  const [activeKey, setActiveKey] = useState<string>(defaultActiveKey);
+  const isEditMode = mode === 'edit';
 
   // 获取盘点详情
   const fetchCheckDetail = async () => {
@@ -40,6 +54,12 @@ export default function CheckDetailDrawer({
       const result = await detailCheck(check.id);
       if (result.code === 200) {
         setDetailData(result.data);
+        // 初始化可编辑数据，默认实际数量等于系统数量
+        const editData = result.data.map(item => ({
+          ...item,
+          actualQuantity: item.systemQuantity
+        }));
+        setEditableData(editData);
       } else {
         message.error(result.msg || '获取盘点详情失败');
       }
@@ -55,8 +75,68 @@ export default function CheckDetailDrawer({
   useEffect(() => {
     if (visible && check) {
       fetchCheckDetail();
+      // 设置默认标签页
+      setActiveKey(defaultActiveKey);
     }
-  }, [visible, check]);
+  }, [visible, check, defaultActiveKey]);
+
+  // 处理输入框变化
+  const handleQuantityChange = (value: number, record: CheckItemVo) => {
+    const newData = editableData.map(item => {
+      if (item.id === record.id) {
+        const actualQuantity = value || 0;
+        const differenceQuantity = actualQuantity - item.systemQuantity;
+        return { 
+          ...item, 
+          actualQuantity,
+          differenceQuantity,
+          status: 1, // 已盘点
+          isDifference: differenceQuantity !== 0 ? 1 : 0 // 有差异为1，无差异为0
+        };
+      }
+      return item;
+    });
+    setEditableData(newData);
+  };
+
+  // 提交盘点数据
+  const handleSubmitCheck = async () => {
+    // 检查是否所有数据都已填写
+    const isAllChecked = editableData.every(item => item.status === 1);
+    if (!isAllChecked) {
+      message.warning('请完成所有物品的盘点');
+      return;
+    }
+
+    // 二次确认
+    Modal.confirm({
+      title: '确认提交',
+      content: '确定要提交盘点结果吗？提交后无法修改。',
+      onOk: async () => {
+        try {
+          setSubmitting(true);
+          // 准备提交的数据
+          const submitData: StockCheckDto[] = editableData.map(item => ({
+            stockId: item.stockId,
+            actualQuantity: String(item.actualQuantity) // 转换为字符串类型
+          }));
+          
+          const result = await startCheck(submitData);
+          if (result.code === 200) {
+            message.success('盘点提交成功');
+            onClose(); // 关闭抽屉
+          } else {
+            message.error(result.msg || '盘点提交失败');
+          }
+        } catch (error) {
+          console.error('盘点提交失败:', error);
+          message.error('盘点提交失败，请稍后重试');
+        } finally {
+          setSubmitting(false);
+        }
+      }
+    });
+  };
 
   // 渲染基本信息选项卡内容
   const renderBasicInfo = () => {
@@ -105,6 +185,10 @@ export default function CheckDetailDrawer({
 
   // 渲染盘点详情选项卡内容
   const renderCheckDetails = () => {
+    // 根据盘点单状态和编辑模式决定是否可编辑
+    const isEditable = check?.status === 0 && isEditMode; // 只有在待盘点状态且是编辑模式下才能编辑
+    const dataSource = isEditable ? editableData : detailData;
+    
     const columns = [
       {
         title: '产品名称',
@@ -155,7 +239,17 @@ export default function CheckDetailDrawer({
         key: 'actualQuantity',
         width: 100,
         render: (text: number, record: CheckItemVo) => (
-          record.status === 1 ? text : '-'
+          isEditable ? (
+            <Input
+              type="number"
+              defaultValue={record.systemQuantity}
+              onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 0, record)}
+              min={0}
+              style={{ width: '100%' }}
+            />
+          ) : (
+            record.status === 1 ? text : '-'
+          )
         ),
       },
       {
@@ -205,9 +299,24 @@ export default function CheckDetailDrawer({
     ];
 
     return (
-      <Card title='盘点明细' size='small'>
+      <Card 
+        title='盘点明细' 
+        size='small'
+        extra={
+          isEditable && (
+            <Button 
+              type="primary" 
+              onClick={handleSubmitCheck}
+              loading={submitting}
+              disabled={!editableData.length}
+            >
+              提交盘点
+            </Button>
+          )
+        }
+      >
         <Table
-          dataSource={detailData}
+          dataSource={dataSource}
           columns={columns}
           rowKey='id'
           size='small'
@@ -247,7 +356,8 @@ export default function CheckDetailDrawer({
     >
       <Spin spinning={loading}>
         <Tabs
-          defaultActiveKey='basic'
+          activeKey={activeKey}
+          onChange={setActiveKey}
           items={tabItems}
           style={{ marginBottom: 32 }}
           size='large'
