@@ -42,7 +42,6 @@ import {
 import CheckAddDrawer from './CheckAddDrawer';
 import CheckDetailDrawer from './CheckDetailDrawer';
 
-const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 export default function CheckManager() {
@@ -125,19 +124,21 @@ export default function CheckManager() {
       // 处理日期范围 - 计划时间
       let planStartTime = null;
       let planEndTime = null;
-      if (values.planDateRange && values.planDateRange.length === 2) {
-        planStartTime = values.planDateRange[0].format('YYYY-MM-DD HH:mm:ss');
-        planEndTime = values.planDateRange[1].format('YYYY-MM-DD HH:mm:ss');
+      if (values.planStartTime) {
+        planStartTime = values.planStartTime.format('YYYY-MM-DD HH:mm:ss');
+      }
+      if (values.planEndTime) {
+        planEndTime = values.planEndTime.format('YYYY-MM-DD HH:mm:ss');
       }
 
       // 处理日期范围 - 实际时间
       let actualStartTime = null;
       let actualEndTime = null;
-      if (values.actualDateRange && values.actualDateRange.length === 2) {
-        actualStartTime = values.actualDateRange[0].format(
-          'YYYY-MM-DD HH:mm:ss'
-        );
-        actualEndTime = values.actualDateRange[1].format('YYYY-MM-DD HH:mm:ss');
+      if (values.actualStartTime) {
+        actualStartTime = values.actualStartTime.format('YYYY-MM-DD HH:mm:ss');
+      }
+      if (values.actualEndTime) {
+        actualEndTime = values.actualEndTime.format('YYYY-MM-DD HH:mm:ss');
       }
 
       const queryDto: CheckQueryDto = {
@@ -449,24 +450,56 @@ export default function CheckManager() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item label='计划时间' name='planDateRange'>
-                <RangePicker
-                  style={{ width: '100%' }}
-                  locale={locale}
-                  showTime={{ format: 'HH:mm:ss' }}
-                  format='YYYY-MM-DD HH:mm:ss'
-                />
-              </Form.Item>
+              <Row gutter={8}>
+                <Col span={12}>
+                  <Form.Item label='计划开始时间' name='planStartTime'>
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      locale={locale}
+                      showTime={{ format: 'HH:mm:ss' }}
+                      format='YYYY-MM-DD HH:mm:ss'
+                      placeholder='开始时间'
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label='计划结束时间' name='planEndTime'>
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      locale={locale}
+                      showTime={{ format: 'HH:mm:ss' }}
+                      format='YYYY-MM-DD HH:mm:ss'
+                      placeholder='结束时间'
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
             </Col>
             <Col span={6}>
-              <Form.Item label='实际时间' name='actualDateRange'>
-                <RangePicker
-                  style={{ width: '100%' }}
-                  locale={locale}
-                  showTime={{ format: 'HH:mm:ss' }}
-                  format='YYYY-MM-DD HH:mm:ss'
-                />
-              </Form.Item>
+              <Row gutter={8}>
+                <Col span={12}>
+                  <Form.Item label='实际开始时间' name='actualStartTime'>
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      locale={locale}
+                      showTime={{ format: 'HH:mm:ss' }}
+                      format='YYYY-MM-DD HH:mm:ss'
+                      placeholder='开始时间'
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label='实际结束时间' name='actualEndTime'>
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      locale={locale}
+                      showTime={{ format: 'HH:mm:ss' }}
+                      format='YYYY-MM-DD HH:mm:ss'
+                      placeholder='结束时间'
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
             </Col>
             <Col span={6} style={{ textAlign: 'right' }}>
               <Space>
