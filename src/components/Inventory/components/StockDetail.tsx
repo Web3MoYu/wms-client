@@ -9,7 +9,7 @@ import {
   Row,
   Col,
 } from 'antd';
-import { renderMoveStatus } from '../components/MoveStatusComponents';
+import { renderMoveStatus } from './MoveStatusComponents';
 import { MovementVo } from '../../../api/stock-service/MoveController';
 
 const { Title, Text } = Typography;

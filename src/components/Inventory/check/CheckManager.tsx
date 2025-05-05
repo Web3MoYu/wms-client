@@ -34,6 +34,7 @@ import {
   getAllAreas,
   Area,
 } from '../../../api/location-service/AreaController';
+import CheckAddDrawer from './CheckAddDrawer';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -61,6 +62,7 @@ export default function CheckManager() {
   // 创建人和盘点人选项
   const [creatorOptions, setCreatorOptions] = useState<any[]>([]);
   const [checkerOptions, setCheckerOptions] = useState<any[]>([]);
+  const [addDrawerVisible, setAddDrawerVisible] = useState<boolean>(false);
 
   // 处理URL参数
   useEffect(() => {
@@ -206,10 +208,20 @@ export default function CheckManager() {
     fetchChecks();
   };
 
-  // 新增盘点
-  const handleAdd = () => {
-    message.info('新增盘点功能待实现');
-    // TODO: 实现新增盘点功能
+  // 打开新增抽屉
+  const showAddDrawer = () => {
+    setAddDrawerVisible(true);
+  };
+
+  // 关闭新增抽屉
+  const hideAddDrawer = () => {
+    setAddDrawerVisible(false);
+  };
+
+  // 新增盘点成功后刷新列表
+  const handleAddSuccess = () => {
+    hideAddDrawer();
+    fetchChecks();
   };
 
   // 表格列定义
@@ -404,7 +416,12 @@ export default function CheckManager() {
             justifyContent: 'flex-end',
           }}
         >
-          <Button type='primary' icon={<PlusOutlined />} onClick={handleAdd}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={showAddDrawer}
+            style={{ marginBottom: 16 }}
+          >
             新增盘点
           </Button>
         </div>
@@ -427,6 +444,11 @@ export default function CheckManager() {
           scroll={{ x: 'max-content' }}
         />
       </Card>
+      <CheckAddDrawer
+        visible={addDrawerVisible}
+        onClose={hideAddDrawer}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 }

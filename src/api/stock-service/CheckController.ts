@@ -39,6 +39,13 @@ export interface CheckVo extends Check {
   checkerUser: User;
 }
 
+export interface AddCheckDto {
+  areaId: string; // 区域ID
+  planStartTime: string; // 计划开始时间
+  planEndTime: string; // 计划结束时间
+  remark: string; // 备注
+}
+
 /**
  * 分页查询盘点单
  * @param dto 盘点单查询条件
@@ -48,6 +55,22 @@ export function pageCheck(dto: CheckQueryDto): Promise<Result<Page<CheckVo>>> {
   return new Promise((resolve, reject) => {
     axios
       .post('/stock/check/page', dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 新增盘点单
+ */
+export function addCheck(dto: AddCheckDto): Promise<Result<string>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .post('/stock/check/add', dto)
       .then((res) => {
         resolve(res.data);
       })

@@ -45,7 +45,7 @@ import {
   Area,
 } from '../../../api/location-service/AreaController';
 import MoveAddDrawer from './MoveAddDrawer';
-import MoveDetail from './MoveDetail';
+import MoveDetail from '../components/StockDetail';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
