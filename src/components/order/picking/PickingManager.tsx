@@ -75,7 +75,7 @@ const PickingManager: React.FC = () => {
     // 设置默认值：拣货员为当前用户
     const initialValues: any = {
       picker: currentUserInfo.userId,
-      createTimeAsc: false,
+      createTimeAsc: null,
     };
 
     // 设置表单初始值
@@ -105,15 +105,21 @@ const PickingManager: React.FC = () => {
         picker: values.picker || '',
         status: values.status !== undefined ? values.status : null,
         totalOrdersAsc:
-          values.totalOrdersAsc !== undefined ? values.totalOrdersAsc : false,
+          values.totalOrdersAsc !== undefined && values.totalOrdersAsc !== null 
+            ? values.totalOrdersAsc 
+            : null,
         totalItemsAsc:
-          values.totalItemsAsc !== undefined ? values.totalItemsAsc : false,
+          values.totalItemsAsc !== undefined && values.totalItemsAsc !== null 
+            ? values.totalItemsAsc 
+            : null,
         totalQuantityAsc:
-          values.totalQuantityAsc !== undefined
+          values.totalQuantityAsc !== undefined && values.totalQuantityAsc !== null
             ? values.totalQuantityAsc
-            : false,
+            : null,
         createTimeAsc:
-          values.createTimeAsc !== undefined ? values.createTimeAsc : false,
+          values.createTimeAsc !== undefined && values.createTimeAsc !== null
+            ? values.createTimeAsc 
+            : null,
         _t: new Date().getTime(),
       };
 
@@ -210,10 +216,10 @@ const PickingManager: React.FC = () => {
 
     // 设置默认值
     form.setFieldsValue({
-      createTimeAsc: false,
-      totalOrdersAsc: false,
-      totalItemsAsc: false,
-      totalQuantityAsc: false,
+      createTimeAsc: null,
+      totalOrdersAsc: null,
+      totalItemsAsc: null,
+      totalQuantityAsc: null,
     });
 
     // 如果当前用户存在，设置为默认拣货员
