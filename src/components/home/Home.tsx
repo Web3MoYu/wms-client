@@ -16,9 +16,6 @@ export default function Home() {
       {/* 基础数据统计 - 占据整行 */}
       <BasicStats />
 
-      {/* 订单统计 - 占据整行 */}
-      <OrderStats />
-
       {/* 图表区域 */}
       <Row gutter={[12, 12]}>
         {/* 左侧列 - 产品分类统计 */}
@@ -31,6 +28,8 @@ export default function Home() {
           <StockStats />
         </Col>
       </Row>
+      {/* 订单统计 - 占据整行 */}
+      <OrderStats />
     </div>
   );
 }
