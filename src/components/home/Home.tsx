@@ -3,6 +3,7 @@ import BasicStats from './components/BasicStats';
 import CategoryStats from './components/charts/CategoryStats';
 import StockStats from './components/charts/StockStats';
 import OrderStats from './components/charts/OrderStats';
+import PickingStats from './components/charts/PickingStats';
 
 const { Title } = Typography;
 
@@ -30,6 +31,9 @@ export default function Home() {
       </Row>
       {/* 订单统计 - 占据整行 */}
       <OrderStats />
+      
+      {/* 拣货统计 - 占据整行 */}
+      <PickingStats />
     </div>
   );
 }

@@ -100,6 +100,15 @@ export interface BatchAddPickingDto {
   picker: string;
   remark: string;
 }
+
+export interface PickingStatisticsVo {
+  status: number; // 状态类型 状态：0-待拣货，1-拣货中，2-已完成，3-异常
+  statusVo: string; // 状态描述字段
+  orderCount: number; // 订单数量
+  itemCount: number; // 拣货数量
+  count: number; // 数量
+}
+
 /**
  * 分页查询拣货列表
  *
@@ -194,6 +203,27 @@ export function pickingOne(dto: PickingOneDto[]): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .post('/order/picking/pickingOne', dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 获取拣货信息统计信息
+ *
+ * @param range 时间范围：1day, 1week, 1month, 3months, 6months
+ * @return 统计信息
+ */
+export function getPickingStatistics(
+  range: string
+): Promise<Result<PickingStatisticsVo[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get('/order/picking/statistics', { params: { range } })
       .then((res) => {
         resolve(res.data);
       })
