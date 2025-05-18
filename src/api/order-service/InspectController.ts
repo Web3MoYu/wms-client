@@ -87,6 +87,11 @@ export interface StockInDto {
   locations: Location[]; // 位置信息
 }
 
+export interface InspectStatisticsVo {
+  count: number; // 质检单数量
+  status: number; // 质检状态：0-未质检，1-通过，2-不通过，3-部分异常
+}
+
 /**
  * 查询入库订单列表
  *
@@ -198,6 +203,29 @@ export function stockOne(dto: StockInDto): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .put('/order/inspect/stockOne', dto)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 获取质检统计信息
+ *
+ * @param type  all-全部，in-入库，out-出库
+ * @param range 时间范围：1day, 1week, 1month, 3months, 6months
+ * @return 统计信息
+ */
+export function getInspectionStatistics(
+  range: string,
+  type: string
+): Promise<Result<InspectStatisticsVo[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/order/inspect/statistics/${type}`, { params: { range } })
       .then((res) => {
         resolve(res.data);
       })

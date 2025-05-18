@@ -928,6 +928,7 @@ export default function OrderManager() {
         <div>
           <p>确定为该订单创建拣货单吗？</p>
           <div style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 8 }}>选择分拣人员</div>
             <Select
               showSearch
               placeholder='请选择分拣人员'
@@ -950,6 +951,7 @@ export default function OrderManager() {
 
           {/* 新增备注字段 */}
           <div style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 8 }}>拣货备注</div>
             <TextArea
               rows={3}
               placeholder='请输入拣货备注（选填）'

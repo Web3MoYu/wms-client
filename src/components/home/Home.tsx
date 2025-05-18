@@ -4,6 +4,7 @@ import CategoryStats from './components/charts/CategoryStats';
 import StockStats from './components/charts/StockStats';
 import OrderStats from './components/charts/OrderStats';
 import PickingStats from './components/charts/PickingStats';
+import InspectionStats from './components/charts/InspectionStats';
 
 const { Title } = Typography;
 
@@ -28,11 +29,17 @@ export default function Home() {
         <Col xs={24} lg={12}>
           <StockStats />
         </Col>
+        {/* 拣货统计 - 占据一半 */}
+        <Col xs={24} lg={12}>
+          <PickingStats />
+        </Col>
+        {/* 质检统计 - 占据一半 */}
+        <Col xs={24} lg={12}>
+          <InspectionStats />
+        </Col>
       </Row>
       {/* 订单统计 - 占据整行 */}
       <OrderStats />
-      {/* 拣货统计 - 占据整行 */}
-      <PickingStats />
     </div>
   );
 }
