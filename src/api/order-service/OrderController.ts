@@ -141,6 +141,13 @@ export interface OrderDetailVo<T> {
   locationName: LocationVo[];
 }
 
+export interface OrderStatisticsVo {
+  status: number; // 订单状态
+  statusVo: string; // 状态描述
+  count: number; // 订单数
+  totalAmount: number; // 订单总金额
+  totalQuantity: number; // 总商品数量
+}
 /**
  * 按照条件查询订单列表
  * @param queryDto 查询条件
@@ -316,6 +323,29 @@ export function doneOutBound(id: string): Promise<Result<string>> {
   return new Promise((resolve, reject) => {
     axios
       .put(`/order/doneOutBound/${id}`)
+      .then((res) => {
+        resolve(res.data);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+/**
+ * 获取订单统计信息
+ *
+ * @param type  0-出库，1-入库
+ * @param range 时间范围：1day, 1week, 1month, 3months, 6months
+ * @return 统计信息
+ */
+export function getOrderStatistics(
+  type: number,
+  range: string
+): Promise<Result<OrderStatisticsVo[]>> {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/order/statistics/${type}`, { params: { range } })
       .then((res) => {
         resolve(res.data);
       })

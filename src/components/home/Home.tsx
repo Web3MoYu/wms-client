@@ -2,6 +2,7 @@ import { Row, Col, Typography } from 'antd';
 import BasicStats from './components/BasicStats';
 import CategoryStats from './components/charts/CategoryStats';
 import StockStats from './components/charts/StockStats';
+import OrderStats from './components/charts/OrderStats';
 
 const { Title } = Typography;
 
@@ -14,6 +15,9 @@ export default function Home() {
 
       {/* 基础数据统计 - 占据整行 */}
       <BasicStats />
+
+      {/* 订单统计 - 占据整行 */}
+      <OrderStats />
 
       {/* 图表区域 */}
       <Row gutter={[12, 12]}>
