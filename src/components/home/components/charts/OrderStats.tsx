@@ -10,9 +10,9 @@ import {
   LegendComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import { 
-  getOrderStatistics, 
-  OrderStatisticsVo 
+import {
+  getOrderStatistics,
+  OrderStatisticsVo,
 } from '../../../../api/order-service/OrderController';
 
 // 注册必要的组件
@@ -50,26 +50,26 @@ const getStatusColor = (status: number) => {
   }
 };
 
+// 所有可能的订单状态及其描述
+const allStatuses = [
+  { status: -2, statusVo: '审批拒绝' },
+  { status: -1, statusVo: '已取消' },
+  { status: 0, statusVo: '待审核' },
+  { status: 1, statusVo: '审批通过' },
+  { status: 2, statusVo: '入库中/出库中' },
+  { status: 3, statusVo: '已完成' },
+];
+
 // 确保显示所有可能的订单状态
 const getAllPossibleStatuses = (data: OrderStatisticsVo[]) => {
-  // 所有可能的订单状态及其描述
-  const allStatuses = [
-    { status: -2, statusVo: '审批拒绝' },
-    { status: -1, statusVo: '已取消' },
-    { status: 0, statusVo: '待审核' },
-    { status: 1, statusVo: '审批通过' },
-    { status: 2, statusVo: '入库中/出库中' },
-    { status: 3, statusVo: '已完成' },
-  ];
-  
   // 创建一个Map存储现有数据中的状态
   const existingStatuses = new Map();
-  data.forEach(item => {
+  data.forEach((item) => {
     existingStatuses.set(item.status, item);
   });
-  
+
   // 构建完整的数据集，包括缺失的状态（数量为0）
-  const completeData = allStatuses.map(status => {
+  const completeData = allStatuses.map((status) => {
     if (existingStatuses.has(status.status)) {
       return existingStatuses.get(status.status);
     } else {
@@ -78,11 +78,11 @@ const getAllPossibleStatuses = (data: OrderStatisticsVo[]) => {
         statusVo: status.statusVo,
         count: 0,
         totalAmount: 0,
-        totalQuantity: 0
+        totalQuantity: 0,
       };
     }
   });
-  
+
   return completeData;
 };
 
@@ -114,7 +114,7 @@ const OrderChart: React.FC<OrderChartProps> = ({ data, height = 400 }) => {
     if (chartInstance.current && data?.length) {
       // 确保所有可能的状态都在图表中显示
       const completeData = getAllPossibleStatuses(data);
-      
+
       // 数据排序：按状态顺序排序（已完成、进行中、待处理、已取消）
       const sortedData = [...completeData].sort((a, b) => {
         // 特殊排序逻辑：让正数状态在前，负数状态在后
@@ -122,33 +122,40 @@ const OrderChart: React.FC<OrderChartProps> = ({ data, height = 400 }) => {
         if (a.status < 0 && b.status >= 0) return 1;
         return a.status - b.status;
       });
-      
+
       // 准备图表数据
-      const statusNames = sortedData.map(item => item.statusVo);
-      const counts = sortedData.map(item => item.count);
-      
+      const statusNames = sortedData.map(
+        (item) =>
+          allStatuses.find((s) => s.status === item.status)?.statusVo ||
+          '未知状态'
+      );
+      const counts = sortedData.map((item) => item.count);
+
       // 设置图表选项
       const option = {
         tooltip: {
           trigger: 'axis',
           axisPointer: {
-            type: 'shadow'
+            type: 'shadow',
           },
-          formatter: function(params: any) {
+          formatter: function (params: any) {
             const dataIndex = params[0].dataIndex;
             const item = sortedData[dataIndex];
-            return `${item.statusVo}<br/>
+            return `${
+              allStatuses.find((s) => s.status === item.status)?.statusVo ||
+              '未知状态'
+            }<br/>
                     订单数：${item.count}<br/>
                     订单总金额：${item.totalAmount}<br/>
                     商品总数量：${item.totalQuantity}`;
-          }
+          },
         },
         grid: {
           left: '3%',
           right: '4%',
           bottom: '8%',
           top: '8%',
-          containLabel: true
+          containLabel: true,
         },
         xAxis: {
           type: 'category',
@@ -156,18 +163,18 @@ const OrderChart: React.FC<OrderChartProps> = ({ data, height = 400 }) => {
           axisLabel: {
             interval: 0,
             rotate: 0, // 修改为水平显示
-            fontSize: 12
-          }
+            fontSize: 12,
+          },
         },
         yAxis: {
           type: 'value',
           name: '订单数',
           nameTextStyle: {
-            fontSize: 12
+            fontSize: 12,
           },
           axisLabel: {
-            fontSize: 12
-          }
+            fontSize: 12,
+          },
         },
         series: [
           {
@@ -175,19 +182,19 @@ const OrderChart: React.FC<OrderChartProps> = ({ data, height = 400 }) => {
             type: 'bar',
             data: counts,
             itemStyle: {
-              color: function(params: any) {
+              color: function (params: any) {
                 // 使用对应状态的颜色
                 const status = sortedData[params.dataIndex].status;
                 return getStatusColor(status);
-              }
+              },
             },
             label: {
               show: true,
               position: 'top',
-              fontSize: 12
-            }
-          }
-        ]
+              fontSize: 12,
+            },
+          },
+        ],
       };
 
       // 设置图表选项
@@ -196,10 +203,10 @@ const OrderChart: React.FC<OrderChartProps> = ({ data, height = 400 }) => {
   }, [data]);
 
   return (
-    <div 
-      ref={chartRef} 
-      style={{ 
-        width: '100%', 
+    <div
+      ref={chartRef}
+      style={{
+        width: '100%',
         height: `${height}px`,
       }}
     />
@@ -220,7 +227,7 @@ const OrderStats: React.FC = () => {
     setLoading(true);
     try {
       const result = await getOrderStatistics(type, range);
-      
+
       if (result?.code === 200 && result.data) {
         setOrderData(result.data);
       } else {
@@ -260,7 +267,7 @@ const OrderStats: React.FC = () => {
         value={type}
         onChange={handleTypeChange}
         style={{ width: 80, marginRight: 8 }}
-        size="small"
+        size='small'
       >
         <Option value={0}>出库</Option>
         <Option value={1}>入库</Option>
@@ -269,19 +276,19 @@ const OrderStats: React.FC = () => {
         value={range}
         onChange={handleRangeChange}
         style={{ width: 100, marginRight: 8 }}
-        size="small"
+        size='small'
       >
-        <Option value="1day">最近一天</Option>
-        <Option value="1week">最近一周</Option>
-        <Option value="1month">最近一月</Option>
-        <Option value="3months">最近三月</Option>
-        <Option value="6months">最近半年</Option>
+        <Option value='1day'>最近一天</Option>
+        <Option value='1week'>最近一周</Option>
+        <Option value='1month'>最近一月</Option>
+        <Option value='3months'>最近三月</Option>
+        <Option value='6months'>最近半年</Option>
       </Select>
-      <Button 
-        icon={<ReloadOutlined />} 
+      <Button
+        icon={<ReloadOutlined />}
         onClick={handleRefresh}
         loading={loading}
-        size="small"
+        size='small'
       >
         刷新
       </Button>
@@ -295,9 +302,9 @@ const OrderStats: React.FC = () => {
 
   if (loading && orderData.length === 0) {
     return (
-      <Card 
-        title={getCardTitle()} 
-        size="small"
+      <Card
+        title={getCardTitle()}
+        size='small'
         style={{ marginBottom: '12px' }}
         extra={renderExtra()}
       >
@@ -309,9 +316,9 @@ const OrderStats: React.FC = () => {
   }
 
   return (
-    <Card 
-      title={getCardTitle()} 
-      size="small"
+    <Card
+      title={getCardTitle()}
+      size='small'
       style={{ marginBottom: '12px' }}
       extra={renderExtra()}
     >
@@ -326,4 +333,4 @@ const OrderStats: React.FC = () => {
   );
 };
 
-export default OrderStats; 
+export default OrderStats;

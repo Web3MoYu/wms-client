@@ -31,7 +31,6 @@ export default function Home() {
       </Row>
       {/* 订单统计 - 占据整行 */}
       <OrderStats />
-      
       {/* 拣货统计 - 占据整行 */}
       <PickingStats />
     </div>

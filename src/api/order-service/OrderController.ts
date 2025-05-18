@@ -143,7 +143,6 @@ export interface OrderDetailVo<T> {
 
 export interface OrderStatisticsVo {
   status: number; // 订单状态
-  statusVo: string; // 状态描述
   count: number; // 订单数
   totalAmount: number; // 订单总金额
   totalQuantity: number; // 总商品数量

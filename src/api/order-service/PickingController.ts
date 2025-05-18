@@ -103,7 +103,6 @@ export interface BatchAddPickingDto {
 
 export interface PickingStatisticsVo {
   status: number; // 状态类型 状态：0-待拣货，1-拣货中，2-已完成，3-异常
-  statusVo: string; // 状态描述字段
   orderCount: number; // 订单数量
   itemCount: number; // 拣货数量
   count: number; // 数量
